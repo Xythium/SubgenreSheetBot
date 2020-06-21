@@ -356,12 +356,6 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Track to search for")]
             string search)
         {
-            if (search == "donkfloor")
-            {
-                await Context.Channel.SendFileAsync(new FileInfo("yes.jpg").FullName);
-                return;
-            }
-
             using var typing = await RevalidateCache();
 
             var split = search.Split(new[]
@@ -404,12 +398,6 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Track to search for")]
             string search)
         {
-            if (search == "donkfloor")
-            {
-                await Context.Channel.SendFileAsync(new FileInfo("yes.jpg").FullName);
-                return;
-            }
-
             using var typing = await RevalidateCache();
 
             var split = search.Split(new[]
@@ -453,12 +441,6 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Track to search for")]
             string search)
         {
-            if (search == "donkfloor")
-            {
-                await Context.Channel.SendFileAsync(new FileInfo("yes.jpg").FullName);
-                return;
-            }
-
             var split = search.Split(new[]
             {
                 " - "
@@ -482,12 +464,6 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Artist to search for")]
             string artist = "")
         {
-            if (artist == "donkfloor")
-            {
-                await Context.Channel.SendFileAsync(new FileInfo("yes.jpg").FullName);
-                return;
-            }
-
             using var typing = await RevalidateCache();
 
             var tracksByArtist = GetAllTracksByArtistFuzzy(artist);
@@ -526,17 +502,11 @@ namespace SubgenreSheetBot.Commands
             await ReplyAsync(sb.ToString());
         }
 
-        [Command("genre"), Alias("gender", "g"), Summary("Returns a list of up to 8 tracks of a given genre")]
+        [Command("genre"), Alias("g"), Summary("Returns a list of up to 8 tracks of a given genre")]
         public async Task Genre(
             [Remainder, Summary("Genre to search for")]
             string genre)
         {
-            if (genre == "donkfloor")
-            {
-                await Context.Channel.SendFileAsync(new FileInfo("yes.jpg").FullName);
-                return;
-            }
-
             using var typing = await RevalidateCache();
 
             var genres = entries.Select(e => e.Genre)
@@ -563,17 +533,11 @@ namespace SubgenreSheetBot.Commands
             await SendTrackList(test, tracks, false);
         }
 
-        [Command("genreinfo"), Alias("genderinfo", "gi"), Summary("Returns information of a genre")]
+        [Command("genreinfo"), Alias("gi"), Summary("Returns information of a genre")]
         public async Task GenreInfo(
             [Remainder, Summary("Genre to search for")]
             string genre)
         {
-            if (genre == "donkfloor")
-            {
-                await Context.Channel.SendFileAsync(new FileInfo("yes.jpg").FullName);
-                return;
-            }
-
             using var typing = await RevalidateCache();
 
             var genres = entries.Select(e => e.Genre)
@@ -620,8 +584,7 @@ namespace SubgenreSheetBot.Commands
                 .WithDescription($"we have {tracks.Length} {test} tracks, from {count.Length} artists, including {count.First().Key}\r\n" + $"the first {test} was in {tracks.Last().Date:Y} by {tracks.Last().Artists} and the latest is on {tracks.First().Date:Y} by {tracks.First().Artists}" + $"\r\n\r\n{sb}" + $"\r\npog")
                 .WithColor(color);
 
-            var message = await ReplyAsync(embed: embed.Build());
-            //await message.AddReactionAsync(new Emote());
+            await ReplyAsync(embed: embed.Build());
         }
 
         [Command("subgenre"), Alias("sg"), Summary("Returns a list of up to 8 tracks of a given subgenre")]
@@ -629,12 +592,6 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Genre to search for")]
             string genre)
         {
-            if (genre == "donkfloor")
-            {
-                await Context.Channel.SendFileAsync(new FileInfo("yes.jpg").FullName);
-                return;
-            }
-
             using var typing = await RevalidateCache();
 
             var genres = GetAllSubgenres();
@@ -664,12 +621,6 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Genre to search for")]
             string genre)
         {
-            if (genre == "donkfloor")
-            {
-                await Context.Channel.SendFileAsync(new FileInfo("yes.jpg").FullName);
-                return;
-            }
-
             using var typing = await RevalidateCache();
 
             var genres = entries.Select(e => e.Subgenres)
@@ -717,12 +668,6 @@ namespace SubgenreSheetBot.Commands
         [Command("label"), Alias("l")]
         public async Task Label([Remainder] string label)
         {
-            if (label == "donkfloor")
-            {
-                await Context.Channel.SendFileAsync(new FileInfo("yes.jpg").FullName);
-                return;
-            }
-
             using var typing = await RevalidateCache();
 
             var labels = GetAllLabelNames()
