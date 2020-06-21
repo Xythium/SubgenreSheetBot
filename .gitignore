@@ -1,6 +1,6 @@
 
-# Created by https://www.toptal.com/developers/gitignore/api/visualstudio,jetbrains,dotnetcore
-# Edit at https://www.toptal.com/developers/gitignore?templates=visualstudio,jetbrains,dotnetcore
+# Created by https://www.toptal.com/developers/gitignore/api/visualstudio,jetbrains+all,dotnetcore
+# Edit at https://www.toptal.com/developers/gitignore?templates=visualstudio,jetbrains+all,dotnetcore
 
 ### DotnetCore ###
 # .NET Core build folders
@@ -11,7 +11,7 @@ obj/
 /node_modules
 /wwwroot/node_modules
 
-### JetBrains ###
+### JetBrains+all ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
@@ -84,28 +84,21 @@ fabric.properties
 # Android studio 3.1+ serialized cache file
 .idea/caches/build_file_checksums.ser
 
-### JetBrains Patch ###
-# Comment Reason: https://github.com/joeblau/gitignore.io/issues/186#issuecomment-215987721
+### JetBrains+all Patch ###
+# Ignores the whole .idea folder and all .iml files
+# See https://github.com/joeblau/gitignore.io/issues/186 and https://github.com/joeblau/gitignore.io/issues/360
 
-# *.iml
-# modules.xml
-# .idea/misc.xml
-# *.ipr
+.idea/
+
+# Reason: https://github.com/joeblau/gitignore.io/issues/186#issuecomment-249601023
+
+*.iml
+modules.xml
+.idea/misc.xml
+*.ipr
 
 # Sonarlint plugin
-.idea/**/sonarlint/
-
-# SonarQube Plugin
-.idea/**/sonarIssues.xml
-
-# Markdown Navigator plugin
-.idea/**/markdown-navigator.xml
-.idea/**/markdown-navigator-enh.xml
-.idea/**/markdown-navigator/
-
-# Cache file creation bug
-# See https://youtrack.jetbrains.com/issue/JBR-2257
-.idea/$CACHE_FILE$
+.idea/sonarlint
 
 ### VisualStudio ###
 ## Ignore Visual Studio temporary files, build results, and
@@ -462,6 +455,6 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 
-# End of https://www.toptal.com/developers/gitignore/api/visualstudio,jetbrains,dotnetcore
+# End of https://www.toptal.com/developers/gitignore/api/visualstudio,jetbrains+all,dotnetcore
 
 nuget.config

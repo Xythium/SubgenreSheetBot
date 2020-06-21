@@ -1,5 +1,4 @@
-﻿﻿using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -16,10 +15,9 @@ using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Util.Store;
 using MusicTools;
-using Newtonsoft.Json;
 using Serilog;
 
-namespace GuillBotDev.Commands
+namespace SubgenreSheetBot.Commands
 {
     public class SpreadsheetModule : ModuleBase
     {
@@ -67,7 +65,7 @@ namespace GuillBotDev.Commands
 
         private async Task<IDisposable> RevalidateCache()
         {
-            var dis = Context.Channel.EnterTypingState();
+            var typingState = Context.Channel.EnterTypingState();
 
             if (lastTime == null || DateTime.UtcNow.Subtract(lastTime.Value)
                 .TotalSeconds > 60)
@@ -83,7 +81,7 @@ namespace GuillBotDev.Commands
                 Log.Information($"Cache revalidation took {DateTime.UtcNow.Subtract(now).TotalMilliseconds}ms");
             }
 
-            return dis;
+            return typingState;
         }
 
         private static readonly Dictionary<string, Color> genreColors = new Dictionary<string, Color>
