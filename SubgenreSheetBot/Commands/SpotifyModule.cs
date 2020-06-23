@@ -122,9 +122,17 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
+            
             var genres = string.Join(", ", album.Genres);
+
             if (string.IsNullOrWhiteSpace(genres))
+            {
+                if (album.Genres.Count > 0)
+                {
+                    await ReplyAsync($"asdadasdasdadasdadsda {MentionUtils.MentionUser(131768632354144256)}");
+                }
                 genres = "None";
+            }
 
             var sb = new StringBuilder();
             var sb1 = new StringBuilder();
@@ -168,7 +176,6 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Label name to search for")]
             string labelName)
         {
-            using var typing = Context.Channel.EnterTypingState();
             var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Album, $"label:\"{labelName}\""));
 
             var albums = new List<SimpleAlbum>();

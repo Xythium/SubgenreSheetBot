@@ -63,10 +63,8 @@ namespace SubgenreSheetBot.Commands
         private static List<Entry> entries = new List<Entry>();
         private static DateTime? lastTime = null;
 
-        private async Task<IDisposable> RevalidateCache()
+        private async Task RevalidateCache()
         {
-            var typingState = Context.Channel.EnterTypingState();
-
             if (lastTime == null || DateTime.UtcNow.Subtract(lastTime.Value)
                 .TotalSeconds > 60)
             {
@@ -80,8 +78,6 @@ namespace SubgenreSheetBot.Commands
                 lastTime = DateTime.UtcNow;
                 Log.Information($"Cache revalidation took {DateTime.UtcNow.Subtract(now).TotalMilliseconds}ms");
             }
-
-            return typingState;
         }
 
         private static readonly Dictionary<string, Color> genreColors = new Dictionary<string, Color>
@@ -356,7 +352,7 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Track to search for")]
             string search)
         {
-            using var typing = await RevalidateCache();
+            await RevalidateCache();
 
             var split = search.Split(new[]
             {
@@ -398,7 +394,7 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Track to search for")]
             string search)
         {
-            using var typing = await RevalidateCache();
+            await RevalidateCache();
 
             var split = search.Split(new[]
             {
@@ -464,7 +460,7 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Artist to search for")]
             string artist = "")
         {
-            using var typing = await RevalidateCache();
+            await RevalidateCache();
 
             var tracksByArtist = GetAllTracksByArtistFuzzy(artist);
 
@@ -482,7 +478,7 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Artist to search for")]
             string artist)
         {
-            using var typing = await RevalidateCache();
+            await RevalidateCache();
 
             var artists = entries.SelectMany(e => e.ArtistsList)
                 .Distinct()
@@ -507,7 +503,7 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Genre to search for")]
             string genre)
         {
-            using var typing = await RevalidateCache();
+            await RevalidateCache();
 
             var genres = entries.Select(e => e.Genre)
                 .Distinct()
@@ -538,7 +534,7 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Genre to search for")]
             string genre)
         {
-            using var typing = await RevalidateCache();
+            await RevalidateCache();
 
             var genres = entries.Select(e => e.Genre)
                 .Distinct()
@@ -592,7 +588,7 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Genre to search for")]
             string genre)
         {
-            using var typing = await RevalidateCache();
+            await RevalidateCache();
 
             var genres = GetAllSubgenres();
             var test = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
@@ -621,7 +617,7 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Genre to search for")]
             string genre)
         {
-            using var typing = await RevalidateCache();
+            await RevalidateCache();
 
             var genres = entries.Select(e => e.Subgenres)
                 .Distinct()
@@ -650,7 +646,7 @@ namespace SubgenreSheetBot.Commands
         [Command("labels"), Alias("ls")]
         public async Task Labels()
         {
-            using var typing = await RevalidateCache();
+            await RevalidateCache();
 
             var labels = entries.SelectMany(e => e.LabelList)
                 .GroupBy(l => l, e => e, (s, e) => new
@@ -668,7 +664,7 @@ namespace SubgenreSheetBot.Commands
         [Command("label"), Alias("l")]
         public async Task Label([Remainder] string label)
         {
-            using var typing = await RevalidateCache();
+            await RevalidateCache();
 
             var labels = GetAllLabelNames()
                 .OrderBy(l => l)
@@ -679,7 +675,7 @@ namespace SubgenreSheetBot.Commands
         [Command("debug")]
         public async Task Debug()
         {
-            using var typing = await RevalidateCache();
+            await RevalidateCache();
 
             var subgenres = entries.Where(e => e.SubgenresList.Count > 1)
                 .GroupBy(e => e.Subgenres, e => e, (s, e) =>
