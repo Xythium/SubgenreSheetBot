@@ -211,6 +211,46 @@ namespace SubgenreSheetBot.Commands
             }
         }
 
+        [Command("label"), Alias("l"), Summary("Get all releases from a label from a certain year")]
+        public async Task Label([Summary("Year to find releases for")]int year,
+            [Remainder, Summary("Label name to search for")]
+            string labelName)
+        {
+            var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Album, $"label:\"{labelName}\" year:{year}"));
+
+            var albums = new List<SimpleAlbum>();
+            var sb = new StringBuilder();
+
+            await foreach (var album in api.Paginate(response.Albums, s => s.Albums))
+            {
+                albums.Add(album);
+                if (albums.Count == 2000)
+                    break;
+            }
+
+            foreach (var album in albums.OrderByDescending(a => a.ReleaseDate))
+            {
+                var line = $"{string.Join(" & ", album.Artists.Select(a => $"{a.Name}{(a.Type != "artist" ? $" ({a.Type})" : "")}"))} - {album.Name} ({album.ReleaseDate})";
+                sb.AppendLine(line);
+            }
+
+            if (sb.Length < 1)
+            {
+                await ReplyAsync("pissed my pant");
+                return;
+            }
+
+            if (sb.Length > 1000)
+            {
+                var writer = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
+                await Context.Channel.SendFileAsync(writer, "albums.txt", $"I found {albums.Count} albums which does not fit in a discord message");
+            }
+            else
+            {
+                await ReplyAsync(sb.ToString());
+            }
+        }
+
         private static string IntToKey(int key)
         {
             return key switch
