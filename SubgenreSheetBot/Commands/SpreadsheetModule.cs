@@ -313,16 +313,25 @@ namespace SubgenreSheetBot.Commands
             await RevalidateCache();
 
             var labels = entries.SelectMany(e => e.LabelList)
-                .GroupBy(l => l, e => e, (s, e) => new
+                .GroupBy(l => l, e => e, (label, ls) =>
                 {
-                    Key = s,
-                    TrackCount = e.Count()
+                    var tracks = entries.Where(e => e.LabelList.Contains(label))
+                        .ToArray();
+                    return new
+                    {
+                        Key = label,
+                        ArtistCount = tracks.SelectMany(e => e.ArtistsList)
+                            .Distinct()
+                            .Count(),
+                        TrackCount = tracks.Length
+                    };
                 })
                 .OrderByDescending(a => a.TrackCount)
+                .ThenByDescending(a => a.ArtistCount)
                 .ThenBy(a => a.Key)
                 .ToList();
 
-            await ReplyAsync(string.Join("\r\n", labels.Select(l => $"{l.Key} ({l.TrackCount} tracks, {entries.Where(e => e.LabelList.Contains(l.Key)).SelectMany(e => e.ArtistsList).Distinct().Count()} artists)")));
+            await ReplyAsync(string.Join("\r\n", labels.Select(l => $"{l.Key} ({l.TrackCount} tracks, {l.ArtistCount} artists)")));
         }
 
         [Command("label"), Alias("l")]
