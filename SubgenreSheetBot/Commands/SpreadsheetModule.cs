@@ -513,15 +513,13 @@ namespace SubgenreSheetBot.Commands
             var days = Math.Floor(now.Date.Subtract(earliest.Date)
                 .TotalDays);
 
-  
-
             var embed = new EmbedBuilder().WithTitle(test)
                 .WithDescription($"{test}'s latest release {(latest.Date.CompareTo(now) > 0 ? "is" : "was")} on {latest.Date:yyyy'-'MM'-'dd} by {latest.Artists}, and their first release {(earliest.Date.CompareTo(now) > 0 ? "is" : "was")} on {earliest.Date:yyyy'-'MM'-'dd} by {earliest.Artists}")
                 .AddField("Tracks", tracks.Count, true)
                 .AddField("Years active", days <= 0 ? "Not yet active" : $"{Math.Floor(days / 365)} years and {(days % 365)} days", true);
 
-            if (test == "mau5trap")
-                embed = embed.WithThumbnailUrl("https://i0.wp.com/thegroovecartel.com/wp-content/uploads/2019/07/mau5trap-logo.jpg");
+            //  if (test == "mau5trap")
+            embed = embed.WithThumbnailUrl($"https://raw.githubusercontent.com/Xythium/SubgenreSheetBot/master/SubgenreSheetBot/logo_{test}.jpg");
 
             await ReplyAsync(embed: embed.Build());
         }
