@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -366,8 +367,8 @@ namespace SubgenreSheetBot.Commands
                 .AddField("Tracks", tracks.Count, true)
                 .AddField("Years active", days <= 0 ? "Not yet active" : $"{Math.Floor(days / 365)} years and {(days % 365)} days", true);
 
-            //  if (test == "mau5trap")
-            embed = embed.WithThumbnailUrl($"https://raw.githubusercontent.com/Xythium/SubgenreSheetBot/master/SubgenreSheetBot/logo_{test}.jpg");
+            if (File.Exists($"logo_{test}.jpg"))
+                embed = embed.WithThumbnailUrl($"https://raw.githubusercontent.com/Xythium/SubgenreSheetBot/master/SubgenreSheetBot/logo_{test}.jpg");
 
             await ReplyAsync(embed: embed.Build());
         }
