@@ -365,6 +365,7 @@ namespace SubgenreSheetBot.Commands
             var embed = new EmbedBuilder().WithTitle(test)
                 .WithDescription($"{test}'s latest release {(latest.Date.CompareTo(now) > 0 ? "is" : "was")} on {latest.Date:yyyy'-'MM'-'dd} by {latest.Artists}, and their first release {(earliest.Date.CompareTo(now) > 0 ? "is" : "was")} on {earliest.Date:yyyy'-'MM'-'dd} by {earliest.Artists}")
                 .AddField("Tracks", tracks.Count, true)
+                .AddField("Artists", tracks.SelectMany(t => t.ArtistsList).Distinct().Count(), true)
                 .AddField("Years active", days <= 0 ? "Not yet active" : $"{Math.Floor(days / 365)} years and {(days % 365)} days", true);
 
             if (File.Exists($"logo_{test}.jpg"))
