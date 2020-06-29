@@ -46,21 +46,6 @@ namespace SubgenreSheetBot.Commands
             });
         }
 
-        private const int A = 0;
-        private const int B = A + 1;
-        private const int C = B + 1;
-        private const int D = C + 1;
-        private const int E = D + 1;
-        private const int F = E + 1;
-        private const int G = F + 1;
-        private const int H = G + 1;
-        private const int I = H + 1;
-        private const int J = I + 1;
-        private const int K = J + 1;
-        private const int L = K + 1;
-        private const int M = L + 1;
-        private const int N = M + 1;
-
         private static List<Entry> entries = new List<Entry>();
         private static DateTime? lastTime = null;
 
@@ -172,6 +157,16 @@ namespace SubgenreSheetBot.Commands
             },
         };
 
+        public static readonly string[] DateFormat =
+        {
+            "yyyy'-'MM'-'dd"
+        };
+
+        public static readonly string[] TimeFormat =
+        {
+            "m':'ss" /*, "h:mm:ss"*/
+        };
+
         private static Color GetGenreColor(string genre)
         {
             if (!genreColors.TryGetValue(genre, out var color))
@@ -245,34 +240,61 @@ namespace SubgenreSheetBot.Commands
                     .WithIsInline(true),
                 new EmbedFieldBuilder().WithName("Song Title")
                     .WithValue(track.Title)
-                    .WithIsInline(true),
-                new EmbedFieldBuilder().WithName("Genre")
-                    .WithValue(track.Subgenres)
-                    .WithIsInline(true),
-                new EmbedFieldBuilder().WithName("Date")
-                    .WithValue(track.Date.ToString("yyyy'-'MM'-'dd"))
-                    .WithIsInline(true),
-                new EmbedFieldBuilder().WithName("Primary Label")
-                    .WithValue(track.Label)
-                    .WithIsInline(true),
+                    .WithIsInline(true)
             };
             if (track.Length != null)
                 fields.Add(new EmbedFieldBuilder().WithName("Length")
-                    .WithValue($"{(int) track.Length.Value.TotalMinutes}:{track.Length.Value.Seconds.ToString().PadLeft(2, '0')}")
+                    .WithValue(track.Length.Value.ToString(TimeFormat[0]))
                     .WithIsInline(true));
+
+            fields.Add(new EmbedFieldBuilder().WithName("Primary Label")
+                .WithValue(track.Label)
+                .WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("Date")
+                .WithValue(track.Date.ToString(DateFormat[0]))
+                .WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("Genre")
+                .WithValue(track.Subgenres)
+                .WithIsInline(true));
+
             if (!string.IsNullOrWhiteSpace(track.Bpm))
+            {
                 fields.Add(new EmbedFieldBuilder().WithName("BPM")
-                    .WithValue(track.Bpm)
+                    .WithValue($"{track.Bpm} {BoolToEmoji(track.CorrectBpm)}")
                     .WithIsInline(true));
+            }
+
             if (!string.IsNullOrWhiteSpace(track.Key))
+            {
                 fields.Add(new EmbedFieldBuilder().WithName("Key")
-                    .WithValue(track.Key)
+                    .WithValue($"{track.Key} {BoolToEmoji(track.CorrectKey)}")
                     .WithIsInline(true));
+            }
+
+            fields.Add(new EmbedFieldBuilder().WithName("Spotify")
+                .WithValue(BoolToEmoji(track.Spotify))
+                .WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("SoundCloud")
+                .WithValue(BoolToEmoji(track.SoundCloud))
+                .WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("Beatport")
+                .WithValue(BoolToEmoji(track.Beatport))
+                .WithIsInline(true));
 
             var builder = new EmbedBuilder().WithColor(GetGenreColor(track.Genre))
                 .WithFields(fields)
                 .Build();
             await ReplyAsync(null, false, builder);
+        }
+
+        private string BoolToEmoji(bool value)
+        {
+            if (value)
+            {
+                return "✅";
+            }
+
+            return "❌";
         }
 
         private async Task SendTrackInfoEmbed(TrackInfo info)
@@ -295,7 +317,7 @@ namespace SubgenreSheetBot.Commands
                     .WithValue(string.Join(", ", info.Remixers))
                     .WithIsInline(true));
             fields.Add(new EmbedFieldBuilder().WithName("Date")
-                .WithValue(info.ScrobbledDate.ToString("yyyy'-'MM'-'dd"))
+                .WithValue(info.ScrobbledDate.ToString(DateFormat[0]))
                 .WithIsInline(true));
 
             var builder = new EmbedBuilder().WithFields(fields)
@@ -344,7 +366,7 @@ namespace SubgenreSheetBot.Commands
                 for (var i = 0; i < tracks.Count; i++)
                 {
                     var track = tracks[i];
-                    sb.AppendLine($"{tracks.IndexOf(track) + 1}. {track.Artists} - {track.Title} [{track.Label}] {track.Date:yyyy'-'MM'-'dd}");
+                    sb.AppendLine($"{tracks.IndexOf(track) + 1}. {track.Artists} - {track.Title} [{track.Label}] {track.Date.ToString(DateFormat[0])}");
                 }
             }
             else
@@ -352,7 +374,7 @@ namespace SubgenreSheetBot.Commands
                 for (var i = 0; i < latestTracks.Length; i++)
                 {
                     var track = latestTracks[i];
-                    sb.AppendLine($"{tracks.IndexOf(track) + 1}. {track.Artists} - {track.Title} [{track.Label}] {track.Date:yyyy'-'MM'-'dd}");
+                    sb.AppendLine($"{tracks.IndexOf(track) + 1}. {track.Artists} - {track.Title} [{track.Label}] {track.Date.ToString(DateFormat[0])}");
                 }
 
                 sb.AppendLine("...");
@@ -360,7 +382,7 @@ namespace SubgenreSheetBot.Commands
                 for (var i = earliestTracks.Length - 1; i >= 0; i--)
                 {
                     var track = earliestTracks[i];
-                    sb.AppendLine($"{tracks.IndexOf(track) + 1}. {track.Artists} - {track.Title} [{track.Label}] {track.Date:yyyy'-'MM'-'dd}");
+                    sb.AppendLine($"{tracks.IndexOf(track) + 1}. {track.Artists} - {track.Title} [{track.Label}] {track.Date.ToString(DateFormat[0])}");
                 }
             }
 
@@ -378,16 +400,6 @@ namespace SubgenreSheetBot.Commands
                 return null;
             if (valueRanges.Count == 0)
                 return null;
-
-            static string GetStringArgument(IList<object> row, int index, string def)
-            {
-                if (index >= row.Count)
-                    return def;
-                if (string.IsNullOrWhiteSpace((string) row[index]))
-                    return def;
-
-                return (string) row[index];
-            }
 
             var entries = new List<Entry>();
 
@@ -408,63 +420,10 @@ namespace SubgenreSheetBot.Commands
                 {
                     try
                     {
-                        var dateStr = GetStringArgument(row, A, null);
-                        if (dateStr == null)
-                            continue;
-
-                        if (!DateTime.TryParseExact(dateStr, new[]
+                        if (Entry.TryParse(row, sheet, out var entry))
                         {
-                            "yyyy'-'MM'-'dd"
-                        }, CultureInfo.CurrentCulture, DateTimeStyles.None, out var date))
-                        {
-                            Log.Error($"cannot parse {dateStr}");
-                            continue;
+                            entries.Add(entry);
                         }
-
-                        var genre = GetStringArgument(row, E, null);
-                        var subgenre = GetStringArgument(row, F, null);
-                        var artists = GetStringArgument(row, G, null);
-                        var title = GetStringArgument(row, H, null);
-                        var label = GetStringArgument(row, I, null);
-
-                        var lengthStr = GetStringArgument(row, J, null);
-                        TimeSpan? length;
-
-                        if (lengthStr == null || lengthStr == "--:--")
-                            length = null;
-                        else
-                        {
-                            if (!TimeSpan.TryParseExact(lengthStr, new[]
-                            {
-                                "m':'ss" /*, "h:mm:ss"*/
-                            }, CultureInfo.CurrentCulture, TimeSpanStyles.None, out var l))
-                            {
-                                Log.Fatal($"cannot parse {lengthStr}");
-                                length = null;
-                            }
-                            else
-                            {
-                                length = l;
-                            }
-                        }
-
-                        var bpmStr = GetStringArgument(row, L, null);
-                        var key = GetStringArgument(row, N, null);
-
-                        var entry = new Entry
-                        {
-                            Sheet = sheet,
-                            Date = date,
-                            Genre = genre,
-                            Subgenres = subgenre,
-                            Artists = artists,
-                            Title = title,
-                            Label = label,
-                            Length = length,
-                            Bpm = bpmStr,
-                            Key = key
-                        };
-                        entries.Add(entry);
                     }
                     catch (Exception ex)
                     {
@@ -479,14 +438,16 @@ namespace SubgenreSheetBot.Commands
         }
     }
 
-    public class Entry : IComparable<Entry>, IComparable
+    public class Entry
     {
         public string Sheet { get; set; }
 
         public DateTime Date { get; set; }
 
         public bool Spotify { get; set; }
+
         public bool SoundCloud { get; set; }
+
         public bool Beatport { get; set; }
 
         public string Genre { get; set; }
@@ -508,101 +469,139 @@ namespace SubgenreSheetBot.Commands
 
         public TimeSpan? Length { get; set; }
 
+        public bool CorrectBpm { get; set; }
+
         public string Bpm { get; set; } // todo: cant be decimal at the moment because '98.5 > 95'
+
+        public bool CorrectKey { get; set; }
 
         public string Key { get; set; }
 
-        public int CompareTo(Entry other)
+        private const int A = 0;
+        private const int B = A + 1;
+        private const int C = B + 1;
+        private const int D = C + 1;
+        private const int E = D + 1;
+        private const int F = E + 1;
+        private const int G = F + 1;
+        private const int H = G + 1;
+        private const int I = H + 1;
+        private const int J = I + 1;
+        private const int K = J + 1;
+        private const int L = K + 1;
+        private const int M = L + 1;
+        private const int N = M + 1;
+
+        public static bool TryParse(IList<object> row, string sheet, out Entry entry)
         {
-            if (ReferenceEquals(this, other))
-                return 0;
-            if (ReferenceEquals(null, other))
-                return 1;
+            var date = GetDateArgument(row, A, null);
 
-            var sheetComparison = string.Compare(Sheet, other.Sheet, StringComparison.Ordinal);
-            if (sheetComparison != 0)
-                return sheetComparison;
+            if (date == null)
+            {
+                entry = null;
+                return false;
+            }
 
-            var dateComparison = Date.CompareTo(other.Date);
-            if (dateComparison != 0)
-                return dateComparison;
+            var spotify = GetBoolArgument(row, B, false);
+            var soundcloud = GetBoolArgument(row, C, false);
+            var beatport = GetBoolArgument(row, D, false);
+            var genre = GetStringArgument(row, E, null);
+            var subgenre = GetStringArgument(row, F, null);
+            var artists = GetStringArgument(row, G, null);
+            var title = GetStringArgument(row, H, null);
+            var label = GetStringArgument(row, I, null);
+            var length = GetTimeArgument(row, J, null);
+            var correctBpm = GetBoolArgument(row, K, false);
+            var bpmStr = GetStringArgument(row, L, null);
+            var correctKey = GetBoolArgument(row, M, false);
+            var key = GetStringArgument(row, N, null);
 
-            var genreComparison = string.Compare(Genre, other.Genre, StringComparison.Ordinal);
-            if (genreComparison != 0)
-                return genreComparison;
+            entry = new Entry
+            {
+                Sheet = sheet,
+                Date = date.Value,
+                Spotify = spotify,
+                SoundCloud = soundcloud,
+                Beatport = beatport,
+                Genre = genre,
+                Subgenres = subgenre,
+                Artists = artists,
+                Title = title,
+                Label = label,
+                Length = length,
+                CorrectBpm = correctBpm,
+                Bpm = bpmStr,
+                CorrectKey = correctKey,
+                Key = key
+            };
 
-            var subgenresComparison = string.Compare(Subgenres, other.Subgenres, StringComparison.Ordinal);
-            if (subgenresComparison != 0)
-                return subgenresComparison;
-
-            var artistsComparison = string.Compare(Artists, other.Artists, StringComparison.Ordinal);
-            if (artistsComparison != 0)
-                return artistsComparison;
-
-            var titleComparison = string.Compare(Title, other.Title, StringComparison.Ordinal);
-            if (titleComparison != 0)
-                return titleComparison;
-
-            var labelComparison = string.Compare(Label, other.Label, StringComparison.Ordinal);
-            if (labelComparison != 0)
-                return labelComparison;
-
-            var lengthComparison = Nullable.Compare(Length, other.Length);
-            if (lengthComparison != 0)
-                return lengthComparison;
-
-            var bpmComparison = string.Compare(Bpm, other.Bpm, StringComparison.Ordinal);
-            if (bpmComparison != 0)
-                return bpmComparison;
-
-            return string.Compare(Key, other.Key, StringComparison.Ordinal);
+            return true;
         }
 
-        public int CompareTo(object obj)
+        private static string GetStringArgument(IList<object> row, int index, string def)
         {
-            var other = (Entry) obj;
-            if (ReferenceEquals(this, other))
-                return 0;
-            if (ReferenceEquals(null, other))
-                return 1;
+            if (index >= row.Count)
+                return def;
 
-            var sheetComparison = string.Compare(Sheet, other.Sheet, StringComparison.Ordinal);
-            if (sheetComparison != 0)
-                return sheetComparison;
+            var str = (string) row[index];
+            if (string.IsNullOrWhiteSpace(str))
+                return def;
 
-            var dateComparison = Date.CompareTo(other.Date);
-            if (dateComparison != 0)
-                return dateComparison;
+            return str;
+        }
 
-            var genreComparison = string.Compare(Genre, other.Genre, StringComparison.Ordinal);
-            if (genreComparison != 0)
-                return genreComparison;
+        private static DateTime? GetDateArgument(IList<object> row, int index, DateTime? def)
+        {
+            if (index >= row.Count)
+                return def;
 
-            var subgenresComparison = string.Compare(Subgenres, other.Subgenres, StringComparison.Ordinal);
-            if (subgenresComparison != 0)
-                return subgenresComparison;
+            var str = (string) row[index];
+            if (string.IsNullOrWhiteSpace(str))
+                return def;
 
-            var artistsComparison = string.Compare(Artists, other.Artists, StringComparison.Ordinal);
-            if (artistsComparison != 0)
-                return artistsComparison;
+            if (!DateTime.TryParseExact(str, SpreadsheetModule.DateFormat, CultureInfo.CurrentCulture, DateTimeStyles.None, out var date))
+            {
+                Log.Error($"cannot parse {str}");
+                return def;
+            }
 
-            var titleComparison = string.Compare(Title, other.Title, StringComparison.Ordinal);
-            if (titleComparison != 0)
-                return titleComparison;
+            return date;
+        }
 
-            var labelComparison = string.Compare(Label, other.Label, StringComparison.Ordinal);
-            if (labelComparison != 0)
-                return labelComparison;
+        private static TimeSpan? GetTimeArgument(IList<object> row, int index, TimeSpan? def)
+        {
+            if (index >= row.Count)
+                return def;
 
-            var lengthComparison = Nullable.Compare(Length, other.Length);
-            if (lengthComparison != 0)
-                return lengthComparison;
+            var str = (string) row[index];
+            if (string.IsNullOrWhiteSpace(str) || str == "--:--")
+                return def;
 
-            var bpmComparison = string.Compare(Bpm, other.Bpm, StringComparison.Ordinal);
-            if (bpmComparison != 0)
-                return bpmComparison;
+            if (!TimeSpan.TryParseExact(str, SpreadsheetModule.TimeFormat, CultureInfo.CurrentCulture, TimeSpanStyles.None, out var time))
+            {
+                Log.Error($"cannot parse {str}");
+                return def;
+            }
 
-            return string.Compare(Key, other.Key, StringComparison.Ordinal);
+            return time;
+        }
+
+        private static bool GetBoolArgument(IList<object> row, int index, bool def)
+        {
+            if (index >= row.Count)
+                return def;
+
+            var str = (string) row[index];
+            if (string.IsNullOrWhiteSpace(str))
+                return def;
+
+            if (string.Equals(str, "TRUE", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (string.Equals(str, "FALSE", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            return def;
         }
     }
 
