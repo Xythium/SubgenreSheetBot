@@ -57,6 +57,9 @@ namespace SubgenreSheetBot.Commands
         private const int I = H + 1;
         private const int J = I + 1;
         private const int K = J + 1;
+        private const int L = K + 1;
+        private const int M = L + 1;
+        private const int N = M + 1;
 
         private static List<Entry> entries = new List<Entry>();
         private static DateTime? lastTime = null;
@@ -69,7 +72,7 @@ namespace SubgenreSheetBot.Commands
                 var now = DateTime.UtcNow;
 
                 entries = new List<Entry>();
-                var values = await BatchRequest("'2020-2024'!A2:K", "'2015-2019'!A2:K", "'2010-2014'!A2:K", "'Upcoming'!A2:K", "'Pre-2010s'!A2:K", "'Genreless'!A2:K");
+                var values = await BatchRequest("'2020-2024'!A2:N", "'2015-2019'!A2:N", "'2010-2014'!A2:N", "'Upcoming'!A2:N", "'Pre-2010s'!A2:N", "'Genreless'!A2:N");
                 if (values != null)
                     entries.AddRange(values);
 
@@ -418,13 +421,13 @@ namespace SubgenreSheetBot.Commands
                             continue;
                         }
 
-                        var genre = GetStringArgument(row, B, null);
-                        var subgenre = GetStringArgument(row, C, null);
-                        var artists = GetStringArgument(row, D, null);
-                        var title = GetStringArgument(row, E, null);
-                        var label = GetStringArgument(row, F, null);
+                        var genre = GetStringArgument(row, E, null);
+                        var subgenre = GetStringArgument(row, F, null);
+                        var artists = GetStringArgument(row, G, null);
+                        var title = GetStringArgument(row, H, null);
+                        var label = GetStringArgument(row, I, null);
 
-                        var lengthStr = GetStringArgument(row, G, null);
+                        var lengthStr = GetStringArgument(row, J, null);
                         TimeSpan? length;
 
                         if (lengthStr == null || lengthStr == "--:--")
@@ -445,8 +448,8 @@ namespace SubgenreSheetBot.Commands
                             }
                         }
 
-                        var bpmStr = GetStringArgument(row, I, null);
-                        var key = GetStringArgument(row, K, null);
+                        var bpmStr = GetStringArgument(row, L, null);
+                        var key = GetStringArgument(row, N, null);
 
                         var entry = new Entry
                         {
@@ -481,6 +484,10 @@ namespace SubgenreSheetBot.Commands
         public string Sheet { get; set; }
 
         public DateTime Date { get; set; }
+
+        public bool Spotify { get; set; }
+        public bool SoundCloud { get; set; }
+        public bool Beatport { get; set; }
 
         public string Genre { get; set; }
 
