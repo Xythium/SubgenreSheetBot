@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using Discord;
 using FuzzySharp;
 using FuzzySharp.PreProcess;
+using FuzzySharp.SimilarityRatio.Scorer;
+using FuzzySharp.SimilarityRatio.Scorer.StrategySensitive;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
@@ -167,6 +169,8 @@ namespace SubgenreSheetBot.Commands
             "m':'ss" /*, "h:mm:ss"*/
         };
 
+        private static IRatioScorer scorer = new TokenSetScorer();
+
         private static Color GetGenreColor(string genre)
         {
             if (!genreColors.TryGetValue(genre, out var color))
@@ -194,6 +198,15 @@ namespace SubgenreSheetBot.Commands
                 .OrderByDescending(e => e.Date)
                 .ToList();
         }
+
+        private static List<Entry> GetTracksByTitleFuzzy(List<Entry> tracksByArtist, string title, int threshold = 80)
+        {
+            return tracksByArtist.Where(e => Fuzz.Ratio(e.Title, title, PreprocessMode.Full) >= threshold)
+                .OrderByDescending(e => e.Date)
+                .ToList();
+        }
+
+        private static List<Entry> GetTracksByTitleFuzzy(string title) { return GetTracksByTitleFuzzy(entries, title); }
 
         private static List<Entry> GetAllTracksByLabelFuzzy(string label, int threshold = 80)
         {
