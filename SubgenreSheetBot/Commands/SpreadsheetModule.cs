@@ -1,19 +1,78 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FuzzySharp;
 using FuzzySharp.PreProcess;
+using FuzzySharp.SimilarityRatio.Scorer.StrategySensitive;
 using MusicTools;
 
 namespace SubgenreSheetBot.Commands
 {
     public partial class SpreadsheetModule : ModuleBase
     {
-        [Command("trackexact"), Alias("te"), Summary("Search for a track on the sheet")]
+        [Command("track"), Alias("t"), Summary("Search for a track on the sheet")]
         public async Task Track(
+            [Remainder, Summary("Track to search for")]
+            string search)
+        {
+            await RevalidateCache();
+
+            var split = search.Split(new[]
+            {
+                " - "
+            }, StringSplitOptions.RemoveEmptyEntries);
+
+            List<Entry> tracks;
+
+            if (split.Length == 1)
+            {
+                tracks = GetTracksByTitleFuzzy(split[0]);
+            }
+            else if (split.Length != 2)
+            {
+                await ReplyAsync($"cannot parse `{search}` into `Artist - Title` or `Title`");
+                return;
+            }
+            else
+            {
+                var artist = split[0];
+                var tracksByArtist = GetAllTracksByArtistFuzzy(artist);
+
+                if (tracksByArtist.Count == 0)
+                {
+                    await ReplyAsync($"no tracks found by artist `{artist}`");
+                    return;
+                }
+
+                var title = split[1];
+                tracks = GetTracksByTitleFuzzy(tracksByArtist, title);
+
+                if (tracks.Count == 0)
+                {
+                    await ReplyAsync($"i found the artist `{artist}` but i cannot find the track `{title}`");
+                    return;
+                }
+            }
+
+            if (tracks.Count == 0)
+            {
+                await ReplyAsync($"pissed left pant");
+                return;
+            }
+
+            foreach (var track in tracks)
+            {
+                await SendTrackEmbed(track);
+            }
+        }
+
+        [Command("trackexact"), Alias("te"), Summary("Search for a track on the sheet")]
+        public async Task TrackExact(
             [Remainder, Summary("Track to search for")]
             string search)
         {
@@ -55,7 +114,7 @@ namespace SubgenreSheetBot.Commands
         }
 
         [Command("trackinfoexact"), Alias("tie"), Summary("Search for a track on the sheet")]
-        public async Task TrackInfo(
+        public async Task TrackInfoExact(
             [Remainder, Summary("Track to search for")]
             string search)
         {
@@ -144,20 +203,16 @@ namespace SubgenreSheetBot.Commands
             string artist)
         {
             await RevalidateCache();
-
-            var artists = entries.SelectMany(e => e.ArtistsList)
-                .Distinct()
-                .Select(a => (a, fuzzyFunc(artist, a, PreprocessMode.Full)))
-                .OrderByDescending(a => a.Item2)
-                .ThenBy(a => a.a)
-                .Take(15)
-                .ToArray();
-            var sb = new StringBuilder($"{artists.Length} most similar artists (using {fuzzyFunc.Method.Name})\r\n");
+            
+            var artists = Process.ExtractTop(artist, entries.SelectMany(e => e.ArtistsList)
+                .Distinct(), scorer: scorer, limit: 15).ToArray();
+         
+            var sb = new StringBuilder($"{artists.Length} most similar artists (using {scorer.GetType().Name})\r\n");
 
             for (var i = 0; i < artists.Length; i++)
             {
                 var track = artists[i];
-                sb.AppendLine($"{Array.IndexOf(artists, track) + 1}. `{track.a}` {track.Item2}% similar");
+                sb.AppendLine($"{Array.IndexOf(artists, track) + 1}. `{track.Value}` {track.Score}% similar");
             }
 
             await ReplyAsync(sb.ToString());
@@ -365,7 +420,9 @@ namespace SubgenreSheetBot.Commands
             var embed = new EmbedBuilder().WithTitle(test)
                 .WithDescription($"{test}'s latest release {(latest.Date.CompareTo(now) > 0 ? "is" : "was")} on {latest.Date.ToString(DateFormat[0])} by {latest.Artists}, and their first release {(earliest.Date.CompareTo(now) > 0 ? "is" : "was")} on {earliest.Date.ToString(DateFormat[0])} by {earliest.Artists}")
                 .AddField("Tracks", tracks.Count, true)
-                .AddField("Artists", tracks.SelectMany(t => t.ArtistsList).Distinct().Count(), true)
+                .AddField("Artists", tracks.SelectMany(t => t.ArtistsList)
+                    .Distinct()
+                    .Count(), true)
                 .AddField("Years active", days <= 0 ? "Not yet active" : $"{Math.Floor(days / 365)} years and {(days % 365)} days", true);
 
             if (File.Exists($"logo_{test}.jpg"))
