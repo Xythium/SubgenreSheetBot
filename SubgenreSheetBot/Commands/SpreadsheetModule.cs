@@ -288,10 +288,11 @@ namespace SubgenreSheetBot.Commands
                 .ThenBy(a => a.Key)
                 .ToArray();
 
-            var sb = new StringBuilder("Top 10 artists: \r\n");
-            var aaaa = count.Take(10);
+            var top10 = count.Take(10)
+                .ToArray();
+            var sb = new StringBuilder($"Top {top10.Length} artists: \r\n");
 
-            foreach (var artist in aaaa)
+            foreach (var artist in top10)
             {
                 sb.AppendLine($"{artist.Key} - {artist.Count}");
             }
