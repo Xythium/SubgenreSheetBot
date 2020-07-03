@@ -338,7 +338,13 @@ namespace SubgenreSheetBot.Commands
             await ReplyAsync(null, false, builder);
         }
 
-        private async Task SendTrackList(string search, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3)
+        private async Task SendTrackList(string search, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
+        {
+            var sb = BuildTrackList(search, tracks, includeGenreless, numLatest, numEarliest, includeIndex, includeArtist, includeTitle, includeLabel, includeDate);
+            await ReplyAsync($"`{search}` has {tracks.Count} tracks" + sb);
+        }
+
+        private static StringBuilder BuildTrackList(string search, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
         {
             var genrelessCount = 0;
 
@@ -357,7 +363,7 @@ namespace SubgenreSheetBot.Commands
                 .ToArray();
             var cutoffThreshold = numLatest + numEarliest;
 
-            var sb = new StringBuilder($"`{search}` has {tracks.Count} tracks");
+            var sb = new StringBuilder();
 
             var futureTracks = tracks.Where(e => e.Date > DateTime.UtcNow)
                 .ToArray();
@@ -379,7 +385,7 @@ namespace SubgenreSheetBot.Commands
                 for (var i = 0; i < tracks.Count; i++)
                 {
                     var track = tracks[i];
-                    sb.AppendLine($"{tracks.IndexOf(track) + 1}. {track.Artists} - {track.Title} [{track.Label}] {track.Date.ToString(DateFormat[0])}");
+                    sb.AppendLine(FormatTrack(tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
                 }
             }
             else
@@ -387,7 +393,7 @@ namespace SubgenreSheetBot.Commands
                 for (var i = 0; i < latestTracks.Length; i++)
                 {
                     var track = latestTracks[i];
-                    sb.AppendLine($"{tracks.IndexOf(track) + 1}. {track.Artists} - {track.Title} [{track.Label}] {track.Date.ToString(DateFormat[0])}");
+                    sb.AppendLine(FormatTrack(tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
                 }
 
                 sb.AppendLine("...");
@@ -395,11 +401,65 @@ namespace SubgenreSheetBot.Commands
                 for (var i = earliestTracks.Length - 1; i >= 0; i--)
                 {
                     var track = earliestTracks[i];
-                    sb.AppendLine($"{tracks.IndexOf(track) + 1}. {track.Artists} - {track.Title} [{track.Label}] {track.Date.ToString(DateFormat[0])}");
+                    sb.AppendLine(FormatTrack(tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
                 }
             }
 
-            await ReplyAsync(sb.ToString());
+            return sb;
+        }
+
+        private static string FormatTrack(List<Entry> tracks, Entry track, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
+        {
+            var sb = new StringBuilder();
+
+            if (includeIndex)
+            {
+                sb.Append($"{tracks.IndexOf(track) + 1}. ");
+            }
+
+            if (includeArtist && includeTitle)
+            {
+                sb.Append($"{track.Artists} - {track.Title} ");
+            }
+            else if (includeArtist)
+            {
+                sb.Append($"{track.Artists} ");
+            }
+            else if (includeTitle)
+            {
+                sb.Append($"{track.Title} ");
+            }
+
+            if (includeLabel)
+            {
+                sb.Append($"[{track.Label}] ");
+            }
+
+            if (includeDate)
+            {
+                sb.Append($"{track.Date.ToString(DateFormat[0])}");
+            }
+
+            return sb.ToString()
+                .Trim();
+        }
+
+        private static string IsWas(DateTime date, DateTime compare) { return date.CompareTo(compare) > 0 ? "is" : "was"; }
+
+        private async Task SendArtistInfo(string artist, List<Entry> tracks)
+        {
+            var latest = tracks.First();
+            var earliest = tracks.Last();
+            var now = DateTime.UtcNow;
+            var days = Math.Floor(now.Date.Subtract(earliest.Date)
+                .TotalDays);
+
+            var embed = new EmbedBuilder().WithTitle(artist)
+                .WithDescription($"{artist}'s latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and their first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**")
+                .AddField("Tracks", BuildTrackList(artist, tracks, includeArtist: false)
+                    .ToString());
+
+            await ReplyAsync(embed: embed.Build());
         }
 
         private async Task<List<Entry>> BatchRequest(params string[] ranges)
