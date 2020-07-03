@@ -179,10 +179,10 @@ namespace SubgenreSheetBot.Commands
             await SendTrackInfoEmbed(info);
         }
 
-        [Command("artist"), Alias("a"), Summary("Returns a list of tracks by a given artist")]
+        [Command("artist"), Alias("a"), Summary("Returns info about an artist")]
         public async Task Artist(
             [Remainder, Summary("Artist to search for")]
-            string artist = "")
+            string artist)
         {
             await RevalidateCache();
 
@@ -194,7 +194,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            await SendTrackList(artist, tracksByArtist);
+            await SendArtistInfo(artist, tracksByArtist);
         }
 
         [Command("artistdebug"), Alias("ad"), Summary("Returns a list of up to 15 artists most similar to the given input")]
@@ -203,10 +203,11 @@ namespace SubgenreSheetBot.Commands
             string artist)
         {
             await RevalidateCache();
-            
+
             var artists = Process.ExtractTop(artist, entries.SelectMany(e => e.ArtistsList)
-                .Distinct(), scorer: scorer, limit: 15).ToArray();
-         
+                    .Distinct(), scorer: scorer, limit: 15)
+                .ToArray();
+
             var sb = new StringBuilder($"{artists.Length} most similar artists (using {scorer.GetType().Name})\r\n");
 
             for (var i = 0; i < artists.Length; i++)
