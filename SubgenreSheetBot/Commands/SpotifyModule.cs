@@ -6,12 +6,14 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Serilog;
 using SpotifyAPI.Web;
+using Swan.Logging;
 
 namespace SubgenreSheetBot.Commands
 {
     [Group("Spotify"), Alias("s")]
-    public class SpotifyModule : ModuleBase
+    public partial class SpotifyModule : ModuleBase
     {
         private static SpotifyClient api;
 
@@ -24,30 +26,6 @@ namespace SubgenreSheetBot.Commands
 
                 api = new SpotifyClient(config);
             }
-        }
-
-        private async Task<string> GetIdFromUrl(string url)
-        {
-            if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            {
-                var locals = uri.LocalPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-                if (locals.Length == 2)
-                {
-                    if (locals[0] == "album")
-                    {
-                        return locals[1];
-                    }
-
-                    await ReplyAsync($"Url has to link to an album");
-                    return "";
-                }
-
-                await ReplyAsync($"{uri} is not a valid url");
-                return "";
-            }
-
-            return url;
         }
 
         [Command("tracks"), Alias("t"), Summary("Get all tracks from an album")]
@@ -118,7 +96,6 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            
             var genres = string.Join(", ", album.Genres);
 
             if (string.IsNullOrWhiteSpace(genres))
@@ -127,6 +104,7 @@ namespace SubgenreSheetBot.Commands
                 {
                     await ReplyAsync($"asdadasdasdadasdadsda {MentionUtils.MentionUser(131768632354144256)}");
                 }
+
                 genres = "None";
             }
 
@@ -208,8 +186,8 @@ namespace SubgenreSheetBot.Commands
         }
 
         [Command("label"), Alias("l"), Summary("Get all releases from a label from a certain year")]
-        public async Task Label([Summary("Year to find releases for")]int year,
-            [Remainder, Summary("Label name to search for")]
+        public async Task Label(
+            [Summary("Year to find releases for")] int year, [Remainder, Summary("Label name to search for")]
             string labelName)
         {
             var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Album, $"label:\"{labelName}\" year:{year}"));
@@ -247,34 +225,130 @@ namespace SubgenreSheetBot.Commands
             }
         }
 
-        private static string IntToKey(int key)
+        [Command("peep")]
+        public async Task Peep([Remainder] string labelName)
         {
-            return key switch
+            var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Artist | SearchRequest.Types.Track, $"label:\"{labelName}\""));
+
+            var allArtists = new HashSet<FullArtist>(new FullArtistComparer());
+            var testArtists = new HashSet<SimpleArtist>(new SimpleArtistComparer());
+      
+            await foreach (var artist in api.Paginate(response.Artists, s => s.Artists, new SimplePaginator()))
             {
-                0 => "C",
-                1 => "C#",
-                2 => "D",
-                3 => "D#",
-                4 => "E",
-                5 => "F",
-                6 => "F#",
-                7 => "G",
-                8 => "G#",
-                9 => "A",
-                10 => "A#",
-                11 => "B",
-                _ => "?"
-            };
+                allArtists.Add(artist);
+                if (allArtists.Count == 2000)
+                    break;
+            }
+
+            IUserMessage message = null;
+            var count = 0;
+
+            await foreach (var track in api.Paginate(response.Tracks, s => s.Tracks))
+            {
+                var artists = track.Artists.Select(a => a);
+
+                foreach (var artist in artists)
+                {
+                    testArtists.Add(artist);
+                }
+
+                if (++count == 2000)
+                {
+                    await ReplyAsync("too many tracks");
+                    break;
+                }
+
+                if (count % 300 == 0)
+                {
+                    message = await UpdateOrSend(message, $"{count} tracks");
+                    await Task.Delay(100);
+                }
+            }
+
+            var notFound = allArtists.Where(a => testArtists.FirstOrDefault(f => string.Equals(f.Name, a.Name, StringComparison.OrdinalIgnoreCase)) == null)
+                .ToArray();
+
+            if (message == null)
+            {
+                await ReplyAsync($"Checking {allArtists.Count} artists & {testArtists.Count} artists from every track");
+            }
+            else
+            {
+                await message.ModifyAsync(m => m.Content = $"Checking {allArtists.Count} artists & {testArtists.Count} artists from every track");
+            }
+
+            var sb = new StringBuilder();
+
+            foreach (var artist in notFound)
+            {
+                response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"label:{labelName} \"{artist.Name}\""));
+                if (response.Tracks.Items.Count < 1)
+                    sb.AppendLine($"`{artist.Name}` ({artist.Id}) has no albums");
+                //await Task.Delay(50);
+            }
+
+            if (sb.Length > 0)
+            {
+                await SendOrAttachment(sb.ToString());
+            }
+            else
+            {
+                await ReplyAsync($"couldnt find anything for {labelName}");
+            }
         }
 
-        private static string IntToMode(int mode)
+        private async Task<IUserMessage> UpdateOrSend(IUserMessage message, string str)
         {
-            return mode switch
+            if (message == null)
             {
-                0 => "min",
-                1 => "maj",
-                _ => "?"
-            };
+                return message = await ReplyAsync(str);
+            }
+
+            await message.ModifyAsync(m => m.Content = str);
+            return message;
+        }
+
+        private async Task SendOrAttachment(string str)
+        {
+            if (str.Length > 2000)
+            {
+                var writer = new MemoryStream(Encoding.UTF8.GetBytes(str));
+                await Context.Channel.SendFileAsync(writer, "content.txt", $"Message too long");
+            }
+            else
+            {
+                await ReplyAsync(str);
+            }
+        }
+    }
+
+    public class FullArtistComparer : IEqualityComparer<FullArtist>
+    {
+        public bool Equals(FullArtist x, FullArtist y)
+        {
+            if (x == null || y == null)
+                return false;
+
+            return string.Equals(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public int GetHashCode(FullArtist obj) { return obj.Id.GetHashCode(); }
+    }
+
+    public class SimpleArtistComparer : IEqualityComparer<SimpleArtist>
+    {
+        public bool Equals(SimpleArtist x, SimpleArtist y)
+        {
+            if (x == null || y == null)
+                return false;
+
+            return string.Equals(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public int GetHashCode(SimpleArtist obj)
+        {
+            return obj.Name.ToLower()
+                .GetHashCode();
         }
     }
 }
