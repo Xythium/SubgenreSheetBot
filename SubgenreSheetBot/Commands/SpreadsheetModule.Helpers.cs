@@ -15,7 +15,8 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Util.Store;
-using MusicTools;
+using MusicTools.Parsing.Track;
+using MusicTools.Utils;
 using Serilog;
 
 namespace SubgenreSheetBot.Commands
@@ -157,6 +158,9 @@ namespace SubgenreSheetBot.Commands
             {
                 "Space Bass", new Color(167, 78, 142)
             },
+            {
+                "Country", new Color(181, 104, 12)
+            },
         };
 
         public static readonly string[] DateFormat =
@@ -169,7 +173,7 @@ namespace SubgenreSheetBot.Commands
             "m':'ss" /*, "h:mm:ss"*/
         };
 
-        private static IRatioScorer scorer = new TokenSetScorer();
+        private static readonly IRatioScorer scorer = new TokenSetScorer();
 
         private static Color GetGenreColor(string genre)
         {
@@ -341,7 +345,7 @@ namespace SubgenreSheetBot.Commands
         private async Task SendTrackList(string search, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
         {
             var sb = BuildTrackList(search, tracks, includeGenreless, numLatest, numEarliest, includeIndex, includeArtist, includeTitle, includeLabel, includeDate);
-            await ReplyAsync($"`{search}` has {tracks.Count} tracks" + sb);
+            await ReplyAsync(sb.ToString());
         }
 
         private static StringBuilder BuildTrackList(string search, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
@@ -363,7 +367,7 @@ namespace SubgenreSheetBot.Commands
                 .ToArray();
             var cutoffThreshold = numLatest + numEarliest;
 
-            var sb = new StringBuilder();
+            var sb = new StringBuilder($"`{search}` has {tracks.Count} tracks");
 
             var futureTracks = tracks.Where(e => e.Date > DateTime.UtcNow)
                 .ToArray();
@@ -385,7 +389,7 @@ namespace SubgenreSheetBot.Commands
                 for (var i = 0; i < tracks.Count; i++)
                 {
                     var track = tracks[i];
-                    sb.AppendLine(FormatTrack(tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
+                    sb.AppendLine(FormatTrack(search, tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
                 }
             }
             else
@@ -393,7 +397,7 @@ namespace SubgenreSheetBot.Commands
                 for (var i = 0; i < latestTracks.Length; i++)
                 {
                     var track = latestTracks[i];
-                    sb.AppendLine(FormatTrack(tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
+                    sb.AppendLine(FormatTrack(search, tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
                 }
 
                 sb.AppendLine("...");
@@ -401,14 +405,14 @@ namespace SubgenreSheetBot.Commands
                 for (var i = earliestTracks.Length - 1; i >= 0; i--)
                 {
                     var track = earliestTracks[i];
-                    sb.AppendLine(FormatTrack(tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
+                    sb.AppendLine(FormatTrack(search, tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
                 }
             }
 
             return sb;
         }
 
-        private static string FormatTrack(List<Entry> tracks, Entry track, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
+        private static string FormatTrack(string search, List<Entry> tracks, Entry track, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
         {
             var sb = new StringBuilder();
 
@@ -427,7 +431,10 @@ namespace SubgenreSheetBot.Commands
             }
             else if (includeTitle)
             {
-                sb.Append($"{track.Title} ");
+                if (track.ArtistsList.Length > 1)
+                    sb.Append($"{track.Title} (w/ {string.Join(" & ", track.ArtistsList.Where(a => !string.Equals(a, search, StringComparison.OrdinalIgnoreCase)))}) ");
+                else
+                    sb.Append($"{track.Title} ");
             }
 
             if (includeLabel)
@@ -509,6 +516,19 @@ namespace SubgenreSheetBot.Commands
 
             return entries;
         }
+
+        private async Task SendOrAttachment(string str)
+        {
+            if (str.Length > 2000)
+            {
+                var writer = new MemoryStream(Encoding.UTF8.GetBytes(str));
+                await Context.Channel.SendFileAsync(writer, "content.txt", $"Message too long");
+            }
+            else
+            {
+                await ReplyAsync(str);
+            }
+        }
     }
 
     public class Entry
@@ -527,18 +547,18 @@ namespace SubgenreSheetBot.Commands
 
         public string Subgenres { get; set; }
 
-        public List<string> SubgenresList => MusicTools.Subgenres.SplitSubgenres(Subgenres);
+        public List<string> SubgenresList => SubgenresUtils.SplitSubgenres(Subgenres);
 
         public string Artists { get; set; }
 
-        public string[] ArtistsList => Artist.SplitArtists(Artists)
+        public string[] ArtistsList => ArtistUtils.SplitArtists(Artists)
             .ToArray();
 
         public string Title { get; set; }
 
         public string Label { get; set; }
 
-        public List<string> LabelList => MusicTools.Subgenres.SplitSubgenres(Label);
+        public List<string> LabelList => SubgenresUtils.SplitSubgenres(Label);
 
         public TimeSpan? Length { get; set; }
 
