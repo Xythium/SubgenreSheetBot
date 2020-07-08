@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,9 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Serilog;
 using SpotifyAPI.Web;
-using Swan.Logging;
 
 namespace SubgenreSheetBot.Commands
 {
@@ -232,7 +230,7 @@ namespace SubgenreSheetBot.Commands
 
             var allArtists = new HashSet<FullArtist>(new FullArtistComparer());
             var testArtists = new HashSet<SimpleArtist>(new SimpleArtistComparer());
-      
+
             await foreach (var artist in api.Paginate(response.Artists, s => s.Artists, new SimplePaginator()))
             {
                 allArtists.Add(artist);
@@ -245,7 +243,8 @@ namespace SubgenreSheetBot.Commands
 
             await foreach (var track in api.Paginate(response.Tracks, s => s.Tracks))
             {
-                var artists = track.Artists.Select(a => a);
+                var artists = track.Artists.Select(a => a)
+                    .ToArray();
 
                 foreach (var artist in artists)
                 {
@@ -258,7 +257,7 @@ namespace SubgenreSheetBot.Commands
                     break;
                 }
 
-                if (count % 300 == 0)
+                if (count % 250 == 0)
                 {
                     message = await UpdateOrSend(message, $"{count} tracks");
                     await Task.Delay(100);
@@ -282,9 +281,13 @@ namespace SubgenreSheetBot.Commands
             foreach (var artist in notFound)
             {
                 response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"label:{labelName} \"{artist.Name}\""));
+
                 if (response.Tracks.Items.Count < 1)
-                    sb.AppendLine($"`{artist.Name}` ({artist.Id}) has no albums");
-                //await Task.Delay(50);
+                {
+                    sb.AppendLine($"`{artist.Name}` <https://open.spotify.com/artist/{artist.Id}>");
+                }
+
+                await Task.Delay(100);
             }
 
             if (sb.Length > 0)
@@ -297,58 +300,41 @@ namespace SubgenreSheetBot.Commands
             }
         }
 
-        private async Task<IUserMessage> UpdateOrSend(IUserMessage message, string str)
+        /*[Command("isrc")]
+        public async Task Isrc(
+            [Remainder, Summary("Label name to search for")]
+            string labelName)
         {
-            if (message == null)
+            var sb = new StringBuilder();
+
+            IUserMessage message = null;
+
+            try
             {
-                return message = await ReplyAsync(str);
+                for (int i = 423 - 1; i >= 0; i--)
+                {
+                    var isrc = $"GBTDG07{i.ToString().PadLeft(5, '0')}";
+                    if (i % 50 == 0)
+                        message = await UpdateOrSend(message, $"{isrc} looking");
+
+                    var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"isrc:\"{isrc}\""));
+
+                    await foreach (var track in api.Paginate(response.Tracks, s => s.Tracks))
+                    {
+                        //message = await UpdateOrSend(message, $"GBTDG13{i.ToString().PadLeft(5, '0')} found");
+                        sb.AppendLine($"{string.Join(" & ", track.Artists.Select(a => a.Name.ToUpper()))},{track.Name.ToUpper()},{isrc},,,{TimeSpan.FromMilliseconds(track.DurationMs)}");
+                    }
+
+                    await Task.Delay(100);
+                }
             }
-
-            await message.ModifyAsync(m => m.Content = str);
-            return message;
-        }
-
-        private async Task SendOrAttachment(string str)
-        {
-            if (str.Length > 2000)
+            catch
             {
-                var writer = new MemoryStream(Encoding.UTF8.GetBytes(str));
-                await Context.Channel.SendFileAsync(writer, "content.txt", $"Message too long");
             }
-            else
+            finally
             {
-                await ReplyAsync(str);
+                await SendOrAttachment(sb.ToString());
             }
-        }
-    }
-
-    public class FullArtistComparer : IEqualityComparer<FullArtist>
-    {
-        public bool Equals(FullArtist x, FullArtist y)
-        {
-            if (x == null || y == null)
-                return false;
-
-            return string.Equals(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
-        }
-
-        public int GetHashCode(FullArtist obj) { return obj.Id.GetHashCode(); }
-    }
-
-    public class SimpleArtistComparer : IEqualityComparer<SimpleArtist>
-    {
-        public bool Equals(SimpleArtist x, SimpleArtist y)
-        {
-            if (x == null || y == null)
-                return false;
-
-            return string.Equals(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
-        }
-
-        public int GetHashCode(SimpleArtist obj)
-        {
-            return obj.Name.ToLower()
-                .GetHashCode();
-        }
+        }*/
     }
 }
