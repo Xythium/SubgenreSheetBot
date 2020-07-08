@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -389,7 +389,7 @@ namespace SubgenreSheetBot.Commands
                 .ThenBy(a => a.Key)
                 .ToList();
 
-            await ReplyAsync(string.Join("\r\n", labels.Select(l => $"{l.Key} ({l.TrackCount} tracks, {l.ArtistCount} artists)")));
+            await SendOrAttachment(string.Join("\r\n", labels.Select(l => $"{l.Key} ({l.TrackCount} tracks, {l.ArtistCount} artists)")));
         }
 
         [Command("label"), Alias("l")]
