@@ -297,9 +297,13 @@ namespace SubgenreSheetBot.Commands
                 sb.AppendLine($"{artist.Key} - {artist.Count}");
             }
 
+            var earliest = tracks.Last();
+            var latest = tracks.First();
+            var now = DateTime.Now;
+
             var color = GetGenreColor(test);
             var embed = new EmbedBuilder().WithTitle(test)
-                .WithDescription($"we have {tracks.Length} {test} tracks, from {count.Length} artists, including {count.First().Key}\r\n" + $"the first {test} was in {tracks.Last().Date:Y} by {tracks.Last().Artists} and the latest is on {tracks.First().Date:Y} by {tracks.First().Artists}" + $"\r\n\r\n{sb}" + $"\r\npog")
+                .WithDescription($"we have {tracks.Length} {test} tracks, from {count.Length} artists, including {count.First().Key}\r\n" + $"the first track {IsWas(earliest.Date, now)} on {earliest.Date:Y} by {earliest.Artists} and the latest {IsWas(latest.Date, now)} on {latest.Date:Y} by {latest.Artists}" + $"\r\n\r\n{sb}" + $"\r\npog")
                 .WithColor(color);
 
             await ReplyAsync(embed: embed.Build());
