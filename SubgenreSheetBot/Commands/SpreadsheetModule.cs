@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,9 +7,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FuzzySharp;
-using FuzzySharp.PreProcess;
-using FuzzySharp.SimilarityRatio.Scorer.StrategySensitive;
-using MusicTools;
+using MusicTools.Parsing.Track;
 
 namespace SubgenreSheetBot.Commands
 {
@@ -424,7 +422,7 @@ namespace SubgenreSheetBot.Commands
                 .TotalDays);
 
             var embed = new EmbedBuilder().WithTitle(test)
-                .WithDescription($"{test}'s latest release {(latest.Date.CompareTo(now) > 0 ? "is" : "was")} on {latest.Date.ToString(DateFormat[0])} by {latest.Artists}, and their first release {(earliest.Date.CompareTo(now) > 0 ? "is" : "was")} on {earliest.Date.ToString(DateFormat[0])} by {earliest.Artists}")
+                .WithDescription($"{test}'s latest release {IsWas(latest.Date, now)} on {latest.Date.ToString(DateFormat[0])} by {latest.Artists}, and their first release {IsWas(earliest.Date, now)} on {earliest.Date.ToString(DateFormat[0])} by {earliest.Artists}")
                 .AddField("Tracks", tracks.Count, true)
                 .AddField("Artists", tracks.SelectMany(t => t.ArtistsList)
                     .Distinct()
