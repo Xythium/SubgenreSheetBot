@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -40,7 +40,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            var album = await api.Albums.Get(albumId);
+            var album = await GetAlbumOrCache(albumId);
             var albumArtists = album.Artists;
 
             if (albumArtists.Count == 0)
@@ -87,7 +87,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            var album = await api.Albums.Get(albumId);
+            var album = await GetAlbumOrCache(albumId);
             var albumArtists = album.Artists;
 
             if (albumArtists.Count == 0)
@@ -114,7 +114,7 @@ namespace SubgenreSheetBot.Commands
             //2009-09-22	House	Tech House | Progressive House	deadmau5	Lack of a Better Name	mau5trap	8:15	FALSE	128	FALSE	F min
             foreach (var track in album.Tracks.Items)
             {
-                var features = await api.Tracks.GetAudioFeatures(track.Id);
+                var features = await GetAudioFeaturesOrCache(track.Id);
 
                 if (sb.Length > 900)
                 {
