@@ -258,51 +258,37 @@ namespace SubgenreSheetBot.Commands
             var genres = entries.Select(e => e.Genre)
                 .Distinct()
                 .ToArray();
-            var test = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
+            var search = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
 
-            if (test == null)
+            if (search == null)
             {
                 await ReplyAsync($"Genre `{genre}` not found. Here is every genre I found: {string.Join(", ", genres)}");
                 return;
             }
 
-            var tracks = entries.Where(e => string.Equals(e.Genre, test, StringComparison.OrdinalIgnoreCase))
+            var tracks = entries.Where(e => string.Equals(e.Genre, search, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(e => e.Date)
                 .ToArray();
 
             if (tracks.Length == 0)
             {
-                await ReplyAsync($"No tracks with genre `{test}` found");
+                await ReplyAsync($"No tracks with genre `{search}` found");
                 return;
             }
 
-            var count = tracks.SelectMany(t => t.ArtistsList)
-                .GroupBy(a => a, s => s, (s, e) => new KeyCount<Entry>()
-                {
-                    Key = s,
-                    Count = e.Count()
-                })
-                .OrderByDescending(a => a.Count)
-                .ThenBy(a => a.Key)
-                .ToArray();
-
-            var top10 = count.Take(10)
-                .ToArray();
-            var sb = new StringBuilder($"Top {top10.Length} artists: \r\n");
-
-            foreach (var artist in top10)
-            {
-                sb.AppendLine($"{artist.Key} - {artist.Count}");
-            }
+            var description = BuildTopNumberOfTracksList(tracks, 10, out var top, out var numArtists);
+            var bpmList = BuildBpmList(tracks, 20);
 
             var earliest = tracks.Last();
             var latest = tracks.First();
             var now = DateTime.Now;
 
-            var color = GetGenreColor(test);
-            var embed = new EmbedBuilder().WithTitle(test)
-                .WithDescription($"we have {tracks.Length} {test} tracks, from {count.Length} artists, including {count.First().Key}\r\n" + $"the first track {IsWas(earliest.Date, now)} on {earliest.Date:Y} by {earliest.Artists} and the latest {IsWas(latest.Date, now)} on {latest.Date:Y} by {latest.Artists}" + $"\r\n\r\n{sb}" + $"\r\npog")
-                .WithColor(color);
+            var color = GetGenreColor(search);
+            var embed = new EmbedBuilder().WithTitle(search)
+                .WithDescription($"We have {tracks.Length} {search} tracks, from {numArtists} artists.\r\n" + $"The first track {IsWas(earliest.Date, now)} on {earliest.Date:Y} by {earliest.Artists} and the latest {IsWas(latest.Date, now)} on {latest.Date:Y} by {latest.Artists}")
+                .WithColor(color)
+                .AddField($"Top {top} Artists", description.ToString(), true)
+                .AddField("BPM", bpmList.ToString(), true);
 
             await ReplyAsync(embed: embed.Build());
         }
