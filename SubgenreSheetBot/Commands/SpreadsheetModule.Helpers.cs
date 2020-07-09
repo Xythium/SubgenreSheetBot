@@ -161,6 +161,9 @@ namespace SubgenreSheetBot.Commands
             {
                 "Country", new Color(181, 104, 12)
             },
+            {
+                "Jazz", new Color(135, 206, 250)
+            },
         };
 
         public static readonly string[] DateFormat =
@@ -411,6 +414,60 @@ namespace SubgenreSheetBot.Commands
 
             return sb;
         }
+        
+        private static StringBuilder BuildBpmList(Entry[] tracks, int range = 10)
+        {
+            var bpms = tracks.SelectMany(t => t.BpmList)
+                .Select(d => new
+                {
+                    From = (int) (d / range) * range + 1,
+                    //To = (int)(d / 10) * 10 + 10,
+                })
+                .GroupBy(d => d, d => d, (d, e) => new
+                {
+                    d.From,
+                    //d.To,
+                    Count = e.Count()
+                })
+                .OrderBy(d => d.From)
+                .ToArray();
+
+            var bpmList = new StringBuilder();
+
+            foreach (var grouping in bpms)
+            {
+                bpmList.AppendLine($"{grouping.From}-{grouping.From + (range-1)}: {grouping.Count}");
+            }
+
+            return bpmList;
+        }
+        
+        private static StringBuilder BuildTopNumberOfTracksList(Entry[] tracks, int top, out int actualTop, out int numArtists)
+        {
+            var artistCount = tracks.SelectMany(t => t.ArtistsList)
+                .GroupBy(a => a, s => s, (s, e) => new KeyCount<Entry>()
+                {
+                    Key = s,
+                    Count = e.Count()
+                })
+                .OrderByDescending(a => a.Count)
+                .ThenBy(a => a.Key)
+                .ToArray();
+
+            numArtists = artistCount.Length;
+            var topList = artistCount.Take(top)
+                .ToArray();
+            actualTop = topList.Length;
+
+            var description = new StringBuilder();
+
+            foreach (var artist in topList)
+            {
+                description.AppendLine($"{artist.Key} - {artist.Count} tracks");
+            }
+
+            return description;
+        }
 
         private static string FormatTrack(string search, List<Entry> tracks, Entry track, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
         {
@@ -565,6 +622,31 @@ namespace SubgenreSheetBot.Commands
         public bool CorrectBpm { get; set; }
 
         public string Bpm { get; set; } // todo: cant be decimal at the moment because '98.5 > 95'
+
+        public List<decimal> BpmList
+        {
+            get
+            {
+                var list = new List<decimal>();
+                if (string.IsNullOrWhiteSpace(Bpm))
+                    return list;
+
+                var split = Bpm.Split(new[]
+                {
+                    '/', '>'
+                }, StringSplitOptions.RemoveEmptyEntries);
+                if (split.Length < 1)
+                    return list;
+
+                foreach (var s in split)
+                {
+                    if (decimal.TryParse(s, out var dec))
+                        list.Add(dec);
+                }
+
+                return list;
+            }
+        }
 
         public bool CorrectKey { get; set; }
 
