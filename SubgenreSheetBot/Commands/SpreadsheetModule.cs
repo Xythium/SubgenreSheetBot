@@ -149,7 +149,7 @@ namespace SubgenreSheetBot.Commands
 
             foreach (var track in tracks)
             {
-                var info = TrackParser.GetTrackInfo(track.Artists, track.Title, null, null, track.Date);
+                var info = TrackParser.GetTrackInfo(track.FormattedArtists, track.Title, null, null, track.Date);
                 await SendTrackInfoEmbed(info);
             }
         }
@@ -285,7 +285,7 @@ namespace SubgenreSheetBot.Commands
 
             var color = GetGenreColor(search);
             var embed = new EmbedBuilder().WithTitle(search)
-                .WithDescription($"We have {tracks.Length} {search} tracks, from {numArtists} artists.\r\n" + $"The first track {IsWas(earliest.Date, now)} on {earliest.Date:Y} by {earliest.Artists} and the latest {IsWas(latest.Date, now)} on {latest.Date:Y} by {latest.Artists}")
+                .WithDescription($"We have {tracks.Length} {search} tracks, from {numArtists} artists.\r\n" + $"The first track {IsWas(earliest.Date, now)} on {earliest.Date:Y} by {earliest.FormattedArtists} and the latest {IsWas(latest.Date, now)} on {latest.Date:Y} by {latest.FormattedArtists}")
                 .WithColor(color)
                 .AddField($"Top {top} Artists", description.ToString(), true)
                 .AddField("BPM", bpmList.ToString(), true);
@@ -408,12 +408,12 @@ namespace SubgenreSheetBot.Commands
                 .TotalDays);
 
             var embed = new EmbedBuilder().WithTitle(test)
-                .WithDescription($"{test}'s latest release {IsWas(latest.Date, now)} on {latest.Date.ToString(DateFormat[0])} by {latest.Artists}, and their first release {IsWas(earliest.Date, now)} on {earliest.Date.ToString(DateFormat[0])} by {earliest.Artists}")
+                .WithDescription($"{test}'s latest release {IsWas(latest.Date, now)} on {latest.Date.ToString(DateFormat[0])} by {latest.FormattedArtists}, and their first release {IsWas(earliest.Date, now)} on {earliest.Date.ToString(DateFormat[0])} by {earliest.FormattedArtists}")
                 .AddField("Tracks", tracks.Count, true)
                 .AddField("Artists", tracks.SelectMany(t => t.ArtistsList)
                     .Distinct()
                     .Count(), true)
-                .AddField("Years active", days <= 0 ? "Not yet active" : $"{Math.Floor(days / 365)} years and {(days % 365)} days", true);
+                .AddField("Years active", days <= 0 ? "Not yet active" : $"{Math.Floor(days / 365)} years and {days % 365} days", true);
 
             if (File.Exists($"logo_{test}.jpg"))
                 embed = embed.WithThumbnailUrl($"https://raw.githubusercontent.com/Xythium/SubgenreSheetBot/master/SubgenreSheetBot/logo_{test}.jpg");
@@ -426,7 +426,7 @@ namespace SubgenreSheetBot.Commands
         {
             await RevalidateCache();
 
-            var subgenres = entries.Where(e => e.SubgenresList.Count > 1)
+            var subgenres = entries.Where(e => e.SubgenresList.Length > 1)
                 .GroupBy(e => e.Subgenres, e => e, (s, e) =>
                 {
                     var enumerable = e.ToList();
