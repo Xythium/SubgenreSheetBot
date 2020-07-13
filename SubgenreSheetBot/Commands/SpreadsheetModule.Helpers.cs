@@ -187,7 +187,7 @@ namespace SubgenreSheetBot.Commands
 
         private static List<Entry> GetAllTracksByArtistExact(string artist)
         {
-            return entries.Where(e => string.Equals(e.Artists, artist, StringComparison.OrdinalIgnoreCase))
+            return entries.Where(e => string.Equals(e.OriginalArtists, artist, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(e => e.Date)
                 .ToList();
         }
@@ -256,7 +256,7 @@ namespace SubgenreSheetBot.Commands
             var fields = new List<EmbedFieldBuilder>
             {
                 new EmbedFieldBuilder().WithName("Artists")
-                    .WithValue(track.Artists)
+                    .WithValue(track.FormattedArtists)
                     .WithIsInline(true),
                 new EmbedFieldBuilder().WithName("Song Title")
                     .WithValue(track.Title)
@@ -268,7 +268,7 @@ namespace SubgenreSheetBot.Commands
                     .WithIsInline(true));
 
             fields.Add(new EmbedFieldBuilder().WithName("Primary Label")
-                .WithValue(track.Label)
+                .WithValue(string.Join(", ", track.LabelList))
                 .WithIsInline(true));
             fields.Add(new EmbedFieldBuilder().WithName("Date")
                 .WithValue(track.Date.ToString(DateFormat[0]))
@@ -414,7 +414,7 @@ namespace SubgenreSheetBot.Commands
 
             return sb;
         }
-        
+
         private static StringBuilder BuildBpmList(Entry[] tracks, int range = 10)
         {
             var bpms = tracks.SelectMany(t => t.BpmList)
@@ -436,12 +436,12 @@ namespace SubgenreSheetBot.Commands
 
             foreach (var grouping in bpms)
             {
-                bpmList.AppendLine($"{grouping.From}-{grouping.From + (range-1)}: {grouping.Count}");
+                bpmList.AppendLine($"{grouping.From}-{grouping.From + (range - 1)}: {grouping.Count}");
             }
 
             return bpmList;
         }
-        
+
         private static StringBuilder BuildTopNumberOfTracksList(Entry[] tracks, int top, out int actualTop, out int numArtists)
         {
             var artistCount = tracks.SelectMany(t => t.ArtistsList)
@@ -480,11 +480,11 @@ namespace SubgenreSheetBot.Commands
 
             if (includeArtist && includeTitle)
             {
-                sb.Append($"{track.Artists} - {track.Title} ");
+                sb.Append($"{track.FormattedArtists} - {track.Title} ");
             }
             else if (includeArtist)
             {
-                sb.Append($"{track.Artists} ");
+                sb.Append($"{track.FormattedArtists} ");
             }
             else if (includeTitle)
             {
@@ -496,7 +496,7 @@ namespace SubgenreSheetBot.Commands
 
             if (includeLabel)
             {
-                sb.Append($"[{track.Label}] ");
+                sb.Append($"[{string.Join(", ", track.LabelList)}] ");
             }
 
             if (includeDate)
@@ -590,38 +590,39 @@ namespace SubgenreSheetBot.Commands
 
     public class Entry
     {
-        public string Sheet { get; set; }
+        public string Sheet { get; private set; }
 
-        public DateTime Date { get; set; }
+        public DateTime Date { get; private set; }
 
-        public bool Spotify { get; set; }
+        public bool Spotify { get; private set; }
 
-        public bool SoundCloud { get; set; }
+        public bool SoundCloud { get; private set; }
 
-        public bool Beatport { get; set; }
+        public bool Beatport { get; private set; }
 
-        public string Genre { get; set; }
+        public string Genre { get; private set; }
 
-        public string Subgenres { get; set; }
+        public string Subgenres { get; private set; }
 
-        public List<string> SubgenresList => SubgenresUtils.SplitSubgenres(Subgenres);
+        public string[] SubgenresList { get; private set; }
 
-        public string Artists { get; set; }
+        public string OriginalArtists { get; private set; }
 
-        public string[] ArtistsList => ArtistUtils.SplitArtists(Artists)
-            .ToArray();
+        public string[] ArtistsList { get; private set; }
 
-        public string Title { get; set; }
+        public string FormattedArtists => string.Join(" x ", ArtistsList);
 
-        public string Label { get; set; }
+        public string Title { get; private set; }
 
-        public List<string> LabelList => SubgenresUtils.SplitSubgenres(Label);
+        private string Label { get; set; } // todo: unused
 
-        public TimeSpan? Length { get; set; }
+        public List<string> LabelList { get; private set; }
 
-        public bool CorrectBpm { get; set; }
+        public TimeSpan? Length { get; private set; }
 
-        public string Bpm { get; set; } // todo: cant be decimal at the moment because '98.5 > 95'
+        public bool CorrectBpm { get; private set; }
+
+        public string Bpm { get; private set; } // todo: cant be decimal at the moment because '98.5 > 95'
 
         public List<decimal> BpmList
         {
@@ -648,9 +649,9 @@ namespace SubgenreSheetBot.Commands
             }
         }
 
-        public bool CorrectKey { get; set; }
+        public bool CorrectKey { get; private set; }
 
-        public string Key { get; set; }
+        public string Key { get; private set; }
 
         private const int A = 0;
         private const int B = A + 1;
@@ -700,9 +701,14 @@ namespace SubgenreSheetBot.Commands
                 Beatport = beatport,
                 Genre = genre,
                 Subgenres = subgenre,
-                Artists = artists,
+                SubgenresList = SubgenresUtils.SplitSubgenres(subgenre)
+                    .ToArray(),
+                OriginalArtists = artists,
+                ArtistsList = ArtistUtils.SplitArtists(artists)
+                    .ToArray(),
                 Title = title,
                 Label = label,
+                LabelList = SubgenresUtils.SplitSubgenres(label),
                 Length = length,
                 CorrectBpm = correctBpm,
                 Bpm = bpmStr,

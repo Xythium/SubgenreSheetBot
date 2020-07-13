@@ -64,9 +64,9 @@ namespace SubgenreSheetBot.Commands
             };
         }
 
-        private static Dictionary<string, FullAlbum> fullAlbumCache = new Dictionary<string, FullAlbum>();
+        private static readonly Dictionary<string, FullAlbum> fullAlbumCache = new Dictionary<string, FullAlbum>();
 
-        private async Task<FullAlbum> GetAlbumOrCache(string albumId)
+        private static async Task<FullAlbum> GetAlbumOrCache(string albumId)
         {
             if (!fullAlbumCache.TryGetValue(albumId, out var album))
             {
@@ -77,9 +77,9 @@ namespace SubgenreSheetBot.Commands
             return album;
         }
 
-        private static Dictionary<string, TrackAudioFeatures> audioFeaturesCache = new Dictionary<string, TrackAudioFeatures>();
+        private static readonly Dictionary<string, TrackAudioFeatures> audioFeaturesCache = new Dictionary<string, TrackAudioFeatures>();
 
-        private async Task<TrackAudioFeatures> GetAudioFeaturesOrCache(string trackId)
+        private static async Task<TrackAudioFeatures> GetAudioFeaturesOrCache(string trackId)
         {
             if (!audioFeaturesCache.TryGetValue(trackId, out var album))
             {

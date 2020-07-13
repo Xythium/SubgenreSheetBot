@@ -148,6 +148,7 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Label name to search for")]
             string labelName)
         {
+            labelName = labelName.Replace("\"", "");
             var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Album, $"label:\"{labelName}\""));
 
             var albums = new List<SimpleAlbum>();
@@ -188,6 +189,7 @@ namespace SubgenreSheetBot.Commands
             [Summary("Year to find releases for")] int year, [Remainder, Summary("Label name to search for")]
             string labelName)
         {
+            labelName = labelName.Replace("\"", "");
             var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Album, $"label:\"{labelName}\" year:{year}"));
 
             var albums = new List<SimpleAlbum>();
