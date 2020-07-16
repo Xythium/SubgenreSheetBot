@@ -366,7 +366,7 @@ namespace SubgenreSheetBot.Commands
                     return new
                     {
                         Key = label,
-                        ArtistCount = tracks.SelectMany(e => e.ArtistsList)
+                        ArtistCount = tracks.SelectMany(e => e.ActualArtists)
                             .Distinct()
                             .Count(),
                         TrackCount = tracks.Length
@@ -410,7 +410,7 @@ namespace SubgenreSheetBot.Commands
             var embed = new EmbedBuilder().WithTitle(test)
                 .WithDescription($"{test}'s latest release {IsWas(latest.Date, now)} on {latest.Date.ToString(DateFormat[0])} by {latest.FormattedArtists}, and their first release {IsWas(earliest.Date, now)} on {earliest.Date.ToString(DateFormat[0])} by {earliest.FormattedArtists}")
                 .AddField("Tracks", tracks.Count, true)
-                .AddField("Artists", tracks.SelectMany(t => t.ArtistsList)
+                .AddField("Artists", tracks.SelectMany(t => t.ActualArtists)
                     .Distinct()
                     .Count(), true)
                 .AddField("Years active", days <= 0 ? "Not yet active" : $"{Math.Floor(days / 365)} years and {days % 365} days", true);
@@ -419,6 +419,51 @@ namespace SubgenreSheetBot.Commands
                 embed = embed.WithThumbnailUrl($"https://raw.githubusercontent.com/Xythium/SubgenreSheetBot/master/SubgenreSheetBot/logo_{test}.jpg");
 
             await ReplyAsync(embed: embed.Build());
+        }
+
+        [Command("labelartists"), Alias("la")]
+        public async Task LabelArtists([Remainder] string label)
+        {
+            await RevalidateCache();
+
+            var test = GetLabelNameFuzzy(label);
+
+            if (string.IsNullOrWhiteSpace(test))
+            {
+                await ReplyAsync($"Cannot find the label `{label}`");
+                return;
+            }
+
+            var tracks = GetAllTracksByLabelFuzzy(test);
+
+            if (tracks.Count < 1)
+            {
+                await ReplyAsync($"Cannot find any tracks by the label `{test}`");
+                return;
+            }
+
+            var artists = tracks.SelectMany(e => e.ActualArtists)
+                .GroupBy(l => l, e => e, (s, list) =>
+                {
+                    return new
+                    {
+                        Key = s,
+                        Count = list.Count()
+                    };
+                })
+                .OrderByDescending(a => a.Count)
+                .ThenBy(a => a.Key)
+                .ToList();
+
+            var sb = new StringBuilder();
+
+            for (var index = 0; index < artists.Count; index++)
+            {
+                var artist = artists[index];
+                sb.AppendLine($"{index + 1}. {artist.Key}: {artist.Count} tracks");
+            }
+
+            await SendOrAttachment(sb.ToString());
         }
 
         [Command("debug")]

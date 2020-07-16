@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -444,7 +445,7 @@ namespace SubgenreSheetBot.Commands
 
         private static StringBuilder BuildTopNumberOfTracksList(Entry[] tracks, int top, out int actualTop, out int numArtists)
         {
-            var artistCount = tracks.SelectMany(t => t.ArtistsList)
+            var artistCount = tracks.SelectMany(t => t.ActualArtistsNoFeatures)
                 .GroupBy(a => a, s => s, (s, e) => new KeyCount<Entry>()
                 {
                     Key = s,
@@ -612,6 +613,61 @@ namespace SubgenreSheetBot.Commands
 
         public string FormattedArtists => string.Join(" x ", ArtistsList);
 
+        public string[] ActualArtists
+        {
+            get
+            {
+                var artists = new SortedSet<string>();
+
+                foreach (var feature in info.Features)
+                {
+                    artists.Add(feature);
+                }
+
+                if (info.Remixers.Count > 0)
+                {
+                    foreach (var remixer in info.Remixers)
+                    {
+                        artists.Add(remixer);
+                    }
+                }
+                else
+                {
+                    foreach (var artist in info.Artists)
+                    {
+                        artists.Add(artist);
+                    }
+                }
+
+                return artists.ToArray();
+            }
+        }
+
+        public string[] ActualArtistsNoFeatures
+        {
+            get
+            {
+                var artists = new SortedSet<string>();
+
+                if (info.Remixers.Count > 0)
+                {
+                    foreach (var remixer in info.Remixers)
+                    {
+                        artists.Add(remixer);
+                    }
+                }
+                else
+                {
+                    foreach (var artist in info.Artists)
+                    {
+                        artists.Add(artist);
+                    }
+                }
+
+                return artists.ToArray();
+            }
+        }
+
         public string Title { get; private set; }
 
         private string Label { get; set; } // todo: unused
@@ -652,6 +708,8 @@ namespace SubgenreSheetBot.Commands
         public bool CorrectKey { get; private set; }
 
         public string Key { get; private set; }
+
+        private TrackInfo info;
 
         private const int A = 0;
         private const int B = A + 1;
@@ -715,6 +773,7 @@ namespace SubgenreSheetBot.Commands
                 CorrectKey = correctKey,
                 Key = key
             };
+            entry.info = TrackParser.GetTrackInfo(entry.FormattedArtists, entry.Title, "", "", entry.Date);
 
             return true;
         }
