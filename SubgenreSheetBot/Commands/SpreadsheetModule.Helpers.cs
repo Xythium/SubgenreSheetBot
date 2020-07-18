@@ -216,12 +216,12 @@ namespace SubgenreSheetBot.Commands
 
         private static List<Entry> GetTracksByTitleFuzzy(string title) { return GetTracksByTitleFuzzy(entries, title); }
 
-        private static List<Entry> GetAllTracksByLabelFuzzy(string label, int threshold = 80)
+        private static Entry[] GetAllTracksByLabelFuzzy(string label, int threshold = 80)
         {
             var test = GetLabelNameFuzzy(label, threshold);
             return entries.Where(e => e.LabelList.Any(s => string.Equals(s, test, StringComparison.OrdinalIgnoreCase)))
                 .OrderByDescending(e => e.Date)
-                .ToList();
+                .ToArray();
         }
 
         private static string[] GetAllLabelNames()
@@ -443,10 +443,33 @@ namespace SubgenreSheetBot.Commands
             return bpmList;
         }
 
+        private static StringBuilder BuildTopGenreList(Entry[] tracks, int top = 10, bool ignoreUnknown = true)
+        {
+            var genres = tracks.Select(t => t.Genre)
+                .GroupBy(d => d, d => d, (d, e) => new KeyCount
+                {
+                    Key = d,
+                    Count = ignoreUnknown && d == "?" ? 0 : e.Count()
+                })
+                .OrderByDescending(d => d.Count)
+                .ThenBy(d => d.Key)
+                .Take(top)
+                .ToArray();
+
+            var genreList = new StringBuilder();
+
+            foreach (var grouping in genres)
+            {
+                genreList.AppendLine($"{grouping.Key}: {grouping.Count}");
+            }
+
+            return genreList;
+        }
+
         private static StringBuilder BuildTopNumberOfTracksList(Entry[] tracks, int top, out int actualTop, out int numArtists)
         {
             var artistCount = tracks.SelectMany(t => t.ActualArtistsNoFeatures)
-                .GroupBy(a => a, s => s, (s, e) => new KeyCount<Entry>()
+                .GroupBy(a => a, s => s, (s, e) => new KeyCount
                 {
                     Key = s,
                     Count = e.Count()
@@ -850,5 +873,11 @@ namespace SubgenreSheetBot.Commands
         public string Key;
         public int Count;
         public List<T> Elements;
+    }
+    
+    public struct KeyCount
+    {
+        public string Key;
+        public int Count;
     }
 }

@@ -228,6 +228,7 @@ namespace SubgenreSheetBot.Commands
         [Command("peep")]
         public async Task Peep([Remainder] string labelName)
         {
+            labelName = labelName.Replace("\"", "");
             var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Artist | SearchRequest.Types.Track, $"label:\"{labelName}\""));
 
             var allArtists = new HashSet<FullArtist>(new FullArtistComparer());
