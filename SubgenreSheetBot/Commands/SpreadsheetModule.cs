@@ -395,7 +395,7 @@ namespace SubgenreSheetBot.Commands
 
             var tracks = GetAllTracksByLabelFuzzy(test);
 
-            if (tracks.Count < 1)
+            if (tracks.Length < 1)
             {
                 await ReplyAsync($"Cannot find any tracks by the label `{test}`");
                 return;
@@ -407,13 +407,17 @@ namespace SubgenreSheetBot.Commands
             var days = Math.Floor(now.Date.Subtract(earliest.Date)
                 .TotalDays);
 
+            var numArtists = tracks.SelectMany(t => t.ActualArtists)
+                .Distinct()
+                .Count();
+
             var embed = new EmbedBuilder().WithTitle(test)
                 .WithDescription($"{test}'s latest release {IsWas(latest.Date, now)} on {latest.Date.ToString(DateFormat[0])} by {latest.FormattedArtists}, and their first release {IsWas(earliest.Date, now)} on {earliest.Date.ToString(DateFormat[0])} by {earliest.FormattedArtists}")
-                .AddField("Tracks", tracks.Count, true)
-                .AddField("Artists", tracks.SelectMany(t => t.ActualArtists)
-                    .Distinct()
-                    .Count(), true)
-                .AddField("Years active", days <= 0 ? "Not yet active" : $"{Math.Floor(days / 365)} years and {days % 365} days", true);
+                .AddField("Tracks", tracks.Length, true)
+                .AddField("Artists", numArtists, true)
+                .AddField("Years active", days <= 0 ? "Not yet active" : $"{Math.Floor(days / 365)} years and {days % 365} days", true)
+                .AddField("Genres", BuildTopGenreList(tracks, 5)
+                    .ToString(), true);
 
             if (File.Exists($"logo_{test}.jpg"))
                 embed = embed.WithThumbnailUrl($"https://raw.githubusercontent.com/Xythium/SubgenreSheetBot/master/SubgenreSheetBot/logo_{test}.jpg");
@@ -436,7 +440,7 @@ namespace SubgenreSheetBot.Commands
 
             var tracks = GetAllTracksByLabelFuzzy(test);
 
-            if (tracks.Count < 1)
+            if (tracks.Length < 1)
             {
                 await ReplyAsync($"Cannot find any tracks by the label `{test}`");
                 return;
