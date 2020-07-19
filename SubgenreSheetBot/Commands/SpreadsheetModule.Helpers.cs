@@ -449,8 +449,9 @@ namespace SubgenreSheetBot.Commands
                 .GroupBy(d => d, d => d, (d, e) => new KeyCount
                 {
                     Key = d,
-                    Count = ignoreUnknown && d == "?" ? 0 : e.Count()
+                    Count = e.Count()
                 })
+                .Where(d => ignoreUnknown && d.Key != "?")
                 .OrderByDescending(d => d.Count)
                 .ThenBy(d => d.Key)
                 .Take(top)
@@ -874,7 +875,7 @@ namespace SubgenreSheetBot.Commands
         public int Count;
         public List<T> Elements;
     }
-    
+
     public struct KeyCount
     {
         public string Key;
