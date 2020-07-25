@@ -133,9 +133,9 @@ namespace SubgenreSheetBot.Commands
                     .First()
                     .Url)
                 .AddField("Release Date", album.ReleaseDate)
-                .AddField("Type", string.IsNullOrWhiteSpace(album.AlbumType) ? "None" : album.AlbumType)
-                .AddField("Genre", genres)
-                .AddField("Popularity", album.Popularity)
+                .AddField("Type", string.IsNullOrWhiteSpace(album.AlbumType) ? "None" : album.AlbumType, true)
+                .AddField("Genre", genres, true)
+                .AddField("Popularity", album.Popularity, true)
                 .AddField("Label", album.Label)
                 .AddField("Tracklist", sb.ToString());
             if (sb1.Length > 0)
