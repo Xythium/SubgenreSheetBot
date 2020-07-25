@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Globalization;
@@ -346,13 +346,13 @@ namespace SubgenreSheetBot.Commands
             await ReplyAsync(null, false, builder);
         }
 
-        private async Task SendTrackList(string search, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
+        private async Task SendTrackList(string search, string[] artists, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
         {
-            var sb = BuildTrackList(search, tracks, includeGenreless, numLatest, numEarliest, includeIndex, includeArtist, includeTitle, includeLabel, includeDate);
+            var sb = BuildTrackList(search, artists, tracks, includeGenreless, numLatest, numEarliest, includeIndex, includeArtist, includeTitle, includeLabel, includeDate);
             await ReplyAsync(sb.ToString());
         }
 
-        private static StringBuilder BuildTrackList(string search, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
+        private static StringBuilder BuildTrackList(string search, string[] artists, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
         {
             var genrelessCount = 0;
 
@@ -364,12 +364,13 @@ namespace SubgenreSheetBot.Commands
             }
 
             var latestTracks = tracks.Where(e => e.Date <= DateTime.UtcNow)
+                .OrderByDescending(e => e.Date)
                 .Take(numLatest)
                 .ToArray();
-            var earliestTracks = ((IEnumerable<Entry>) tracks).Reverse()
+            var earliestTracks = tracks.Where(e => e.Date <= DateTime.UtcNow)
+                .Reverse()
                 .Take(numEarliest)
                 .ToArray();
-            var cutoffThreshold = numLatest + numEarliest;
 
             var sb = new StringBuilder($"`{search}` has {tracks.Count} tracks");
 
@@ -388,12 +389,15 @@ namespace SubgenreSheetBot.Commands
 
             sb.AppendLine("\r\n");
 
+            var trackCount = latestTracks.Length + earliestTracks.Length;
+            var cutoffThreshold = numLatest + numEarliest;
+
             if (tracks.Count < cutoffThreshold)
             {
                 for (var i = 0; i < tracks.Count; i++)
                 {
                     var track = tracks[i];
-                    sb.AppendLine(FormatTrack(search, tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
+                    sb.AppendLine(FormatTrack(search, artists, tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
                 }
             }
             else
@@ -401,15 +405,21 @@ namespace SubgenreSheetBot.Commands
                 for (var i = 0; i < latestTracks.Length; i++)
                 {
                     var track = latestTracks[i];
-                    sb.AppendLine(FormatTrack(search, tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
+                    sb.AppendLine(FormatTrack(search, artists, tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
                 }
 
-                sb.AppendLine("...");
-
-                for (var i = earliestTracks.Length - 1; i >= 0; i--)
+                if (trackCount >= cutoffThreshold)
                 {
-                    var track = earliestTracks[i];
-                    sb.AppendLine(FormatTrack(search, tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
+                    sb.AppendLine("...");
+                }
+
+                if (!(latestTracks.Length < numLatest))
+                {
+                    for (var i = earliestTracks.Length - 1; i >= 0; i--)
+                    {
+                        var track = earliestTracks[i];
+                        sb.AppendLine(FormatTrack(search, artists, tracks, track, includeIndex, includeArtist, includeTitle, includeLabel, includeDate));
+                    }
                 }
             }
 
@@ -494,7 +504,7 @@ namespace SubgenreSheetBot.Commands
             return description;
         }
 
-        private static string FormatTrack(string search, List<Entry> tracks, Entry track, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
+        private static string FormatTrack(string search, string[] artists, List<Entry> tracks, Entry track, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
         {
             var sb = new StringBuilder();
 
@@ -514,7 +524,13 @@ namespace SubgenreSheetBot.Commands
             else if (includeTitle)
             {
                 if (track.ArtistsList.Length > 1)
-                    sb.Append($"{track.Title} (w/ {string.Join(" & ", track.ArtistsList.Where(a => !string.Equals(a, search, StringComparison.OrdinalIgnoreCase)))}) ");
+                {
+                    var notFound = track.ArtistsList.Where(artist => !artists.Contains(artist))
+                        .ToArray();
+
+                    if (notFound.Length > 0)
+                        sb.Append($"{track.Title} (w/ {string.Join(" & ", notFound)}) ");
+                }
                 else
                     sb.Append($"{track.Title} ");
             }
@@ -535,17 +551,15 @@ namespace SubgenreSheetBot.Commands
 
         private static string IsWas(DateTime date, DateTime compare) { return date.CompareTo(compare) > 0 ? "is" : "was"; }
 
-        private async Task SendArtistInfo(string artist, List<Entry> tracks)
+        private async Task SendArtistInfo(string search, string[] artists, List<Entry> tracks)
         {
             var latest = tracks.First();
             var earliest = tracks.Last();
             var now = DateTime.UtcNow;
-            var days = Math.Floor(now.Date.Subtract(earliest.Date)
-                .TotalDays);
 
-            var embed = new EmbedBuilder().WithTitle(artist)
-                .WithDescription($"{artist}'s latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and their first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**")
-                .AddField("Tracks", BuildTrackList(artist, tracks, includeArtist: false)
+            var embed = new EmbedBuilder().WithTitle(string.Join(", ", artists))
+                .WithDescription($"`{search}` matches the artists {string.Join(", ", artists)}. The first latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and the first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**")
+                .AddField("Tracks", BuildTrackList(search, artists, tracks, includeArtist: false)
                     .ToString());
 
             await ReplyAsync(embed: embed.Build());
@@ -637,27 +651,30 @@ namespace SubgenreSheetBot.Commands
 
         public string FormattedArtists => string.Join(" x ", ArtistsList);
 
+        /// <summary>
+        /// All artists of a track (remixers instead of original artists if remix, includes featured artists)
+        /// </summary>
         public string[] ActualArtists
         {
             get
             {
                 var artists = new SortedSet<string>();
 
-                foreach (var feature in info.Features)
+                foreach (var feature in Info.Features)
                 {
                     artists.Add(feature);
                 }
 
-                if (info.Remixers.Count > 0)
+                if (Info.Remixers.Count > 0)
                 {
-                    foreach (var remixer in info.Remixers)
+                    foreach (var remixer in Info.Remixers)
                     {
                         artists.Add(remixer);
                     }
                 }
                 else
                 {
-                    foreach (var artist in info.Artists)
+                    foreach (var artist in Info.Artists)
                     {
                         artists.Add(artist);
                     }
@@ -667,22 +684,25 @@ namespace SubgenreSheetBot.Commands
             }
         }
 
+        /// <summary>
+        /// All artists of a track (remixers instead of original artists if remix)
+        /// </summary>
         public string[] ActualArtistsNoFeatures
         {
             get
             {
                 var artists = new SortedSet<string>();
 
-                if (info.Remixers.Count > 0)
+                if (Info.Remixers.Count > 0)
                 {
-                    foreach (var remixer in info.Remixers)
+                    foreach (var remixer in Info.Remixers)
                     {
                         artists.Add(remixer);
                     }
                 }
                 else
                 {
-                    foreach (var artist in info.Artists)
+                    foreach (var artist in Info.Artists)
                     {
                         artists.Add(artist);
                     }
@@ -733,7 +753,7 @@ namespace SubgenreSheetBot.Commands
 
         public string Key { get; private set; }
 
-        private TrackInfo info;
+        public TrackInfo Info { get; set; }
 
         private const int A = 0;
         private const int B = A + 1;
@@ -797,7 +817,7 @@ namespace SubgenreSheetBot.Commands
                 CorrectKey = correctKey,
                 Key = key
             };
-            entry.info = TrackParser.GetTrackInfo(entry.FormattedArtists, entry.Title, "", "", entry.Date);
+            entry.Info = TrackParser.GetTrackInfo(entry.FormattedArtists, entry.Title, "", "", entry.Date);
 
             return true;
         }
