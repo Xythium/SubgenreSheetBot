@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -193,10 +192,66 @@ namespace SubgenreSheetBot.Commands
                 .ToList();
         }
 
-        private static List<Entry> GetAllTracksByArtistFuzzy(string artist, int threshold = 80)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="artist"></param>
+        /// <param name="includeRemixes">Include XXX (artist Remix)</param>
+        /// <param name="includeRemixed">Include artist (XXX Remix)</param>
+        /// <param name="threshold"></param>
+        /// <returns></returns>
+        private static List<Entry> GetAllTracksByArtistFuzzy(string artist, bool includeRemixes = true, bool includeRemixed = false, int threshold = 80)
         {
-            return entries.Where(e => e.ArtistsList.Any(s => fuzzyFunc(s, artist, PreprocessMode.Full) >= threshold))
-                .OrderByDescending(e => e.Date)
+            var tracks = new List<Entry>();
+
+            foreach (var entry in entries)
+            {
+                // include featured artists
+                if (entry.Info.Features.Any(s => fuzzyFunc(s, artist, PreprocessMode.Full) >= threshold))
+                {
+                    tracks.Add(entry);
+                }
+
+                // remix by searching artist should be including
+                if (includeRemixes)
+                {
+                    // track is a remix
+                    if (entry.Info.Remixers.Count > 0)
+                    {
+                        // remixers include searching artist
+                        if (entry.Info.Remixers.Any(s => fuzzyFunc(s, artist, PreprocessMode.Full) >= threshold))
+                        {
+                            tracks.Add(entry);
+                        }
+                    }
+                }
+
+                // remixes of searching artist should be included
+                if (includeRemixed)
+                {
+                    // track is a remix
+                    if (entry.Info.Remixers.Count > 0)
+                    {
+                        // track is by searching artist
+                        if (entry.Info.Artists.Any(s => fuzzyFunc(s, artist, PreprocessMode.Full) >= threshold))
+                        {
+                            tracks.Add(entry);
+                        }
+                    }
+                }
+
+                // track is not a remix
+                if (entry.Info.Remixers.Count < 1)
+                {
+                    // track is by searching artist
+                    if (entry.Info.Artists.Any(s => fuzzyFunc(s, artist, PreprocessMode.Full) >= threshold))
+                    {
+                        tracks.Add(entry);
+                    }
+                }
+            }
+
+            return tracks.OrderByDescending(e => e.Date)
                 .ToList();
         }
 
