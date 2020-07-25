@@ -185,6 +185,13 @@ namespace SubgenreSheetBot.Commands
         {
             await RevalidateCache();
 
+            var artists = Process.ExtractTop(artist, entries.SelectMany(e => e.ActualArtists)
+                    .Distinct(), scorer: scorer, cutoff: 80)
+                .OrderByDescending(a => a.Score)
+                .ThenBy(a => a.Value)
+                .Select(a => a.Value)
+                .ToArray();
+
             var tracksByArtist = GetAllTracksByArtistFuzzy(artist);
 
             if (tracksByArtist.Count == 0)
@@ -193,7 +200,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            await SendArtistInfo(artist, tracksByArtist);
+            await SendArtistInfo(artist, artists, tracksByArtist);
         }
 
         [Command("artistdebug"), Alias("ad"), Summary("Returns a list of up to 15 artists most similar to the given input")]
@@ -203,8 +210,8 @@ namespace SubgenreSheetBot.Commands
         {
             await RevalidateCache();
 
-            var artists = Process.ExtractTop(artist, entries.SelectMany(e => e.ArtistsList)
-                    .Distinct(), scorer: scorer, limit: 15)
+            var artists = Process.ExtractTop(artist, entries.SelectMany(e => e.ActualArtists)
+                    .Distinct(), scorer: scorer, cutoff: 80)
                 .ToArray();
 
             var sb = new StringBuilder($"{artists.Length} most similar artists (using {scorer.GetType().Name})\r\n");
@@ -246,7 +253,10 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            await SendTrackList(test, tracks, false);
+            await SendTrackList(test, new[]
+            {
+                test
+            }, tracks, false);
         }
 
         [Command("genreinfo"), Alias("gi"), Summary("Returns information of a genre")]
@@ -320,7 +330,10 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            await SendTrackList(test, tracks, false);
+            await SendTrackList(test, new[]
+            {
+                test
+            }, tracks, false);
         }
 
         [Command("subgenreexact"), Alias("sge"), Summary("Returns a list of up to 8 tracks of a given subgenre")]
@@ -351,7 +364,10 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            await SendTrackList(test, tracks, false);
+            await SendTrackList(test, new[]
+            {
+                test
+            }, tracks, false);
         }
 
         [Command("labels"), Alias("ls")]
