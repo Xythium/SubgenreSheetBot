@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -106,25 +107,27 @@ namespace SubgenreSheetBot.Commands
                 genres = "None";
             }
 
-            var sb = new StringBuilder();
             var sb1 = new StringBuilder();
+            var sb2 = new StringBuilder();
+            var sb3 = new StringBuilder();
 
             //2009-09-22	House	Tech House | Progressive House	deadmau5	Lack of a Better Name	mau5trap	8:15	FALSE	128	FALSE	F min
             foreach (var track in album.Tracks.Items)
             {
                 var features = await GetAudioFeaturesOrCache(track.Id);
+                var line = FormatTrack(track, features);
 
-                if (sb.Length > 900)
+                if (sb2.Length + line.Length >= 1023)
                 {
-                    sb1.AppendLine($"{track.TrackNumber}. {track.Name}");
-                    sb1.AppendLine($"{TimeSpan.FromMilliseconds(track.DurationMs):m':'ss} - {Math.Round(features.Tempo)} {features.TimeSignature}/4 {IntToKey(features.Key)} {IntToMode(features.Mode)}");
-                    sb1.AppendLine();
+                    sb3.AppendLine(line);
+                }
+                else if (sb1.Length + line.Length >= 1023)
+                {
+                    sb2.AppendLine(line);
                 }
                 else
                 {
-                    sb.AppendLine($"{track.TrackNumber}. {track.Name}");
-                    sb.AppendLine($"{TimeSpan.FromMilliseconds(track.DurationMs):m':'ss} - {Math.Round(features.Tempo)} {features.TimeSignature}/4 {IntToKey(features.Key)} {IntToMode(features.Mode)}");
-                    sb.AppendLine();
+                    sb1.AppendLine(line);
                 }
             }
 
@@ -132,16 +135,25 @@ namespace SubgenreSheetBot.Commands
                 .WithThumbnailUrl(album.Images.OrderByDescending(i => i.Width)
                     .First()
                     .Url)
-                .AddField("Release Date", album.ReleaseDate)
-                .AddField("Type", string.IsNullOrWhiteSpace(album.AlbumType) ? "None" : album.AlbumType, true)
-                .AddField("Genre", genres, true)
-                .AddField("Popularity", album.Popularity, true)
-                .AddField("Label", album.Label)
-                .AddField("Tracklist", sb.ToString());
-            if (sb1.Length > 0)
-                embed = embed.AddField("Tracklist (cont.)", sb1.ToString());
+                .AddField("Release Date", album.ReleaseDate, true)
+                .AddField("Type", string.IsNullOrWhiteSpace(album.AlbumType) ? "None" : album.AlbumType, true);
+
+            if (genres != "None")
+                embed = embed.AddField("Genre", genres, true);
+
+            embed = embed.AddField("Popularity", $"{album.Popularity}%", true)
+                .AddField("Label", album.Label, true)
+                .AddField("Tracklist", sb1.ToString());
+
+            if (sb2.Length > 0)
+                embed = embed.AddField("Tracklist (cont.)", sb2.ToString());
+            if (sb3.Length > 0)
+                embed = embed.AddField("Tracklist (cont. again)", sb3.ToString());
+
             await ReplyAsync(embed: embed.Build());
         }
+
+        
 
         [Command("label"), Alias("l"), Summary("Get all releases from a label")]
         public async Task Label(
