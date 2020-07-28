@@ -14,19 +14,6 @@ namespace SubgenreSheetBot.Commands
     [Group("Spotify"), Alias("s")]
     public partial class SpotifyModule : ModuleBase
     {
-        private static SpotifyClient api;
-
-        public SpotifyModule()
-        {
-            if (api == null)
-            {
-                var config = SpotifyClientConfig.CreateDefault()
-                    .WithAuthenticator(new ClientCredentialsAuthenticator(File.ReadAllText("spotify_id"), File.ReadAllText("spotify_secret")));
-
-                api = new SpotifyClient(config);
-            }
-        }
-
         [Command("tracks"), Alias("t"), Summary("Get all tracks from an album")]
         public async Task Tracks(
             [Remainder, Summary("Album ID to search for")]
@@ -39,7 +26,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            var album = await GetAlbumOrCache(albumId);
+            var album = (await GetAlbumOrCache(albumId)).Album;
             var albumArtists = album.Artists;
 
             if (albumArtists.Count == 0)
@@ -86,7 +73,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            var album = await GetAlbumOrCache(albumId);
+            var album = (await GetAlbumOrCache(albumId)).Album;
             var albumArtists = album.Artists;
 
             if (albumArtists.Count == 0)
@@ -153,8 +140,6 @@ namespace SubgenreSheetBot.Commands
             await ReplyAsync(embed: embed.Build());
         }
 
-        
-
         [Command("label"), Alias("l"), Summary("Get all releases from a label")]
         public async Task Label(
             [Remainder, Summary("Label name to search for")]
@@ -163,15 +148,26 @@ namespace SubgenreSheetBot.Commands
             labelName = labelName.Replace("\"", "");
             var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Album, $"label:\"{labelName}\""));
 
-            var albums = new List<SimpleAlbum>();
+            var albums = new List<FullAlbum>();
             var sb = new StringBuilder();
 
             await foreach (var album in api.Paginate(response.Albums, s => s.Albums))
             {
-                albums.Add(album);
+                var cacheResult = await GetAlbumOrCache(album.Id);
+
+                if (labelName.Contains("mau5trap", StringComparison.OrdinalIgnoreCase) && !labelName.Contains("mmj mau5trap", StringComparison.OrdinalIgnoreCase) && cacheResult.Album.Label.Contains("mmj mau5trap", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                albums.Add(cacheResult.Album);
                 if (albums.Count == 2000)
                     break;
+
+                if (!cacheResult.Cached)
+                    await Task.Delay(100);
             }
+
+            /*var playlist =await CreateOrUpdatePlaylist(labelName, albums.OrderByDescending(a => a.ReleaseDate)
+                .ToArray());*/
 
             foreach (var album in albums.OrderByDescending(a => a.ReleaseDate))
             {
@@ -185,10 +181,11 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            if (sb.Length > 1000)
+            //  await ReplyAsync($"{playlist.Uri}");
+            if (sb.Length > 2000)
             {
                 var writer = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
-                await Context.Channel.SendFileAsync(writer, "albums.txt", $"I found {albums.Count} albums which does not fit in a discord message");
+                await Context.Channel.SendFileAsync(writer, "pog.txt", $"I found {albums.Count} albums which does not fit in a discord message");
             }
             else
             {
@@ -204,14 +201,22 @@ namespace SubgenreSheetBot.Commands
             labelName = labelName.Replace("\"", "");
             var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Album, $"label:\"{labelName}\" year:{year}"));
 
-            var albums = new List<SimpleAlbum>();
+            var albums = new List<FullAlbum>();
             var sb = new StringBuilder();
 
             await foreach (var album in api.Paginate(response.Albums, s => s.Albums))
             {
-                albums.Add(album);
+                var cacheResult = await GetAlbumOrCache(album.Id);
+
+                if (labelName.Contains("mau5trap", StringComparison.OrdinalIgnoreCase) && !labelName.Contains("mmj mau5trap", StringComparison.OrdinalIgnoreCase) && cacheResult.Album.Label.Contains("mmj mau5trap", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                albums.Add(cacheResult.Album);
                 if (albums.Count == 2000)
                     break;
+
+                if (!cacheResult.Cached)
+                    await Task.Delay(100);
             }
 
             foreach (var album in albums.OrderByDescending(a => a.ReleaseDate))
@@ -226,10 +231,10 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            if (sb.Length > 1000)
+            if (sb.Length > 2000)
             {
                 var writer = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
-                await Context.Channel.SendFileAsync(writer, "albums.txt", $"I found {albums.Count} albums which does not fit in a discord message");
+                await Context.Channel.SendFileAsync(writer, "pog.txt", $"I found {albums.Count} albums which does not fit in a discord message");
             }
             else
             {

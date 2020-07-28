@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -11,6 +12,19 @@ namespace SubgenreSheetBot.Commands
 {
     public partial class SpotifyModule
     {
+        private static SpotifyClient api;
+
+        public SpotifyModule()
+        {
+            if (api == null)
+            {
+                var config = SpotifyClientConfig.CreateDefault()
+                    .WithAuthenticator(new ClientCredentialsAuthenticator(File.ReadAllText("spotify_id"), File.ReadAllText("spotify_secret")));
+
+                api = new SpotifyClient(config);
+            }
+        }
+
         private async Task<string> GetIdFromUrl(string url)
         {
             if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
@@ -67,15 +81,24 @@ namespace SubgenreSheetBot.Commands
 
         private static readonly Dictionary<string, FullAlbum> fullAlbumCache = new Dictionary<string, FullAlbum>();
 
-        private static async Task<FullAlbum> GetAlbumOrCache(string albumId)
+        private static async Task<AlbumCacheResult> GetAlbumOrCache(string albumId)
         {
             if (!fullAlbumCache.TryGetValue(albumId, out var album))
             {
                 album = await api.Albums.Get(albumId);
                 fullAlbumCache.Add(albumId, album);
+                return new AlbumCacheResult
+                {
+                    Album = album,
+                    Cached = false
+                };
             }
 
-            return album;
+            return new AlbumCacheResult
+            {
+                Album = album,
+                Cached = true
+            };
         }
 
         private static readonly Dictionary<string, TrackAudioFeatures> audioFeaturesCache = new Dictionary<string, TrackAudioFeatures>();
@@ -179,6 +202,39 @@ namespace SubgenreSheetBot.Commands
 
             return str;
         }
+
+        private async Task<FullPlaylist> CreateOrUpdatePlaylist(string name, FullAlbum[] albums)
+        {
+            var playlist = await FindUserPlaylist(name);
+
+            await api.Playlists.ReplaceItems(playlist.Id, new PlaylistReplaceItemsRequest(albums.SelectMany(a => a.Tracks.Items.Select(t => t.Id))
+                .ToList()));
+
+            return playlist;
+        }
+
+        private static async Task<FullPlaylist> FindUserPlaylist(string name)
+        {
+            //bug: getting the current user will not work
+            var currentPlaylists = await api.Playlists.CurrentUsers();
+
+            await foreach (var playlist in api.Paginate(currentPlaylists))
+            {
+                if (string.Equals(playlist.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return await api.Playlists.Get(playlist.Id);
+                }
+            }
+
+            return await api.Playlists.Create((await api.UserProfile.Current()).Id, new PlaylistCreateRequest(name));
+        }
+    }
+
+    internal class AlbumCacheResult
+    {
+        public FullAlbum Album { get; set; }
+
+        public bool Cached { get; set; }
     }
 
     public class FullArtistComparer : IEqualityComparer<FullArtist>
