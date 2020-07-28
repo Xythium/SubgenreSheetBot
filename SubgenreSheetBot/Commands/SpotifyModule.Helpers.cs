@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -83,8 +84,15 @@ namespace SubgenreSheetBot.Commands
         {
             if (!audioFeaturesCache.TryGetValue(trackId, out var album))
             {
-                album = await api.Tracks.GetAudioFeatures(trackId);
-                audioFeaturesCache.Add(trackId, album);
+                try
+                {
+                    album = await api.Tracks.GetAudioFeatures(trackId);
+                    audioFeaturesCache.Add(trackId, album);
+                }
+                catch (APIException ex) when (ex.Message == "analysis not found")
+                {
+                    return null;
+                }
             }
 
             return album;
@@ -112,6 +120,64 @@ namespace SubgenreSheetBot.Commands
             {
                 await ReplyAsync(str);
             }
+        }
+
+        private static string FormatTrack(SimpleTrack track, TrackAudioFeatures features)
+        {
+            var featureList = new List<string>
+            {
+                TimeSpan.FromMilliseconds(track.DurationMs)
+                    .ToString("m':'ss")
+            };
+
+            if (features != null)
+            {
+                featureList.Add(BpmToString(features));
+
+                if (features.TimeSignature != 4)
+                {
+                    featureList.Add($"{features.TimeSignature}/4");
+                }
+
+                featureList.Add($"{IntToKey(features.Key)} {IntToMode(features.Mode)}");
+            }
+            else
+            {
+                //featureList.Add("**track analysis not available**");
+            }
+
+            var sb = new StringBuilder($"{track.TrackNumber}. {track.Name} [{string.Join(", ", featureList)}]");
+
+            return sb.ToString();
+        }
+
+        private static string BpmToString(TrackAudioFeatures features)
+        {
+            var bpm = features.Tempo;
+            var floating = bpm - (int) bpm;
+
+            if (floating < 0.3 || floating > 0.7)
+            {
+                features.Tempo = bpm = (float) Math.Round(bpm);
+            }
+            else
+            {
+                features.Tempo = bpm = (float) Math.Round(bpm, 1);
+            }
+
+            if (Math.Abs(floating - 0.5) < 0.03 && bpm < 95)
+            {
+                bpm *= 2;
+            }
+
+            var str = bpm.ToString(CultureInfo.GetCultureInfo("en-US"));
+
+            if (bpm != features.Tempo)
+            {
+                str = $"{features.Tempo} (Mark says {bpm})";
+            }
+
+            return str;
         }
     }
 
