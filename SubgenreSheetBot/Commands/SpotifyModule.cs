@@ -212,11 +212,21 @@ namespace SubgenreSheetBot.Commands
                     continue;
 
                 albums.Add(cacheResult.Album);
+
                 if (albums.Count == 2000)
+                {
+                    await ReplyAsync("reached 2000 album limit");
                     break;
+                }
 
                 if (!cacheResult.Cached)
                     await Task.Delay(100);
+            }
+
+            if (albums.Count < 1)
+            {
+                await ReplyAsync("no albums found");
+                return;
             }
 
             foreach (var album in albums.OrderByDescending(a => a.ReleaseDate))
@@ -248,13 +258,13 @@ namespace SubgenreSheetBot.Commands
             labelName = labelName.Replace("\"", "");
             var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Artist | SearchRequest.Types.Track, $"label:\"{labelName}\""));
 
-            var allArtists = new HashSet<FullArtist>(new FullArtistComparer());
-            var testArtists = new HashSet<SimpleArtist>(new SimpleArtistComparer());
+            var searchedArtists = new HashSet<FullArtist>(new FullArtistComparer());
+            var trackArtists = new HashSet<SimpleArtist>(new SimpleArtistComparer());
 
             await foreach (var artist in api.Paginate(response.Artists, s => s.Artists, new SimplePaginator()))
             {
-                allArtists.Add(artist);
-                if (allArtists.Count == 2000)
+                searchedArtists.Add(artist);
+                if (searchedArtists.Count == 2000)
                     break;
             }
 
@@ -268,7 +278,7 @@ namespace SubgenreSheetBot.Commands
 
                 foreach (var artist in artists)
                 {
-                    testArtists.Add(artist);
+                    trackArtists.Add(artist);
                 }
 
                 if (++count == 2000)
@@ -284,23 +294,23 @@ namespace SubgenreSheetBot.Commands
                 }
             }
 
-            var notFound = allArtists.Where(a => testArtists.FirstOrDefault(f => string.Equals(f.Name, a.Name, StringComparison.OrdinalIgnoreCase)) == null)
-                .ToArray();
-
             if (message == null)
             {
-                await ReplyAsync($"Checking {allArtists.Count} artists & {testArtists.Count} artists from every track");
+                await ReplyAsync($"Checking {searchedArtists.Count} artists & {trackArtists.Count} artists from every track");
             }
             else
             {
-                await message.ModifyAsync(m => m.Content = $"Checking {allArtists.Count} artists & {testArtists.Count} artists from every track");
+                await message.ModifyAsync(m => m.Content = $"Checking {searchedArtists.Count} artists & {trackArtists.Count} artists from every track");
             }
+
+            var notFound = searchedArtists.Where(searchedArtist => trackArtists.FirstOrDefault(trackArtist => string.Equals(trackArtist.Name, searchedArtist.Name, StringComparison.OrdinalIgnoreCase)) == null)
+                .ToArray();
 
             var sb = new StringBuilder();
 
             foreach (var artist in notFound)
             {
-                response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"label:{labelName} \"{artist.Name}\""));
+                response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"label:\"{labelName}\" \"{artist.Name}\""));
 
                 if (response.Tracks.Items.Count < 1)
                 {
@@ -308,6 +318,77 @@ namespace SubgenreSheetBot.Commands
                 }
 
                 await Task.Delay(100);
+            }
+
+            if (sb.Length > 0)
+            {
+                await SendOrAttachment(sb.ToString());
+            }
+            else
+            {
+                await ReplyAsync($"couldnt find anything for {labelName}");
+            }
+        }
+
+        [Command("peepn"), Alias("pn")]
+        public async Task PeepNoDoubleCheck([Remainder] string labelName)
+        {
+            labelName = labelName.Replace("\"", "");
+            var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Artist | SearchRequest.Types.Track, $"label:\"{labelName}\""));
+
+            var searchedArtists = new HashSet<FullArtist>(new FullArtistComparer());
+            var trackArtists = new HashSet<SimpleArtist>(new SimpleArtistComparer());
+
+            await foreach (var artist in api.Paginate(response.Artists, s => s.Artists, new SimplePaginator()))
+            {
+                searchedArtists.Add(artist);
+                if (searchedArtists.Count == 2000)
+                    break;
+            }
+
+            IUserMessage message = null;
+            var count = 0;
+
+            await foreach (var track in api.Paginate(response.Tracks, s => s.Tracks))
+            {
+                var artists = track.Artists.Select(a => a)
+                    .ToArray();
+
+                foreach (var artist in artists)
+                {
+                    trackArtists.Add(artist);
+                }
+
+                if (++count == 2000)
+                {
+                    await ReplyAsync("too many tracks");
+                    break;
+                }
+
+                if (count % 250 == 0)
+                {
+                    message = await UpdateOrSend(message, $"{count} tracks");
+                    await Task.Delay(100);
+                }
+            }
+
+            if (message == null)
+            {
+                await ReplyAsync($"Checking {searchedArtists.Count} artists & {trackArtists.Count} artists from every track");
+            }
+            else
+            {
+                await message.ModifyAsync(m => m.Content = $"Checking {searchedArtists.Count} artists & {trackArtists.Count} artists from every track");
+            }
+
+            var notFound = searchedArtists.Where(searchedArtist => trackArtists.FirstOrDefault(trackArtist => string.Equals(trackArtist.Name, searchedArtist.Name, StringComparison.OrdinalIgnoreCase)) == null)
+                .ToArray();
+
+            var sb = new StringBuilder();
+
+            foreach (var artist in notFound)
+            {
+                sb.AppendLine($"`{artist.Name}` <https://open.spotify.com/artist/{artist.Id}>");
             }
 
             if (sb.Length > 0)
