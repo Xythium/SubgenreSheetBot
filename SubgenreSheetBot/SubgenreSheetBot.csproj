@@ -4,15 +4,16 @@
         <OutputType>Exe</OutputType>
         <TargetFramework>netcoreapp3.1</TargetFramework>
         <LangVersion>8</LangVersion>
-        <AssemblyVersion>1.13.4</AssemblyVersion>
+        <AssemblyVersion>1.14.0</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="FuzzySharp" Version="2.0.2" />
       <PackageReference Include="Google.Apis.Sheets.v4" Version="1.47.0.2007" />
+      <PackageReference Include="MetaBrainz.MusicBrainz" Version="3.0.2" />
       <PackageReference Include="MusicTools" Version="1.4.6" />
-      <PackageReference Include="SpotifyAPI.Web" Version="6.0.0-beta.6" />
-      <PackageReference Include="SpotifyAPI.Web.Auth" Version="6.0.0-beta.6" />
+      <PackageReference Include="SpotifyAPI.Web" Version="6.0.0" />
+      <PackageReference Include="SpotifyAPI.Web.Auth" Version="6.0.0" />
       <PackageReference Include="XDiscordBotLib" Version="1.1.6" />
     </ItemGroup>
 

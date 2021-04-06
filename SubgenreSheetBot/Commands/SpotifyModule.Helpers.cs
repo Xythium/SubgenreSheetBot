@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
+using Serilog;
 using SpotifyAPI.Web;
+using SpotifyAPI.Web.Http;
 
 namespace SubgenreSheetBot.Commands
 {
@@ -19,7 +23,9 @@ namespace SubgenreSheetBot.Commands
             if (api == null)
             {
                 var config = SpotifyClientConfig.CreateDefault()
-                    .WithAuthenticator(new ClientCredentialsAuthenticator(File.ReadAllText("spotify_id"), File.ReadAllText("spotify_secret")));
+                    .WithAuthenticator(new ClientCredentialsAuthenticator(File.ReadAllText("spotify_id"), File.ReadAllText("spotify_secret")))
+                    //.WithDefaultPaginator(new CachingPaginator())
+                    .WithRetryHandler(new SimpleRetryHandler());
 
                 api = new SpotifyClient(config);
             }
@@ -227,6 +233,78 @@ namespace SubgenreSheetBot.Commands
             }
 
             return await api.Playlists.Create((await api.UserProfile.Current()).Id, new PlaylistCreateRequest(name));
+        }
+    }
+
+    public class CachingPaginator : IPaginator
+    {
+        public Task<IList<T>> PaginateAll<T>(IPaginatable<T> firstPage, IAPIConnector connector) { throw new NotImplementedException(); }
+
+        public Task<IList<T>> PaginateAll<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector) { throw new NotImplementedException(); }
+
+        public async IAsyncEnumerable<T> Paginate<T>(IPaginatable<T> firstPage, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new CancellationToken())
+        {
+            if (firstPage == null)
+                throw new ArgumentNullException(nameof(firstPage));
+            if (connector == null)
+                throw new ArgumentNullException(nameof(connector));
+
+            var page = firstPage;
+
+            foreach (var item in page.Items)
+            {
+                yield return item;
+            }
+
+            while (!string.IsNullOrWhiteSpace(page.Next))
+            {
+                page = await connector.Get<Paging<T>>(new Uri(page.Next, UriKind.Absolute))
+                    .ConfigureAwait(false);
+
+                foreach (var item in page.Items!)
+                {
+                    yield return item;
+                }
+            }
+        }
+
+        public async IAsyncEnumerable<T> Paginate<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new CancellationToken())
+        {
+            if (firstPage == null)
+                throw new ArgumentNullException(nameof(firstPage));
+            if (mapper == null)
+                throw new ArgumentNullException(nameof(mapper));
+            if (connector == null)
+                throw new ArgumentNullException(nameof(connector));
+
+            var page = firstPage;
+
+            foreach (var item in page.Items)
+            {
+                yield return item;
+            }
+
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            while (!string.IsNullOrWhiteSpace(page.Next))
+            {
+                try
+                {
+                    var next = await connector.Get<TNext>(new Uri(page.Next, UriKind.Absolute))
+                        .ConfigureAwait(false);
+
+                    page = mapper(next);
+                }
+                catch (Exception ex)
+                {
+                   Log.Fatal(ex, "Error ");
+                    yield break;
+                }
+
+                foreach (var item in page.Items!)
+                {
+                    yield return item;
+                }
+            }
         }
     }
 

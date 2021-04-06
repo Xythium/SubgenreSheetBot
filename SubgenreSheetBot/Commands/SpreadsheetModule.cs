@@ -2,13 +2,17 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using Discord;
 using Discord.Commands;
 using FuzzySharp;
+using MetaBrainz.MusicBrainz;
+using MetaBrainz.MusicBrainz.Interfaces.Entities;
 using MusicTools.Parsing.Track;
+using Newtonsoft.Json;
 
 namespace SubgenreSheetBot.Commands
 {
@@ -516,5 +520,243 @@ namespace SubgenreSheetBot.Commands
 
             await ReplyAsync(sb.ToString());
         }
+
+        static SortedSet<IRecording> tracks = new SortedSet<IRecording>(new MusicBrainzTrackComparer());
+        static SortedSet<string> addedLabels = new SortedSet<string>();
+
+        [Command("mbsubmit")]
+        public async Task MusicBrainzSubmit()
+        {
+            if (Context.User.Discriminator != "0001")
+                return;
+
+            await RevalidateCache();
+
+            var sb = new StringBuilder("This would be submitted if Mark enabled it:\r\n");
+            sb.AppendLine($"User Agent: {GetQuery().UserAgent}");
+
+            var message = await ReplyAsync("recordings found: 0");
+            var found = 0;
+            var lastSend = new DateTime(1970, 1, 1);
+
+            var labels = GetAllLabelNames();
+
+            foreach (var l in labels)
+            {
+                if (addedLabels.Contains(l))
+                    continue;
+
+                var label = (await GetQuery()
+                        .FindLabelsAsync($"label:\"{l}\"", 1)).Results.FirstOrDefault()
+                    ?.Item;
+
+                if (label == null)
+                {
+                    await ReplyAsync($"{l} not found");
+                    continue;
+                }
+
+                var releases = await GetQuery()
+                    .BrowseLabelReleasesAsync(label.Id, 100, inc: Include.Recordings | Include.ArtistCredits);
+
+                foreach (var release in releases.Results)
+                {
+                    if (release.Media == null)
+                        continue;
+
+                    foreach (var medium in release.Media)
+                    {
+                        if (medium.Tracks == null)
+                            continue;
+
+                        foreach (var track in medium.Tracks)
+                        {
+                            if (track.Recording != null)
+                                tracks.Add(track.Recording);
+                        }
+                    }
+                }
+
+                addedLabels.Add(l);
+            }
+
+            await ReplyAsync($"{tracks.Count} tracks");
+
+            var notFound = new List<Entry>();
+
+            foreach (var entry in entries)
+            {
+                if (entry.SubgenresList.SequenceEqual(new[]
+                {
+                    "?"
+                }))
+                    continue;
+
+                var tags = GetQuery()
+                    .SubmitTags(CLIENT_ID);
+
+                var recordings = tracks.Where(t => string.Equals(t.Title, entry.Title, StringComparison.OrdinalIgnoreCase) && string.Equals(t.ArtistCredit?.First()
+                        ?.Name, entry.ArtistsList.First(), StringComparison.OrdinalIgnoreCase))
+                    .Distinct(new MusicBrainzTrackComparer())
+                    .ToArray();
+
+                if (recordings.Length > 0)
+                {
+                    sb.AppendLine($"{entry.OriginalArtists} - {entry.Title}:");
+
+                    foreach (var recording in recordings)
+                    {
+                        sb.AppendLine($"\t{string.Join(" x ", recording.ArtistCredit.Select(ac => ac.Artist.Name))} - {recording.Title} ({recording.Id})");
+
+                        found++;
+
+                        if (DateTime.UtcNow.Subtract(lastSend)
+                            .TotalSeconds > 10)
+                        {
+                            message = await UpdateOrSend(message, $"recordings found: {++found}");
+                            lastSend = DateTime.UtcNow;
+                        }
+
+                        tags.Add(recording, TagVote.Up, entry.SubgenresList);
+                        await tags.SubmitAsync();
+                    }
+
+                    sb.AppendLine($"\t\tTags: {string.Join(", ", entry.SubgenresList)}");
+                }
+                else
+                {
+                    notFound.Add(entry);
+                }
+            }
+
+            await SendOrAttachment(sb.ToString());
+
+            if (notFound.Count > 0)
+            {
+                await SendOrAttachment(string.Join("\r\n", notFound.Select(t => $"{t.OriginalArtists} - {t.Title}")));
+            }
+        }
+
+        /*[Command("say")]
+        public async Task Say(string server, string channel, [Remainder] string message)
+        {
+            if (Context.User.Discriminator != "0001")
+                return;
+
+            var guilds = await Context.Client.GetGuildsAsync();
+            var guild = guilds.FirstOrDefault(g => string.Equals(g.Name, server, StringComparison.OrdinalIgnoreCase));
+
+            if (guild == null)
+            {
+                await ReplyAsync($"server not found. {string.Join(", ", guilds.Select(g => g.Name))}");
+                return;
+            }
+
+            var channels = await guild.GetChannelsAsync();
+            var chl = (IMessageChannel) channels.FirstOrDefault(c => string.Equals(c.Name, channel, StringComparison.OrdinalIgnoreCase));
+
+            if (chl == null)
+            {
+                await ReplyAsync($"channel not found. {string.Join(", ", channels.Select(g => g.Name))}");
+                return;
+            }
+
+            await chl.SendMessageAsync(message);
+        }*/
+
+        private const string MUSICBRAINZ_LIFETIME_FILE = "musicbrainz_lifetime";
+        private const string MUSICBRAINZ_REFRESH_FILE = "musicbrainz_refresh";
+        private const string MUSICBRAINZ_ACCESS_FILE = "musicbrainz_access";
+        private const string MUSICBRAINZ_SECRET_FILE = "musicbrainz_clientsecret";
+        private const string MUSICBRAINZ_AUTH_FILE = "musicbrainz_auth";
+
+        private static string CLIENT_ID = File.ReadAllText("musicbrainz_clientid");
+
+        private static Query GetQuery()
+        {
+            return GetQuery(Assembly.GetExecutingAssembly()
+                .GetName());
+        }
+
+        private static Query GetQuery(AssemblyName assembly)
+        {
+            var query = new Query(assembly.FullName, assembly.Version, new Uri("mailto:xythium@gmail.com"));
+            var oauth = new OAuth2
+            {
+                ClientId = CLIENT_ID
+            };
+
+            var lifetimeFile = new FileInfo(MUSICBRAINZ_LIFETIME_FILE);
+
+            if (lifetimeFile.Exists)
+            {
+                var lifetimeStr = File.ReadAllText(lifetimeFile.FullName);
+                var lifetime = DateTimeOffset.Parse(lifetimeStr);
+                //Console.WriteLine($"{DateTimeOffset.UtcNow} >= {lifetime}: {DateTimeOffset.UtcNow >= lifetime}");
+
+                if (DateTime.UtcNow >= lifetime)
+                {
+                    Console.WriteLine($"Token lifetime has expired");
+
+                    var at = oauth.RefreshBearerToken(File.ReadAllText(MUSICBRAINZ_REFRESH_FILE), File.ReadAllText(MUSICBRAINZ_SECRET_FILE));
+                    File.WriteAllText(MUSICBRAINZ_REFRESH_FILE, at.RefreshToken);
+                    File.WriteAllText(MUSICBRAINZ_ACCESS_FILE, at.AccessToken);
+                    File.WriteAllText(MUSICBRAINZ_LIFETIME_FILE, DateTimeOffset.UtcNow.AddSeconds(at.Lifetime)
+                        .ToString("R"));
+                    File.WriteAllText(MUSICBRAINZ_LIFETIME_FILE + "2", at.Lifetime.ToString());
+                    query.BearerToken = at.AccessToken;
+
+                    Console.WriteLine($"Refreshed token");
+                    return query;
+                }
+
+                var accessTokenFile = new FileInfo(MUSICBRAINZ_ACCESS_FILE);
+
+                if (accessTokenFile.Exists)
+                {
+                    var accessToken = File.ReadAllText(accessTokenFile.FullName);
+
+                    if (!string.IsNullOrWhiteSpace(accessToken))
+                    {
+                        query.BearerToken = accessToken;
+                        return query;
+                    }
+                }
+            }
+
+            return NewToken(query, oauth);
+        }
+
+        private static Query NewToken(Query query, OAuth2 oauth)
+        {
+            var url = oauth.CreateAuthorizationRequest(OAuth2.OutOfBandUri, AuthorizationScope.Everything);
+            System.Diagnostics.Process.Start($"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe \"{url}\"");
+
+            var authToken = Console.ReadLine();
+            File.WriteAllText(MUSICBRAINZ_AUTH_FILE, authToken);
+
+            var at = oauth.GetBearerToken(authToken, File.ReadAllText(MUSICBRAINZ_SECRET_FILE), OAuth2.OutOfBandUri);
+            File.WriteAllText(MUSICBRAINZ_REFRESH_FILE, at.RefreshToken);
+            File.WriteAllText(MUSICBRAINZ_ACCESS_FILE, at.AccessToken);
+            File.WriteAllText(MUSICBRAINZ_LIFETIME_FILE, DateTimeOffset.UtcNow.AddSeconds(at.Lifetime)
+                .ToString("R"));
+            query.BearerToken = at.AccessToken;
+            return query;
+        }
+    }
+
+    public class MusicBrainzTrackComparer : IComparer<IRecording>, IEqualityComparer<IRecording>
+    {
+        public int Compare(IRecording x, IRecording y) { return x.Id.CompareTo(y.Id); }
+
+        public bool Equals(IRecording x, IRecording y)
+        {
+            if (x == null || y == null)
+                return false;
+
+            return x.Id == y.Id;
+        }
+
+        public int GetHashCode(IRecording obj) { return obj.Id.GetHashCode(); }
     }
 }
