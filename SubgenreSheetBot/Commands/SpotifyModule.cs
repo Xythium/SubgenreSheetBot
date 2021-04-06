@@ -161,9 +161,6 @@ namespace SubgenreSheetBot.Commands
                 albums.Add(cacheResult.Album);
                 if (albums.Count == 2000)
                     break;
-
-                if (!cacheResult.Cached)
-                    await Task.Delay(100);
             }
 
             /*var playlist =await CreateOrUpdatePlaylist(labelName, albums.OrderByDescending(a => a.ReleaseDate)
@@ -185,7 +182,7 @@ namespace SubgenreSheetBot.Commands
             if (sb.Length > 2000)
             {
                 var writer = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
-                await Context.Channel.SendFileAsync(writer, "pog.txt", $"I found {albums.Count} albums which does not fit in a discord message");
+                await Context.Channel.SendFileAsync(writer, $"{labelName}.txt", $"I found {albums.Count} albums which does not fit in a discord message");
             }
             else
             {
@@ -218,9 +215,6 @@ namespace SubgenreSheetBot.Commands
                     await ReplyAsync("reached 2000 album limit");
                     break;
                 }
-
-                if (!cacheResult.Cached)
-                    await Task.Delay(100);
             }
 
             if (albums.Count < 1)
@@ -244,7 +238,7 @@ namespace SubgenreSheetBot.Commands
             if (sb.Length > 2000)
             {
                 var writer = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
-                await Context.Channel.SendFileAsync(writer, "pog.txt", $"I found {albums.Count} albums which does not fit in a discord message");
+                await Context.Channel.SendFileAsync(writer, $"{labelName}-{year}.txt", $"I found {albums.Count} albums which does not fit in a discord message");
             }
             else
             {
@@ -261,7 +255,7 @@ namespace SubgenreSheetBot.Commands
             var searchedArtists = new HashSet<FullArtist>(new FullArtistComparer());
             var trackArtists = new HashSet<SimpleArtist>(new SimpleArtistComparer());
 
-            await foreach (var artist in api.Paginate(response.Artists, s => s.Artists, new SimplePaginator()))
+            await foreach (var artist in api.Paginate(response.Artists, s => s.Artists, new CachingPaginator()))
             {
                 searchedArtists.Add(artist);
                 if (searchedArtists.Count == 2000)
@@ -271,7 +265,7 @@ namespace SubgenreSheetBot.Commands
             IUserMessage message = null;
             var count = 0;
 
-            await foreach (var track in api.Paginate(response.Tracks, s => s.Tracks))
+            await foreach (var track in api.Paginate(response.Tracks, s => s.Tracks, new CachingPaginator()))
             {
                 var artists = track.Artists.Select(a => a)
                     .ToArray();
@@ -290,7 +284,6 @@ namespace SubgenreSheetBot.Commands
                 if (count % 250 == 0)
                 {
                     message = await UpdateOrSend(message, $"{count} tracks");
-                    await Task.Delay(100);
                 }
             }
 
@@ -316,8 +309,6 @@ namespace SubgenreSheetBot.Commands
                 {
                     sb.AppendLine($"`{artist.Name}` <https://open.spotify.com/artist/{artist.Id}>");
                 }
-
-                await Task.Delay(100);
             }
 
             if (sb.Length > 0)
@@ -368,7 +359,6 @@ namespace SubgenreSheetBot.Commands
                 if (count % 250 == 0)
                 {
                     message = await UpdateOrSend(message, $"{count} tracks");
-                    await Task.Delay(100);
                 }
             }
 

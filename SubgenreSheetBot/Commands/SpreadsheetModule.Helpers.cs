@@ -680,6 +680,17 @@ namespace SubgenreSheetBot.Commands
                 await ReplyAsync(str);
             }
         }
+        
+        private async Task<IUserMessage> UpdateOrSend(IUserMessage message, string str)
+        {
+            if (message == null)
+            {
+                return message = await ReplyAsync(str);
+            }
+
+            await message.ModifyAsync(m => m.Content = str);
+            return message;
+        }
     }
 
     public class Entry
