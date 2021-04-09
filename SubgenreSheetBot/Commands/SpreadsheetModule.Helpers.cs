@@ -60,7 +60,7 @@ namespace SubgenreSheetBot.Commands
                 var now = DateTime.UtcNow;
 
                 entries = new List<Entry>();
-                var values = await BatchRequest("'2020-2024'!A2:N", "'2015-2019'!A2:N", "'2010-2014'!A2:N", "'Upcoming'!A2:N", "'Pre-2010s'!A2:N", "'Genreless'!A2:N");
+                var values = await BatchRequest("'2020-2024'!A2:O", "'2015-2019'!A2:O", "'2010-2014'!A2:O", "'Pre-2010s'!A2:O", "'Genreless'!A2:O");
                 if (values != null)
                     entries.AddRange(values);
 
@@ -680,7 +680,7 @@ namespace SubgenreSheetBot.Commands
                 await ReplyAsync(str);
             }
         }
-        
+
         private async Task<IUserMessage> UpdateOrSend(IUserMessage message, string str)
         {
             if (message == null)
@@ -835,6 +835,7 @@ namespace SubgenreSheetBot.Commands
         private const int L = K + 1;
         private const int M = L + 1;
         private const int N = M + 1;
+        private const int O = N + 1;
 
         public static bool TryParse(IList<object> row, string sheet, out Entry entry)
         {
@@ -849,16 +850,14 @@ namespace SubgenreSheetBot.Commands
             var spotify = GetBoolArgument(row, B, false);
             var soundcloud = GetBoolArgument(row, C, false);
             var beatport = GetBoolArgument(row, D, false);
-            var genre = GetStringArgument(row, E, null);
-            var subgenre = GetStringArgument(row, F, null);
-            var artists = GetStringArgument(row, G, null);
-            var title = GetStringArgument(row, H, null);
-            var label = GetStringArgument(row, I, null);
-            var length = GetTimeArgument(row, J, null);
-            var correctBpm = GetBoolArgument(row, K, false);
+            var genre = GetStringArgument(row, F, null);
+            var subgenre = GetStringArgument(row, G, null);
+            var artists = GetStringArgument(row, H, null);
+            var title = GetStringArgument(row, I, null);
+            var label = GetStringArgument(row, J, null);
+            var length = GetTimeArgument(row, K, null);
             var bpmStr = GetStringArgument(row, L, null);
-            var correctKey = GetBoolArgument(row, M, false);
-            var key = GetStringArgument(row, N, null);
+            var key = GetStringArgument(row, M, null);
 
             entry = new Entry
             {
@@ -878,9 +877,7 @@ namespace SubgenreSheetBot.Commands
                 Label = label,
                 LabelList = SubgenresUtils.SplitSubgenres(label),
                 Length = length,
-                CorrectBpm = correctBpm,
                 Bpm = bpmStr,
-                CorrectKey = correctKey,
                 Key = key
             };
             entry.Info = TrackParser.GetTrackInfo(entry.FormattedArtists, entry.Title, "", "", entry.Date);
@@ -911,7 +908,7 @@ namespace SubgenreSheetBot.Commands
 
             if (!DateTime.TryParseExact(str, SpreadsheetModule.DateFormat, CultureInfo.CurrentCulture, DateTimeStyles.None, out var date))
             {
-                Log.Error($"cannot parse {str}");
+                Log.Error($"cannot parse {str} as Date");
                 return def;
             }
 
@@ -929,7 +926,7 @@ namespace SubgenreSheetBot.Commands
 
             if (!TimeSpan.TryParseExact(str, SpreadsheetModule.TimeFormat, CultureInfo.CurrentCulture, TimeSpanStyles.None, out var time))
             {
-                Log.Error($"cannot parse {str}");
+                Log.Error($"cannot parse {str} as Time");
                 return def;
             }
 
