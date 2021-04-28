@@ -49,27 +49,27 @@ namespace SubgenreSheetBot.Commands
             });
         }
 
-        private static List<Entry> entries = new List<Entry>();
-        private static DateTime? lastTime = null;
+        private static List<Entry> _entries = new List<Entry>();
+        private static DateTime? _lastTime = null;
 
         private async Task RevalidateCache()
         {
-            if (lastTime == null || DateTime.UtcNow.Subtract(lastTime.Value)
+            if (_lastTime == null || DateTime.UtcNow.Subtract(_lastTime.Value)
                 .TotalSeconds > 60)
             {
                 var now = DateTime.UtcNow;
 
-                entries = new List<Entry>();
+                _entries = new List<Entry>();
                 var values = await BatchRequest("'2020-2024'!A2:O", "'2015-2019'!A2:O", "'2010-2014'!A2:O", "'Pre-2010s'!A2:O", "'Genreless'!A2:O");
                 if (values != null)
-                    entries.AddRange(values);
+                    _entries.AddRange(values);
 
-                lastTime = DateTime.UtcNow;
+                _lastTime = DateTime.UtcNow;
                 Log.Information($"Cache revalidation took {DateTime.UtcNow.Subtract(now).TotalMilliseconds}ms");
             }
         }
 
-        private static readonly Dictionary<string, Color> genreColors = new Dictionary<string, Color>
+        private static readonly Dictionary<string, Color> _genreColors = new Dictionary<string, Color>
         {
             {
                 "Hip Hop", new Color(215, 127, 125)
@@ -176,18 +176,18 @@ namespace SubgenreSheetBot.Commands
             "m':'ss" /*, "h:mm:ss"*/
         };
 
-        private static readonly IRatioScorer scorer = new TokenSetScorer();
+        private static readonly IRatioScorer _scorer = new TokenSetScorer();
 
         private static Color GetGenreColor(string genre)
         {
-            if (!genreColors.TryGetValue(genre, out var color))
+            if (!_genreColors.TryGetValue(genre, out var color))
                 color = Color.Default;
             return color;
         }
 
         private static List<Entry> GetAllTracksByArtistExact(string artist)
         {
-            return entries.Where(e => string.Equals(e.OriginalArtists, artist, StringComparison.OrdinalIgnoreCase))
+            return _entries.Where(e => string.Equals(e.OriginalArtists, artist, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(e => e.Date)
                 .ToList();
         }
@@ -204,7 +204,7 @@ namespace SubgenreSheetBot.Commands
         {
             var tracks = new List<Entry>();
 
-            foreach (var entry in entries)
+            foreach (var entry in _entries)
             {
                 // include featured artists
                 if (entry.Info.Features.Any(s => fuzzyFunc(s, artist, PreprocessMode.Full) >= threshold))
@@ -269,19 +269,19 @@ namespace SubgenreSheetBot.Commands
                 .ToList();
         }
 
-        private static List<Entry> GetTracksByTitleFuzzy(string title) { return GetTracksByTitleFuzzy(entries, title); }
+        private static List<Entry> GetTracksByTitleFuzzy(string title) { return GetTracksByTitleFuzzy(_entries, title); }
 
         private static Entry[] GetAllTracksByLabelFuzzy(string label, int threshold = 80)
         {
             var test = GetLabelNameFuzzy(label, threshold);
-            return entries.Where(e => e.LabelList.Any(s => string.Equals(s, test, StringComparison.OrdinalIgnoreCase)))
+            return _entries.Where(e => e.LabelList.Any(s => string.Equals(s, test, StringComparison.OrdinalIgnoreCase)))
                 .OrderByDescending(e => e.Date)
                 .ToArray();
         }
 
         private static string[] GetAllLabelNames()
         {
-            return entries.SelectMany(e => e.LabelList)
+            return _entries.SelectMany(e => e.LabelList)
                 .Distinct()
                 .ToArray();
         }
@@ -302,7 +302,7 @@ namespace SubgenreSheetBot.Commands
 
         private static string[] GetAllSubgenres()
         {
-            return entries.SelectMany(e => e.SubgenresList)
+            return _entries.SelectMany(e => e.SubgenresList)
                 .Distinct()
                 .ToArray();
         }
@@ -613,7 +613,7 @@ namespace SubgenreSheetBot.Commands
             var now = DateTime.UtcNow;
 
             var embed = new EmbedBuilder().WithTitle(string.Join(", ", artists))
-                .WithDescription($"`{search}` matches the artists {string.Join(", ", artists)}. The first latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and the first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**")
+                .WithDescription($"`{search}` matches the artists {string.Join(", ", artists)}. The latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and the first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**")
                 .AddField("Tracks", BuildTrackList(search, artists, tracks, includeArtist: false)
                     .ToString());
 
@@ -636,7 +636,7 @@ namespace SubgenreSheetBot.Commands
 
             foreach (var range in valueRanges)
             {
-                Log.Verbose($"{range.Range} | {range.ETag} | {range.MajorDimension}");
+                //Log.Verbose($"{range.Range} | {range.ETag} | {range.MajorDimension}");
                 if (range.Values == null)
                     continue;
                 if (range.Values.Count == 0)
