@@ -189,8 +189,8 @@ namespace SubgenreSheetBot.Commands
         {
             await RevalidateCache();
 
-            var artists = Process.ExtractTop(artist, entries.SelectMany(e => e.ActualArtists)
-                    .Distinct(), scorer: scorer, cutoff: 80)
+            var artists = Process.ExtractTop(artist, _entries.SelectMany(e => e.ActualArtists)
+                    .Distinct(), scorer: _scorer, cutoff: 80)
                 .OrderByDescending(a => a.Score)
                 .ThenBy(a => a.Value)
                 .Select(a => a.Value)
@@ -214,11 +214,11 @@ namespace SubgenreSheetBot.Commands
         {
             await RevalidateCache();
 
-            var artists = Process.ExtractTop(artist, entries.SelectMany(e => e.ActualArtists)
-                    .Distinct(), scorer: scorer, cutoff: 80)
+            var artists = Process.ExtractTop(artist, _entries.SelectMany(e => e.ActualArtists)
+                    .Distinct(), scorer: _scorer, cutoff: 80)
                 .ToArray();
 
-            var sb = new StringBuilder($"{artists.Length} most similar artists (using {scorer.GetType().Name})\r\n");
+            var sb = new StringBuilder($"{artists.Length} most similar artists (using {_scorer.GetType().Name})\r\n");
 
             for (var i = 0; i < artists.Length; i++)
             {
@@ -236,7 +236,7 @@ namespace SubgenreSheetBot.Commands
         {
             await RevalidateCache();
 
-            var genres = entries.Select(e => e.Genre)
+            var genres = _entries.Select(e => e.Genre)
                 .Distinct()
                 .ToArray();
             var test = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
@@ -247,7 +247,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            var tracks = entries.Where(e => e.Sheet != "Genreless" && string.Equals(e.Genre, test, StringComparison.OrdinalIgnoreCase))
+            var tracks = _entries.Where(e => e.Sheet != "Genreless" && string.Equals(e.Genre, test, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(e => e.Date)
                 .ToList();
 
@@ -270,7 +270,7 @@ namespace SubgenreSheetBot.Commands
         {
             await RevalidateCache();
 
-            var genres = entries.Select(e => e.Genre)
+            var genres = _entries.Select(e => e.Genre)
                 .Distinct()
                 .ToArray();
             var search = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
@@ -281,7 +281,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            var tracks = entries.Where(e => string.Equals(e.Genre, search, StringComparison.OrdinalIgnoreCase))
+            var tracks = _entries.Where(e => string.Equals(e.Genre, search, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(e => e.Date)
                 .ToArray();
 
@@ -324,7 +324,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            var tracks = entries.Where(e => e.SubgenresList.Contains(test, StringComparer.OrdinalIgnoreCase))
+            var tracks = _entries.Where(e => e.SubgenresList.Contains(test, StringComparer.OrdinalIgnoreCase))
                 .OrderByDescending(e => e.Date)
                 .ToList();
 
@@ -347,7 +347,7 @@ namespace SubgenreSheetBot.Commands
         {
             await RevalidateCache();
 
-            var genres = entries.Select(e => e.Subgenres)
+            var genres = _entries.Select(e => e.Subgenres)
                 .Distinct()
                 .ToArray();
             var test = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
@@ -358,7 +358,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            var tracks = entries.Where(e => string.Equals(e.Subgenres, test, StringComparison.OrdinalIgnoreCase))
+            var tracks = _entries.Where(e => string.Equals(e.Subgenres, test, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(e => e.Date)
                 .ToList();
 
@@ -379,10 +379,10 @@ namespace SubgenreSheetBot.Commands
         {
             await RevalidateCache();
 
-            var labels = entries.SelectMany(e => e.LabelList)
+            var labels = _entries.SelectMany(e => e.LabelList)
                 .GroupBy(l => l, e => e, (label, ls) =>
                 {
-                    var tracks = entries.Where(e => e.LabelList.Contains(label))
+                    var tracks = _entries.Where(e => e.LabelList.Contains(label))
                         .ToArray();
                     return new
                     {
@@ -496,7 +496,7 @@ namespace SubgenreSheetBot.Commands
         {
             await RevalidateCache();
 
-            var subgenres = entries.Where(e => e.SubgenresList.Length > 1)
+            var subgenres = _entries.Where(e => e.SubgenresList.Length > 1)
                 .GroupBy(e => e.Subgenres, e => e, (s, e) =>
                 {
                     var enumerable = e.ToList();
@@ -521,8 +521,8 @@ namespace SubgenreSheetBot.Commands
             await ReplyAsync(sb.ToString());
         }
 
-        static SortedSet<IRecording> tracks = new SortedSet<IRecording>(new MusicBrainzTrackComparer());
-        static SortedSet<string> addedLabels = new SortedSet<string>();
+        static SortedSet<IRecording> _recordings = new SortedSet<IRecording>(new MusicBrainzTrackComparer());
+        static SortedSet<string> _addedLabels = new SortedSet<string>();
 
         [Command("mbsubmit")]
         public async Task MusicBrainzSubmit()
@@ -543,7 +543,7 @@ namespace SubgenreSheetBot.Commands
 
             foreach (var l in labels)
             {
-                if (addedLabels.Contains(l))
+                if (_addedLabels.Contains(l))
                     continue;
 
                 var label = (await GetQuery()
@@ -572,19 +572,19 @@ namespace SubgenreSheetBot.Commands
                         foreach (var track in medium.Tracks)
                         {
                             if (track.Recording != null)
-                                tracks.Add(track.Recording);
+                                _recordings.Add(track.Recording);
                         }
                     }
                 }
 
-                addedLabels.Add(l);
+                _addedLabels.Add(l);
             }
 
-            await ReplyAsync($"{tracks.Count} tracks");
+            await ReplyAsync($"{_recordings.Count} tracks");
 
             var notFound = new List<Entry>();
 
-            foreach (var entry in entries)
+            foreach (var entry in _entries)
             {
                 if (entry.SubgenresList.SequenceEqual(new[]
                 {
@@ -595,7 +595,7 @@ namespace SubgenreSheetBot.Commands
                 var tags = GetQuery()
                     .SubmitTags(CLIENT_ID);
 
-                var recordings = tracks.Where(t => string.Equals(t.Title, entry.Title, StringComparison.OrdinalIgnoreCase) && string.Equals(t.ArtistCredit?.First()
+                var recordings = _recordings.Where(t => string.Equals(t.Title, entry.Title, StringComparison.OrdinalIgnoreCase) && string.Equals(t.ArtistCredit?.First()
                         ?.Name, entry.ArtistsList.First(), StringComparison.OrdinalIgnoreCase))
                     .Distinct(new MusicBrainzTrackComparer())
                     .ToArray();

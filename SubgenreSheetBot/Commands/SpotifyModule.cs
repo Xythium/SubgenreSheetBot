@@ -190,6 +190,46 @@ namespace SubgenreSheetBot.Commands
             }
         }
 
+        [Command("artist"), Alias("a"), Summary("Get all releases from an artist")]
+        public async Task Artist(
+            [Remainder, Summary("Artist to search for")]
+            string artistName)
+        {
+            artistName = artistName.Replace("\"", "");
+
+            var paging = await api.Artists.GetAlbums(artistName);
+
+            var albums = await api.PaginateAll(paging);
+
+            var sb = new StringBuilder();
+
+            /*var playlist =await CreateOrUpdatePlaylist(labelName, albums.OrderByDescending(a => a.ReleaseDate)
+                .ToArray());*/
+
+            foreach (var album in albums.OrderBy(a => a.Name).ThenByDescending(a => a.ReleaseDate).ThenBy(a => string.Join(" & ", a.Artists.Select(_ => _.Name))))
+            {
+                var line = $"{string.Join(" & ", album.Artists.Select(a => $"{a.Name}{(a.Type != "artist" ? $" ({a.Type})" : "")}"))} - {album.Name} ({album.ReleaseDate}) https://open.spotify.com/album/{album.Id}";
+                sb.AppendLine(line);
+            }
+
+            if (sb.Length < 1)
+            {
+                await ReplyAsync("pissed my pant");
+                return;
+            }
+
+            //  await ReplyAsync($"{playlist.Uri}");
+            if (sb.Length > 2000)
+            {
+                var writer = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
+                await Context.Channel.SendFileAsync(writer, $"{artistName}.txt", $"I found {albums.Count} albums which does not fit in a discord message");
+            }
+            else
+            {
+                await ReplyAsync(sb.ToString());
+            }
+        }
+
         [Command("label"), Alias("l"), Summary("Get all releases from a label from a certain year")]
         public async Task Label(
             [Summary("Year to find releases for")] int year, [Remainder, Summary("Label name to search for")]
