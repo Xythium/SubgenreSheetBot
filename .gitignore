@@ -458,3 +458,5 @@ MigrationBackup/
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,jetbrains+all,dotnetcore
 
 nuget.config
+
+NotificationBot/
