@@ -69,7 +69,7 @@ namespace BeatportApi
         [JsonProperty("is_hype"), JsonRequired]
         public bool IsHype { get; set; }
 
-        [JsonProperty("isrc"), JsonRequired]
+        [JsonProperty("isrc")] // optional
         public string Isrc { get; set; }
 
         [JsonProperty("key"), JsonRequired]
