@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BeatportApi;
+using Common;
+using Common.Beatport;
 using Discord;
 using Discord.Commands;
 using Raven.Client;
@@ -17,16 +19,17 @@ namespace SubgenreSheetBot.Commands
         [Command("tracks"), Alias("t"), Summary("Get all tracks from an album")]
         public async Task Tracks(
             [Remainder, Summary("Album ID to search for")]
-            string albumId)
+            string text)
         {
-            albumId = await GetIdFromUrl(albumId);
+            var idResult = BeatportUtils.GetIdFromUrl(text);
 
-            if (string.IsNullOrWhiteSpace(albumId))
+            if (!string.IsNullOrWhiteSpace(idResult.Error))
             {
+                //todo: send error
                 return;
             }
 
-            var album = await GetAlbumOrCache(albumId);
+            var album = await GetAlbum(idResult.Id);
             var albumArtists = album.Artists;
 
             if (albumArtists.Count == 0)
@@ -40,7 +43,7 @@ namespace SubgenreSheetBot.Commands
                     .Replace("{h}", "1400"));
             var sb = new StringBuilder();
 
-            var tracks = await GetTracksOrCache(album.TrackUrls);
+            var tracks = await GetTracks(album);
 
             if (!tracks.Any())
             {
@@ -60,16 +63,17 @@ namespace SubgenreSheetBot.Commands
         [Command("album"), Alias("a", "release"), Summary("Get all tracks from an album")]
         public async Task Album(
             [Remainder, Summary("Album ID to search for")]
-            string albumId)
+            string text)
         {
-            albumId = await GetIdFromUrl(albumId);
+            var idResult = BeatportUtils.GetIdFromUrl(text);
 
-            if (string.IsNullOrWhiteSpace(albumId))
+            if (!string.IsNullOrWhiteSpace(idResult.Error))
             {
+                //todo: send error
                 return;
             }
 
-            var album = await GetAlbumOrCache(albumId);
+            var album = await GetAlbum(idResult.Id);
             var albumArtists = album.Artists;
 
             if (albumArtists.Count == 0)
@@ -78,7 +82,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            var tracks = await GetTracksOrCache(album.TrackUrls);
+            var tracks = await GetTracks(album);
 
             if (tracks.Length < 1)
             {
