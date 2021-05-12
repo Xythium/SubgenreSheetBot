@@ -206,7 +206,9 @@ namespace SubgenreSheetBot.Commands
             /*var playlist =await CreateOrUpdatePlaylist(labelName, albums.OrderByDescending(a => a.ReleaseDate)
                 .ToArray());*/
 
-            foreach (var album in albums.OrderBy(a => a.Name).ThenByDescending(a => a.ReleaseDate).ThenBy(a => string.Join(" & ", a.Artists.Select(_ => _.Name))))
+            foreach (var album in albums.OrderBy(a => a.Name)
+                .ThenByDescending(a => a.ReleaseDate)
+                .ThenBy(a => string.Join(" & ", a.Artists.Select(_ => _.Name))))
             {
                 var line = $"{string.Join(" & ", album.Artists.Select(a => $"{a.Name}{(a.Type != "artist" ? $" ({a.Type})" : "")}"))} - {album.Name} ({album.ReleaseDate}) https://open.spotify.com/album/{album.Id}";
                 sb.AppendLine(line);
@@ -336,7 +338,7 @@ namespace SubgenreSheetBot.Commands
                 await message.ModifyAsync(m => m.Content = $"Checking {searchedArtists.Count} artists & {trackArtists.Count} artists from every track");
             }
 
-            var notFound = searchedArtists.Where(searchedArtist => trackArtists.FirstOrDefault(trackArtist => string.Equals(trackArtist.Name, searchedArtist.Name, StringComparison.OrdinalIgnoreCase)) == null)
+            var notFound = searchedArtists.Where(searchedArtist => trackArtists.FirstOrDefault(trackArtist => trackArtist.Id == searchedArtist.Id) == null)
                 .ToArray();
 
             var sb = new StringBuilder();
@@ -345,7 +347,12 @@ namespace SubgenreSheetBot.Commands
             {
                 response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"label:\"{labelName}\" \"{artist.Name}\""));
 
-                if (response.Tracks.Items.Count < 1)
+                if (response.Tracks.Items == null)
+                {
+                    throw new Exception($"null items {artist.Name}");
+                }
+
+                if (!response.Tracks.Items.Any(track => track.Artists.Any(trackArtist => trackArtist.Id == artist.Id)))
                 {
                     sb.AppendLine($"`{artist.Name}` <https://open.spotify.com/artist/{artist.Id}>");
                 }
@@ -370,7 +377,7 @@ namespace SubgenreSheetBot.Commands
             var searchedArtists = new HashSet<FullArtist>(new FullArtistComparer());
             var trackArtists = new HashSet<SimpleArtist>(new SimpleArtistComparer());
 
-            await foreach (var artist in api.Paginate(response.Artists, s => s.Artists, new SimplePaginator()))
+            await foreach (var artist in api.Paginate(response.Artists, s => s.Artists, new CachingPaginator()))
             {
                 searchedArtists.Add(artist);
                 if (searchedArtists.Count == 2000)
