@@ -15,7 +15,7 @@ namespace BeatportApi
         [JsonProperty("available_worldwide"), JsonRequired]
         public bool IsAvailableWorldwide { get; set; }
 
-        [JsonProperty("bpm"), JsonRequired]
+        [JsonProperty("bpm")] // optional
         public int? Bpm { get; set; }
 
         [JsonProperty("catalog_number"), JsonRequired]
@@ -57,7 +57,7 @@ namespace BeatportApi
         [JsonProperty("id"), JsonRequired]
         public int Id { get; set; }
 
-        [JsonProperty("image"), JsonRequired]
+        [JsonProperty("image")]
         public BeatportImage Image { get; set; }
 
         [JsonProperty("is_available_for_streaming"), JsonRequired]
@@ -75,7 +75,7 @@ namespace BeatportApi
         [JsonProperty("key"), JsonRequired]
         public BeatportKeySummary Key { get; set; }
 
-        [JsonProperty("label_track_identifier"), JsonRequired]
+        [JsonProperty("label_track_identifier")]
         public string LabelTrackIdentifier { get; set; }
 
         [JsonProperty("length")]
