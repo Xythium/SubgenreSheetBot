@@ -4,7 +4,7 @@
         <OutputType>Exe</OutputType>
         <TargetFramework>netcoreapp3.1</TargetFramework>
         <LangVersion>8</LangVersion>
-        <AssemblyVersion>1.16.8</AssemblyVersion>
+        <AssemblyVersion>1.16.9</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>
