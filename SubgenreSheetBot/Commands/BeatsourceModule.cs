@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BeatportApi;
 using BeatportApi.Beatport;
+using BeatportApi.Beatsource;
 using Common;
 using Common.Beatport;
 using Discord;
@@ -14,8 +15,8 @@ using Raven.Client;
 
 namespace SubgenreSheetBot.Commands
 {
-    [Group("Beatport"), Alias("b", "bp")]
-    public partial class BeatportModule : ModuleBase
+    [Group("Beatsource"), Alias("bs")]
+    public partial class BeatsourceModule : ModuleBase
     {
         [Command("tracks"), Alias("t"), Summary("Get all tracks from an album")]
         public async Task Tracks(
@@ -26,7 +27,7 @@ namespace SubgenreSheetBot.Commands
 
             if (!string.IsNullOrWhiteSpace(idResult.Error))
             {
-                //todo: send error
+                await ReplyAsync($"{idResult.Error}");
                 return;
             }
 
@@ -166,7 +167,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            using var session = SubgenreSheetBot.BeatportStore.OpenSession();
+            using var session = SubgenreSheetBot.BeatsourceStore.OpenSession();
             var results = session.Query<BeatportTrack>("TrackIsrc")
                 .Search(t => t.Isrc, isrc)
                 //.Where(t => t.Isrc == isrc)
@@ -187,7 +188,7 @@ namespace SubgenreSheetBot.Commands
             //2009-09-22	House	Tech House | Progressive House	deadmau5	Lack of a Better Name	mau5trap	8:15	FALSE	128	FALSE	F min
             foreach (var track in results)
             {
-                var line = $"{track.ArtistConcat} - {track.Name} <https://www.beatport.com/track/{track.Slug}/{track.Id}>";
+                var line = $"{track.ArtistConcat} - {track.Name} <https://www.beatsource.com/track/{track.Slug}/{track.Id}>";
 
                 if (track.Subgenre != null)
                 {
@@ -237,9 +238,9 @@ namespace SubgenreSheetBot.Commands
             [Remainder, Summary("Label name to search for")]
             string labelName)
         {
-            using var session = SubgenreSheetBot.BeatportStore.OpenSession();
+            using var session = SubgenreSheetBot.BeatsourceStore.OpenSession();
 
-            var albums = session.Query<BeatportRelease>("ReleaseByLabel")
+            var albums = session.Query<BeatsourceRelease>("ReleaseByLabel")
                 .Search(r => r.Label.Name, labelName)
                 .ToList();
             var sb = new StringBuilder();

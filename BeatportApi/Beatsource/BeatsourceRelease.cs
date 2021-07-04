@@ -1,20 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 
-namespace BeatportApi
+namespace BeatportApi.Beatsource
 {
-    public class BeatportRelease
+    public class BeatsourceRelease : BeatsourceReleaseSummary
     {
         [JsonProperty("artists"), JsonRequired]
-        public List<BeatportArtistSummary> Artists { get; set; }
+        public List<BeatsourceArtistSummary> Artists { get; set; }
 
         public string ArtistConcat => string.Join(" x ", Artists.Select(a => a.Name));
 
         [JsonProperty("bpm_range"), JsonRequired]
-        public BeatportBpmRange BpmRange { get; set; }
+        public BeatsourceBpmRange BpmRange { get; set; }
 
         [JsonProperty("catalog_number"), JsonRequired]
         public string CatalogNumber { get; set; }
@@ -35,19 +34,19 @@ namespace BeatportApi
         public string Grid { get; set; }
 
         [JsonProperty("id"), JsonRequired]
-        public int Id { get; set; }
+        public new int Id { get; set; }
 
         [JsonProperty("image"), JsonRequired]
-        public BeatportImage Image { get; set; }
+        public new BeatsourceImage Image { get; set; }
 
-        [JsonProperty("is_hype"), JsonRequired]
-        public bool IsHype { get; set; }
+        [JsonProperty("is_available_for_streaming"), JsonRequired]
+        public bool IsAvailableForStreaming { get; set; }
 
         [JsonProperty("label"), JsonRequired]
-        public BeatportLabelSummary Label { get; set; }
+        public new BeatsourceLabelSummary Label { get; set; }
 
         [JsonProperty("name"), JsonRequired]
-        public string Name { get; set; }
+        public new string Name { get; set; }
 
         [JsonProperty("new_release_date"), JsonRequired]
         public DateTime NewReleaseDate { get; set; }
@@ -62,7 +61,7 @@ namespace BeatportApi
         public DateTime? PreorderDate { get; set; }
 
         [JsonProperty("price"), JsonRequired]
-        public BeatportPrice Price { get; set; }
+        public BeatsourcePrice Price { get; set; }
 
         [JsonProperty("price_override_firm"), JsonRequired]
         public bool IsPriceOverriden { get; set; }
@@ -71,19 +70,21 @@ namespace BeatportApi
         public DateTime PublishDate { get; set; }
 
         [JsonProperty("remixers"), JsonRequired]
-        public List<BeatportArtistSummary> Remixers { get; set; }
+        public List<BeatsourceArtistSummary> Remixers { get; set; }
 
         [JsonProperty("slug"), JsonRequired]
-        public string Slug { get; set; }
+        public new string Slug { get; set; }
+        
+        [JsonProperty("tracks")] // missing when lite request
+        public string[] TrackUrls { get; set; }
 
         [JsonProperty("track_count"), JsonRequired]
         public int TrackCount { get; set; }
 
-        [JsonProperty("tracks")] // missing when lite request
-        public string[] TrackUrls { get; set; }
+     
 
         [JsonProperty("type")] // optional
-        public BeatportReleaseType Type { get; set; }
+        public BeatsourceReleaseType Type { get; set; }
 
         [JsonProperty("upc")] // can be null :(
         public string Upc { get; set; }

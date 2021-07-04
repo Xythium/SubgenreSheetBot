@@ -1,19 +1,19 @@
 ﻿using Newtonsoft.Json;
 
-namespace BeatportApi
+namespace BeatportApi.Beatsource
 {
-    public class BeatportSubgenreSummary
+    public class BeatsourceLabelSummary
     {
         [JsonProperty("id"), JsonRequired]
         public int Id { get; set; }
+
+        [JsonProperty("image"), JsonRequired]
+        public BeatsourceImage Image { get; set; }
 
         [JsonProperty("name"), JsonRequired]
         public string Name { get; set; }
 
         [JsonProperty("slug"), JsonRequired]
         public string Slug { get; set; }
-
-        [JsonProperty("url"), JsonRequired]
-        public string Url { get; set; }
     }
 }

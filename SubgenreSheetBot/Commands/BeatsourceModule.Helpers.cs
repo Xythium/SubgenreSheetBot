@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using BeatportApi;
-using BeatportApi.Beatport;
+using BeatportApi.Beatsource;
 using Common;
 using Common.Beatport;
 using Discord;
@@ -18,13 +18,13 @@ using SpotifyAPI.Web.Http;
 
 namespace SubgenreSheetBot.Commands
 {
-    public partial class BeatportModule
+    public partial class BeatsourceModule
     {
-        private static Beatport api;
+        private static Beatsource api;
 
-        public BeatportModule() { api ??= new Beatport(File.ReadAllText("beatport_token")); }
+        public BeatsourceModule() { api ??= new Beatsource(File.ReadAllText("beatsource_token")); }
 
-        private static string FormatTrack(BeatportTrack track, bool includeArtist = false)
+        private static string FormatTrack(BeatsourceTrack track, bool includeArtist = false)
         {
             var featureList = new List<string>
             {
@@ -68,15 +68,15 @@ namespace SubgenreSheetBot.Commands
             return sb.ToString();
         }
 
-        private static Task<BeatportRelease> GetAlbum(int albumId)
+        private static Task<BeatsourceRelease> GetAlbum(int albumId)
         {
-            using var session = SubgenreSheetBot.BeatportStore.OpenSession();
+            using var session = SubgenreSheetBot.BeatsourceStore.OpenSession();
             return BeatportDbUtils.GetAlbumOrCache(api, session, albumId);
         }
 
-        private static Task<BeatportTrack[]> GetTracks(BeatportRelease album)
+        private static Task<BeatsourceTrack[]> GetTracks(BeatsourceRelease album)
         {
-            using var session = SubgenreSheetBot.BeatportStore.OpenSession();
+            using var session = SubgenreSheetBot.BeatsourceStore.OpenSession();
             return album.GetTracksOrCache(api, session);
         }
     }

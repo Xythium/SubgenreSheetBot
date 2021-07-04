@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 
-namespace BeatportApi
+namespace BeatportApi.Beatsource
 {
-    public class BeatportPrice
+    public class BeatsourcePrice
     {
         [JsonProperty("code"), JsonRequired]
         public string Code { get; set; }
