@@ -156,7 +156,7 @@ namespace SubgenreSheetBot.Commands
             var featureList = new List<string>
             {
                 TimeSpan.FromMilliseconds(track.DurationMs)
-                    .ToString("m':'ss")
+                    .ToString("g")
             };
 
             if (features != null)
@@ -236,125 +236,10 @@ namespace SubgenreSheetBot.Commands
         }
     }
 
-    public class CachingPaginator : IPaginator
-    {
-        public Task<IList<T>> PaginateAll<T>(IPaginatable<T> firstPage, IAPIConnector connector) { throw new NotImplementedException(); }
-
-        public Task<IList<T>> PaginateAll<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector) { throw new NotImplementedException(); }
-
-        public async IAsyncEnumerable<T> Paginate<T>(IPaginatable<T> firstPage, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new CancellationToken())
-        {
-            if (firstPage == null)
-                throw new ArgumentNullException(nameof(firstPage));
-            if (connector == null)
-                throw new ArgumentNullException(nameof(connector));
-
-            var page = firstPage;
-
-            foreach (var item in page.Items)
-            {
-                yield return item;
-            }
-
-            while (!string.IsNullOrWhiteSpace(page.Next))
-            {
-                page = await connector.Get<Paging<T>>(new Uri(page.Next, UriKind.Absolute))
-                    .ConfigureAwait(false);
-
-                foreach (var item in page.Items!)
-                {
-                    yield return item;
-                }
-            }
-        }
-
-        public async IAsyncEnumerable<T> Paginate<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new CancellationToken())
-        {
-            if (firstPage == null)
-                throw new ArgumentNullException(nameof(firstPage));
-            if (mapper == null)
-                throw new ArgumentNullException(nameof(mapper));
-            if (connector == null)
-                throw new ArgumentNullException(nameof(connector));
-
-            var page = firstPage;
-
-            foreach (var item in page.Items)
-            {
-                yield return item;
-            }
-
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            while (!string.IsNullOrWhiteSpace(page.Next))
-            {
-                try
-                {
-                    var next = await connector.Get<TNext>(new Uri(page.Next, UriKind.Absolute))
-                        .ConfigureAwait(false);
-
-                    page = mapper(next);
-                }
-                catch (Exception ex)
-                {
-                   Log.Fatal(ex, "Error ");
-                    yield break;
-                }
-
-                foreach (var item in page.Items!)
-                {
-                    yield return item;
-                }
-            }
-        }
-    }
-
     internal class AlbumCacheResult
     {
         public FullAlbum Album { get; set; }
 
         public bool Cached { get; set; }
-    }
-
-    public class FullArtistComparer : IEqualityComparer<FullArtist>
-    {
-        public bool Equals(FullArtist x, FullArtist y)
-        {
-            if (x == null || y == null)
-                return false;
-
-            return string.Equals(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
-        }
-
-        public int GetHashCode(FullArtist obj) { return obj.Id.GetHashCode(); }
-    }
-
-    public class SimpleArtistComparer : IEqualityComparer<SimpleArtist>
-    {
-        public bool Equals(SimpleArtist x, SimpleArtist y)
-        {
-            if (x == null || y == null)
-                return false;
-
-            return string.Equals(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
-        }
-
-        public int GetHashCode(SimpleArtist obj)
-        {
-            return obj.Name.ToLower()
-                .GetHashCode();
-        }
-    }
-
-    public class FullAlbumComparer : IEqualityComparer<FullAlbum>
-    {
-        public bool Equals(FullAlbum x, FullAlbum y)
-        {
-            if (x == null || y == null)
-                return false;
-
-            return x.Id == y.Id;
-        }
-
-        public int GetHashCode(FullAlbum obj) { return obj.Id.GetHashCode(); }
     }
 }
