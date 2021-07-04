@@ -71,7 +71,7 @@ namespace SubgenreSheetBot.Commands
 
             if (!string.IsNullOrWhiteSpace(idResult.Error))
             {
-                //todo: send error
+                await ReplyAsync($"{idResult.Error}");
                 return;
             }
 
