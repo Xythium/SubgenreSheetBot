@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Common.Spotify;
 using Discord;
 using Discord.Commands;
 using SpotifyAPI.Web;
@@ -292,70 +293,13 @@ namespace SubgenreSheetBot.Commands
         public async Task Peep([Remainder] string labelName)
         {
             labelName = labelName.Replace("\"", "");
-            var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Artist | SearchRequest.Types.Track, $"label:\"{labelName}\""));
-
-            var searchedArtists = new HashSet<FullArtist>(new FullArtistComparer());
-            var trackArtists = new HashSet<SimpleArtist>(new SimpleArtistComparer());
-
-            await foreach (var artist in api.Paginate(response.Artists, s => s.Artists, new CachingPaginator()))
-            {
-                searchedArtists.Add(artist);
-                if (searchedArtists.Count == 2000)
-                    break;
-            }
-
-            IUserMessage message = null;
-            var count = 0;
-
-            await foreach (var track in api.Paginate(response.Tracks, s => s.Tracks, new CachingPaginator()))
-            {
-                var artists = track.Artists.Select(a => a)
-                    .ToArray();
-
-                foreach (var artist in artists)
-                {
-                    trackArtists.Add(artist);
-                }
-
-                if (++count == 2000)
-                {
-                    await ReplyAsync("too many tracks");
-                    break;
-                }
-
-                if (count % 250 == 0)
-                {
-                    message = await UpdateOrSend(message, $"{count} tracks");
-                }
-            }
-
-            if (message == null)
-            {
-                await ReplyAsync($"Checking {searchedArtists.Count} artists & {trackArtists.Count} artists from every track");
-            }
-            else
-            {
-                await message.ModifyAsync(m => m.Content = $"Checking {searchedArtists.Count} artists & {trackArtists.Count} artists from every track");
-            }
-
-            var notFound = searchedArtists.Where(searchedArtist => trackArtists.FirstOrDefault(trackArtist => trackArtist.Id == searchedArtist.Id) == null)
-                .ToArray();
+            var notFound = await SpotifyUtils.Peep(api, labelName);
 
             var sb = new StringBuilder();
 
             foreach (var artist in notFound)
             {
-                response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"label:\"{labelName}\" \"{artist.Name}\""));
-
-                if (response.Tracks.Items == null)
-                {
-                    throw new Exception($"null items {artist.Name}");
-                }
-
-                if (!response.Tracks.Items.Any(track => track.Artists.Any(trackArtist => trackArtist.Id == artist.Id)))
-                {
-                    sb.AppendLine($"`{artist.Name}` <https://open.spotify.com/artist/{artist.Id}>");
-                }
+                sb.AppendLine($"`{artist.Name}` <https://open.spotify.com/artist/{artist.Id}>");
             }
 
             if (sb.Length > 0)
