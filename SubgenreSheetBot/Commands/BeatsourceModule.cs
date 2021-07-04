@@ -40,7 +40,7 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            var embed = new EmbedBuilder().WithTitle($"{string.Join(" & ", albumArtists.Select(a => a.Name))} - {album.Name}")
+            var embed = new EmbedBuilder().WithTitle($"{album.ArtistConcat} - {album.Name}")
                 .WithThumbnailUrl(album.Image.DynamicUri.Replace("{w}", "1400")
                     .Replace("{h}", "1400"));
             var sb = new StringBuilder();
@@ -55,7 +55,7 @@ namespace SubgenreSheetBot.Commands
             //2009-09-22	House	Tech House | Progressive House	deadmau5	Lack of a Better Name	mau5trap	8:15	FALSE	128	FALSE	F min
             foreach (var track in tracks)
             {
-                sb.AppendLine($"`{album.NewReleaseDate},?,?,{string.Join(" & ", track.Artists.Select(a => a.Name))},{track.Name},{album.Label.Name},{TimeSpan.FromMilliseconds(track.LengthMs):m':'ss}`");
+                sb.AppendLine($"`{album.NewReleaseDate},?,?,{track.ArtistConcat},{track.Name},{album.Label.Name},{TimeSpan.FromMilliseconds(track.LengthMs):m':'ss}`");
             }
 
             await ReplyAsync(embed: embed.Build());
