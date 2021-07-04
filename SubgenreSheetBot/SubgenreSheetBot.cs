@@ -7,6 +7,7 @@ namespace SubgenreSheetBot
     public class SubgenreSheetBot : Bot
     {
         public static readonly DataStore BeatportStore = new DataStore("beatport");
+        public static readonly DataStore BeatsourceStore = new DataStore("beatsource");
 
         public SubgenreSheetBot(string token) : base(token) { }
 

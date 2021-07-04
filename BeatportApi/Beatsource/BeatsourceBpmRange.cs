@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 
-namespace BeatportApi
+namespace BeatportApi.Beatsource
 {
-    public class BeatportBpmRange
+    public class BeatsourceBpmRange
     {
         [JsonProperty("min")]
         public int? Min { get; set; }

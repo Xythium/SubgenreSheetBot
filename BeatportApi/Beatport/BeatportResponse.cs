@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace BeatportApi
+namespace BeatportApi.Beatport
 {
     public class BeatportResponse<T>
     {
