@@ -7,7 +7,7 @@ namespace BeatportApi.Beatsource
         [JsonProperty("id"), JsonRequired]
         public int Id { get; set; }
 
-        [JsonProperty("image"), JsonRequired]
+        [JsonProperty("image")] // optional
         public BeatsourceImage Image { get; set; }
 
         [JsonProperty("name"), JsonRequired]

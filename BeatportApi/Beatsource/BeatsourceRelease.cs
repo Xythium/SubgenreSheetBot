@@ -39,7 +39,7 @@ namespace BeatportApi.Beatsource
         [JsonProperty("image"), JsonRequired]
         public new BeatsourceImage Image { get; set; }
 
-        [JsonProperty("is_available_for_streaming"), JsonRequired]
+        [JsonProperty("is_available_for_streaming")] // optional
         public bool IsAvailableForStreaming { get; set; }
 
         [JsonProperty("label"), JsonRequired]
