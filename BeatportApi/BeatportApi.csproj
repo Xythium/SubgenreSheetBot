@@ -75,6 +75,7 @@
         <Compile Include="Beatsource\BeatsourceImage.cs" />
         <Compile Include="Beatsource\BeatsourceKeySummary.cs" />
         <Compile Include="Beatsource\BeatsourceLabelSummary.cs" />
+        <Compile Include="Beatsource\BeatsourceLogin.cs" />
         <Compile Include="Beatsource\BeatsourcePrice.cs" />
         <Compile Include="Beatsource\BeatsourceRelease.cs" />
         <Compile Include="Beatsource\BeatsourceReleaseSummary.cs" />

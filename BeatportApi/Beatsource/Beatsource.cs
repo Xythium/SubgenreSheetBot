@@ -9,14 +9,52 @@ namespace BeatportApi.Beatsource
     public class Beatsource
     {
         private string _bearerToken;
-        private RestClient client;
+        private readonly RestClient client;
 
-        public Beatsource(string bearerToken)
+        public Beatsource()
         {
-            _bearerToken = bearerToken;
             client = new RestClient();
             client.AddDefaultHeader("origin", "www.beatsource.com");
+            //client.AddDefaultHeader("authorization", $"Bearer {_bearerToken}");
+        }
+
+        public async Task<BeatsourceLogin> Login(string username, string password)
+        {
+            var request = new RestRequest("https://www.beatsource.com/api/auth/login", Method.POST);
+            request.AddJsonBody(new
+            {
+                data = new
+                {
+                    username,
+                    password
+                }
+            });
+            var response = await client.ExecuteAsync(request);
+            
+            if (response.Content == "{\"message\": \"Internal server error\"}")
+            {
+                throw new InvalidDataException("Internal server error in GetReleasesByLabelId");
+            }
+            
+            BeatsourceLogin result = null;
+
+            try
+            {
+                result = JsonConvert.DeserializeObject<BeatsourceLogin>(response.Content);
+            }
+            catch (Exception ex)
+            {
+                File.WriteAllText($"error.login.txt", response.Content);
+                throw new Exception($"oofie owwie Login: {ex.Message}");
+            }
+
+            if (result.TokenType != "Bearer")
+                throw new InvalidDataException("unknown token type");
+
+            _bearerToken = result.AccessToken;
             client.AddDefaultHeader("authorization", $"Bearer {_bearerToken}");
+
+            return result;
         }
 
         public Task<BeatsourceResponse<BeatsourceRelease>> GetReleasesByLabelId(int labelId, int itemsPerPage = 200, int page = 1) { return GetReleasesByLabelId(labelId.ToString(), itemsPerPage, page); }
@@ -41,7 +79,7 @@ namespace BeatportApi.Beatsource
             catch (Exception ex)
             {
                 File.WriteAllText($"error.{labelId}.txt", response.Content);
-                throw new Exception($"oofie owwie: {ex.Message}");
+                throw new Exception($"oofie owwie GetReleasesByLabelId: {ex.Message}");
             }
 
             return result;
@@ -67,7 +105,7 @@ namespace BeatportApi.Beatsource
             catch (Exception ex)
             {
                 File.WriteAllText($"error.{releaseId}.txt", response.Content);
-                throw new Exception($"oofie owwie: {ex.Message}");
+                throw new Exception($"oofie owwie GetTracksByReleaseId: {ex.Message}");
             }
 
             return result;
@@ -93,7 +131,7 @@ namespace BeatportApi.Beatsource
             catch (Exception ex)
             {
                 File.WriteAllText($"error.{releaseId}.txt", response.Content);
-                throw new Exception($"oofie owwie: {ex.Message}");
+                throw new Exception($"oofie owwie GetReleaseById: {ex.Message}");
             }
 
             return result;

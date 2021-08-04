@@ -20,9 +20,15 @@ namespace SubgenreSheetBot.Commands
 {
     public partial class BeatsourceModule
     {
-        private static Beatsource api;
+        private Beatsource api;
 
-        public BeatsourceModule() { api ??= new Beatsource(File.ReadAllText("beatsource_token")); }
+        public BeatsourceModule()
+        {
+            api ??= new Beatsource();
+            api.Login(File.ReadAllText("beatsource_user"), File.ReadAllText("beatsource_pass"))
+                .GetAwaiter()
+                .GetResult();
+        }
 
         private static string FormatTrack(BeatsourceTrack track, bool includeArtist = false)
         {
@@ -68,13 +74,13 @@ namespace SubgenreSheetBot.Commands
             return sb.ToString();
         }
 
-        private static Task<BeatsourceRelease> GetAlbum(int albumId)
+        private Task<BeatsourceRelease> GetAlbum(int albumId)
         {
             using var session = SubgenreSheetBot.BeatsourceStore.OpenSession();
             return BeatportDbUtils.GetAlbumOrCache(api, session, albumId);
         }
 
-        private static Task<BeatsourceTrack[]> GetTracks(BeatsourceRelease album)
+        private Task<BeatsourceTrack[]> GetTracks(BeatsourceRelease album)
         {
             using var session = SubgenreSheetBot.BeatsourceStore.OpenSession();
             return album.GetTracksOrCache(api, session);

@@ -35,7 +35,7 @@ namespace Common.Beatport
 
             return t;
         }
-        
+
         public static async Task<BeatsourceRelease> GetAlbumOrCache(Beatsource api, IDocumentSession session, int albumId)
         {
             var t = session.Load<BeatsourceRelease>($"BeatsourceReleases/{albumId}");
@@ -61,6 +61,7 @@ namespace Common.Beatport
         }
 
         public static Task<BeatportTrack[]> GetTracksOrCache(this BeatportRelease album, BAPI api, IDocumentSession session) { return GetTracksOrCache(api, session, album.TrackUrls); }
+
         public static Task<BeatsourceTrack[]> GetTracksOrCache(this BeatsourceRelease album, Beatsource api, IDocumentSession session) { return GetTracksOrCache(api, session, album.TrackUrls); }
 
         public static async Task<BeatportTrack[]> GetTracksOrCache(BAPI api, IDocumentSession session, string[] trackUrls)
@@ -98,7 +99,7 @@ namespace Common.Beatport
                 .ThenBy(t => t.Isrc)
                 .ToArray();
         }
-        
+
         public static async Task<BeatsourceTrack[]> GetTracksOrCache(Beatsource api, IDocumentSession session, string[] trackUrls)
         {
             var tracks = new List<BeatsourceTrack>();
@@ -117,9 +118,10 @@ namespace Common.Beatport
 
                     if (t == null)
                     {
+                        throw new Exception("oh nwwoo :( why");
                         // todo: silent ignore for now
                         /* return null;
-                         throw new Exception("oh nwwoo :( why");*/
+                         */
                     }
 
                     session.Store(t);

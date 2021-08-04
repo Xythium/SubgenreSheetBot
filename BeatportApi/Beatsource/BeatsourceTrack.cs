@@ -87,7 +87,7 @@ namespace BeatportApi.Beatsource
         [JsonProperty("length")]
         public TimeSpan Length => TimeSpan.FromMilliseconds(LengthMs);
 
-        [JsonProperty("length_ms"), JsonRequired]
+        [JsonProperty("length_ms")] // optional?
         public int LengthMs { get; set; }
 
         [JsonProperty("mix_name"), JsonRequired]

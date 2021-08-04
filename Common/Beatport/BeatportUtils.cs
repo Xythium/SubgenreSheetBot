@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BeatportApi;
 using BeatportApi.Beatport;
+using BeatportApi.Beatsource;
 using Discord;
 using Raven.Client;
 using Serilog;
@@ -15,10 +16,7 @@ namespace Common.Beatport
     {
         public static IdFromUrlResult GetIdFromUrl(Uri uri)
         {
-            if (!string.Equals(uri.Host, "www.beatport.com", StringComparison.OrdinalIgnoreCase) ||
-                !string.Equals(uri.Host, "api.beatport.com", StringComparison.OrdinalIgnoreCase) ||
-                !string.Equals(uri.Host, "www.beatsource.com", StringComparison.OrdinalIgnoreCase) ||
-                !string.Equals(uri.Host, "api.beatsource.com", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(uri.Host, "www.beatport.com", StringComparison.OrdinalIgnoreCase) || !string.Equals(uri.Host, "api.beatport.com", StringComparison.OrdinalIgnoreCase) || !string.Equals(uri.Host, "www.beatsource.com", StringComparison.OrdinalIgnoreCase) || !string.Equals(uri.Host, "api.beatsource.com", StringComparison.OrdinalIgnoreCase))
             {
                 if (!uri.Host.Contains("beatport.com") && !uri.Host.Contains("beatsource.com"))
                 {
