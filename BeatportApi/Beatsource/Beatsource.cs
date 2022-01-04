@@ -11,6 +11,11 @@ namespace BeatportApi.Beatsource
         private string _bearerToken;
         private readonly RestClient client;
 
+        private static JsonSerializerSettings serializerSettings = new JsonSerializerSettings
+        {
+            MissingMemberHandling = MissingMemberHandling.Error
+        };
+
         public Beatsource()
         {
             client = new RestClient();
@@ -30,17 +35,17 @@ namespace BeatportApi.Beatsource
                 }
             });
             var response = await client.ExecuteAsync(request);
-            
+
             if (response.Content == "{\"message\": \"Internal server error\"}")
             {
                 throw new InvalidDataException("Internal server error in GetReleasesByLabelId");
             }
-            
+
             BeatsourceLogin result = null;
 
             try
             {
-                result = JsonConvert.DeserializeObject<BeatsourceLogin>(response.Content);
+                result = JsonConvert.DeserializeObject<BeatsourceLogin>(response.Content, serializerSettings);
             }
             catch (Exception ex)
             {
@@ -74,7 +79,7 @@ namespace BeatportApi.Beatsource
 
             try
             {
-                result = JsonConvert.DeserializeObject<BeatsourceResponse<BeatsourceRelease>>(response.Content);
+                result = JsonConvert.DeserializeObject<BeatsourceResponse<BeatsourceRelease>>(response.Content, serializerSettings);
             }
             catch (Exception ex)
             {
@@ -100,7 +105,7 @@ namespace BeatportApi.Beatsource
 
             try
             {
-                result = JsonConvert.DeserializeObject<BeatsourceResponse<BeatsourceTrack>>(response.Content);
+                result = JsonConvert.DeserializeObject<BeatsourceResponse<BeatsourceTrack>>(response.Content, serializerSettings);
             }
             catch (Exception ex)
             {
@@ -126,7 +131,7 @@ namespace BeatportApi.Beatsource
 
             try
             {
-                result = JsonConvert.DeserializeObject<BeatsourceRelease>(response.Content);
+                result = JsonConvert.DeserializeObject<BeatsourceRelease>(response.Content, serializerSettings);
             }
             catch (Exception ex)
             {
@@ -148,7 +153,7 @@ namespace BeatportApi.Beatsource
                 throw new InvalidDataException("Internal server error in GetTrackByTrackId");
             }
 
-            return JsonConvert.DeserializeObject<BeatsourceTrack>(response.Content);
+            return JsonConvert.DeserializeObject<BeatsourceTrack>(response.Content, serializerSettings);
         }
 
         public async Task<BeatsourceTrack> GetTrackByTrackId(string trackId)
@@ -157,7 +162,7 @@ namespace BeatportApi.Beatsource
 
             var response = await client.ExecuteAsync(request);
 
-            return JsonConvert.DeserializeObject<BeatsourceTrack>(response.Content);
+            return JsonConvert.DeserializeObject<BeatsourceTrack>(response.Content, serializerSettings);
         }
     }
 }

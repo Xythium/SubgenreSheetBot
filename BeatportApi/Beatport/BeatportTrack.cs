@@ -9,6 +9,9 @@ namespace BeatportApi.Beatport
     {
         [JsonProperty("artists"), JsonRequired]
         public List<BeatportArtistSummary> Artists { get; set; }
+        
+        [JsonProperty("audio_format")] // todo
+        public object AudioFormat { get; set; }
 
         public string ArtistConcat => string.Join(" x ", Artists.Select(a => a.Name));
 
@@ -26,6 +29,12 @@ namespace BeatportApi.Beatport
 
         [JsonProperty("current_status"), JsonRequired]
         public BeatportStatusSummary CurrentStatus { get; set; }
+        
+        [JsonProperty("desc")] // optional
+        public string Description { get; set; }
+        
+        [JsonProperty("enabled")] // todo
+        public bool IsEnabled { get; set; }
 
         [JsonProperty("encode_status"), JsonRequired]
         public string EncodeStatus { get; set; }
@@ -36,7 +45,7 @@ namespace BeatportApi.Beatport
         [JsonProperty("exclusive"), JsonRequired]
         public bool IsExclusive { get; set; }
 
-        [JsonProperty("exclusive_period"), JsonRequired]
+        [JsonProperty("exclusive_period")] // optional
         public BeatportExclusiveSummary ExclusivePeriod { get; set; }
 
         [JsonProperty("free_download_end_date")] // optional
@@ -141,8 +150,8 @@ namespace BeatportApi.Beatport
         [JsonProperty("sub_genre")] // optional
         public BeatportSubgenreSummary? Subgenre { get; set; }
 
-        [JsonProperty("territories"), JsonRequired]
-        public int[] Territories { get; set; }
+        [JsonProperty("territories")] // idk why
+        public int[]? Territories { get; set; }
 
         [JsonProperty("url")] // optional
         public string Url { get; set; }
