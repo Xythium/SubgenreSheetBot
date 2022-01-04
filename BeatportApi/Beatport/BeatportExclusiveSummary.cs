@@ -4,8 +4,8 @@ namespace BeatportApi.Beatport
 {
     public class BeatportExclusiveSummary
     {
-        [JsonProperty("days"), JsonRequired]
-        public int Days { get; set; }
+        [JsonProperty("days")] // can be null when lifetime exclusive
+        public int? Days { get; set; }
 
         [JsonProperty("description"), JsonRequired]
         public string Description { get; set; }

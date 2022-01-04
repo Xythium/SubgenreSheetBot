@@ -10,6 +10,11 @@ namespace BeatportApi.Beatport
     {
         private string _bearerToken;
 
+        private static JsonSerializerSettings serializerSettings = new JsonSerializerSettings
+        {
+            MissingMemberHandling = MissingMemberHandling.Error
+        };
+
         public Beatport(string bearerToken) { _bearerToken = bearerToken; }
 
         public Task<BeatportResponse<BeatportRelease>> GetReleasesByLabelId(int labelId, int itemsPerPage = 200, int page = 1) { return GetReleasesByLabelId(labelId.ToString(), itemsPerPage, page); }
@@ -31,7 +36,7 @@ namespace BeatportApi.Beatport
 
             try
             {
-                result = JsonConvert.DeserializeObject<BeatportResponse<BeatportRelease>>(response.Content);
+                result = JsonConvert.DeserializeObject<BeatportResponse<BeatportRelease>>(response.Content, serializerSettings);
             }
             catch (Exception ex)
             {
@@ -59,7 +64,7 @@ namespace BeatportApi.Beatport
 
             try
             {
-                result = JsonConvert.DeserializeObject<BeatportResponse<BeatportTrack>>(response.Content);
+                result = JsonConvert.DeserializeObject<BeatportResponse<BeatportTrack>>(response.Content, serializerSettings);
             }
             catch (Exception ex)
             {
@@ -87,7 +92,7 @@ namespace BeatportApi.Beatport
 
             try
             {
-                result = JsonConvert.DeserializeObject<BeatportRelease>(response.Content);
+                result = JsonConvert.DeserializeObject<BeatportRelease>(response.Content, serializerSettings);
             }
             catch (Exception ex)
             {
@@ -110,7 +115,19 @@ namespace BeatportApi.Beatport
                 throw new InvalidDataException("Internal server error in GetTrackByTrackId");
             }
 
-            return JsonConvert.DeserializeObject<BeatportTrack>(response.Content);
+            BeatportTrack result;
+
+            try
+            {
+                result = JsonConvert.DeserializeObject<BeatportTrack>(response.Content, serializerSettings);
+            }
+            catch (Exception ex)
+            {
+                File.WriteAllText($"error.track{trackId}.txt", response.Content);
+                throw new Exception($"oofie owwie: {ex.Message}");
+            }
+
+            return result;
         }
 
         public async Task<BeatportTrack> GetTrackByTrackId(string trackId)
@@ -120,7 +137,7 @@ namespace BeatportApi.Beatport
             request.AddHeader("origin", "www.beatport.com");
             var response = await client.ExecuteAsync(request);
 
-            return JsonConvert.DeserializeObject<BeatportTrack>(response.Content);
+            return JsonConvert.DeserializeObject<BeatportTrack>(response.Content, serializerSettings);
         }
     }
 }

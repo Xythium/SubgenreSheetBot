@@ -147,8 +147,8 @@ namespace BeatportApi.Beatsource
         [JsonProperty("sub_genre")] // optional
         public BeatsourceSubgenreSummary? Subgenre { get; set; }
 
-        [JsonProperty("territories"), JsonRequired]
-        public int[] Territories { get; set; }
+        [JsonProperty("territories")] 
+        public int[]? Territories { get; set; } // not required anymore when worldwide
 
         [JsonProperty("url")] // optional
         public string Url { get; set; }

@@ -30,13 +30,16 @@ namespace BeatportApi.Beatsource
         [JsonProperty("exclusive"), JsonRequired]
         public bool IsExclusive { get; set; }
 
+        [JsonProperty("is_explicit")] // todo: check if required
+        public bool IsExplicit { get; set; }
+
         [JsonProperty("grid")]
         public string Grid { get; set; }
 
         [JsonProperty("id"), JsonRequired]
         public new int Id { get; set; }
 
-        [JsonProperty("image"), JsonRequired]
+        [JsonProperty("image")]
         public new BeatsourceImage Image { get; set; }
 
         [JsonProperty("is_available_for_streaming")] // optional
@@ -74,14 +77,12 @@ namespace BeatportApi.Beatsource
 
         [JsonProperty("slug"), JsonRequired]
         public new string Slug { get; set; }
-        
+
         [JsonProperty("tracks")] // missing when lite request
         public string[] TrackUrls { get; set; }
 
         [JsonProperty("track_count"), JsonRequired]
         public int TrackCount { get; set; }
-
-     
 
         [JsonProperty("type")] // optional
         public BeatsourceReleaseType Type { get; set; }
@@ -94,5 +95,8 @@ namespace BeatportApi.Beatsource
 
         [JsonProperty("url")] // optional
         public string Url { get; set; }
+
+        [JsonProperty("is_dj_edit"), JsonRequired]
+        public bool IsDjEdit { get; set; }
     }
 }

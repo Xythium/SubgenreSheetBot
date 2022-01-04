@@ -39,6 +39,9 @@ namespace BeatportApi.Beatport
         [JsonProperty("image"), JsonRequired]
         public BeatportImage Image { get; set; }
 
+        [JsonProperty("is_available_for_streaming")] // todo ?
+        public bool IsAvailableForStreaming { get; set; }
+        
         [JsonProperty("is_hype"), JsonRequired]
         public bool IsHype { get; set; }
 
