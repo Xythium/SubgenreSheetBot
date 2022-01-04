@@ -5,9 +5,12 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Common;
 using Common.Spotify;
 using Discord;
 using Discord.Commands;
+using Newtonsoft.Json;
+using Serilog;
 using SpotifyAPI.Web;
 
 namespace SubgenreSheetBot.Commands
@@ -16,16 +19,15 @@ namespace SubgenreSheetBot.Commands
     public partial class SpotifyModule : ModuleBase
     {
         [Command("tracks"), Alias("t"), Summary("Get all tracks from an album")]
-        public async Task Tracks(
-            [Remainder, Summary("Album ID to search for")]
-            string albumId)
+        public async Task Tracks([Remainder, Summary("Album ID to search for")] string url)
         {
-            albumId = await GetIdFromUrl(albumId);
+            var (trackId, albumId) = GetIdFromUrl(url);
+
+            if (!string.IsNullOrWhiteSpace(trackId))
+                throw new ArgumentException("Track urls are not supported");
 
             if (string.IsNullOrWhiteSpace(albumId))
-            {
-                return;
-            }
+                throw new ArgumentException("No album ID found");
 
             var album = (await GetAlbumOrCache(albumId)).Album;
             var albumArtists = album.Artists;
@@ -55,7 +57,7 @@ namespace SubgenreSheetBot.Commands
                     }
                 }
 
-                sb.AppendLine($"`{album.ReleaseDate},?,?,{string.Join(" & ", track.Artists.Select(a => a.Name))},{track.Name},{album.Label},{TimeSpan.FromMilliseconds(track.DurationMs):m':'ss},FALSE,{Math.Round(features.Tempo)},FALSE,{IntToKey(features.Key)} {IntToMode(features.Mode)}`");
+                sb.AppendLine($"`{album.ReleaseDate},?,?,{string.Join(" & ", track.Artists.Select(a => a.Name))},{track.Name},{album.Label},{TimeSpan.FromMilliseconds(track.DurationMs):m':'ss},FALSE,{Math.Round(features.Tempo)},FALSE,{SpotifyUtils.IntToKey(features.Key)} {SpotifyUtils.IntToMode(features.Mode)}`");
             }
 
             await ReplyAsync(embed: embed.Build());
@@ -63,88 +65,33 @@ namespace SubgenreSheetBot.Commands
         }
 
         [Command("info"), Alias("i"), Summary("Get all tracks from an album")]
-        public async Task Info(
-            [Remainder, Summary("Album ID to search for")]
-            string albumId)
+        public async Task Info([Remainder, Summary("Album ID to search for")] string url)
         {
-            albumId = await GetIdFromUrl(albumId);
+            var (trackId, albumId) = GetIdFromUrl(url);
+
+            if (!string.IsNullOrWhiteSpace(trackId))
+                throw new ArgumentException("Track urls are not supported");
 
             if (string.IsNullOrWhiteSpace(albumId))
-            {
-                return;
-            }
+                throw new ArgumentException("No album ID found");
 
             var album = (await GetAlbumOrCache(albumId)).Album;
-            var albumArtists = album.Artists;
 
-            if (albumArtists.Count == 0)
+            var (embed, file) = AlbumEmbed.EmbedBuilder(GenericAlbum.FromAlbum(album));
+
+            if (file != null)
             {
-                await ReplyAsync("the artist count is 0");
-                return;
+                await Context.Channel.SendFileAsync(file, "tracklist.txt", embed: embed.Build(), messageReference: new MessageReference(Context.Message.Id));
+                file.Close();
             }
-
-            var genres = string.Join(", ", album.Genres);
-
-            if (string.IsNullOrWhiteSpace(genres))
+            else
             {
-                if (album.Genres.Count > 0)
-                {
-                    await ReplyAsync($"asdadasdasdadasdadsda {MentionUtils.MentionUser(131768632354144256)}");
-                }
-
-                genres = "None";
+                await ReplyAsync(embed: embed.Build());
             }
-
-            var sb1 = new StringBuilder();
-            var sb2 = new StringBuilder();
-            var sb3 = new StringBuilder();
-
-            //2009-09-22	House	Tech House | Progressive House	deadmau5	Lack of a Better Name	mau5trap	8:15	FALSE	128	FALSE	F min
-            foreach (var track in album.Tracks.Items)
-            {
-                var features = await GetAudioFeaturesOrCache(track.Id);
-                var line = FormatTrack(track, features);
-
-                if (sb2.Length + line.Length >= 1023)
-                {
-                    sb3.AppendLine(line);
-                }
-                else if (sb1.Length + line.Length >= 1023)
-                {
-                    sb2.AppendLine(line);
-                }
-                else
-                {
-                    sb1.AppendLine(line);
-                }
-            }
-
-            var embed = new EmbedBuilder().WithTitle($"{string.Join(" & ", albumArtists.Select(a => a.Name))} - {album.Name}")
-                .WithThumbnailUrl(album.Images.OrderByDescending(i => i.Width)
-                    .First()
-                    .Url)
-                .AddField("Release Date", album.ReleaseDate, true)
-                .AddField("Type", string.IsNullOrWhiteSpace(album.AlbumType) ? "None" : album.AlbumType, true);
-
-            if (genres != "None")
-                embed = embed.AddField("Genre", genres, true);
-
-            embed = embed.AddField("Popularity", $"{album.Popularity}%", true)
-                .AddField("Label", album.Label, true)
-                .AddField("Tracklist", sb1.ToString());
-
-            if (sb2.Length > 0)
-                embed = embed.AddField("Tracklist (cont.)", sb2.ToString());
-            if (sb3.Length > 0)
-                embed = embed.AddField("Tracklist (cont. again)", sb3.ToString());
-
-            await ReplyAsync(embed: embed.Build());
         }
 
         [Command("label"), Alias("l"), Summary("Get all releases from a label")]
-        public async Task Label(
-            [Remainder, Summary("Label name to search for")]
-            string labelName)
+        public async Task Label([Remainder, Summary("Label name to search for")] string labelName)
         {
             labelName = labelName.Replace("\"", "");
             var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Album, $"label:\"{labelName}\""));
@@ -192,9 +139,7 @@ namespace SubgenreSheetBot.Commands
         }
 
         [Command("artist"), Alias("a"), Summary("Get all releases from an artist")]
-        public async Task Artist(
-            [Remainder, Summary("Artist to search for")]
-            string artistName)
+        public async Task Artist([Remainder, Summary("Artist to search for")] string artistName)
         {
             artistName = artistName.Replace("\"", "");
 
@@ -208,8 +153,8 @@ namespace SubgenreSheetBot.Commands
                 .ToArray());*/
 
             foreach (var album in albums.OrderBy(a => a.Name)
-                .ThenByDescending(a => a.ReleaseDate)
-                .ThenBy(a => string.Join(" & ", a.Artists.Select(_ => _.Name))))
+                         .ThenByDescending(a => a.ReleaseDate)
+                         .ThenBy(a => string.Join(" & ", a.Artists.Select(_ => _.Name))))
             {
                 var line = $"{string.Join(" & ", album.Artists.Select(a => $"{a.Name}{(a.Type != "artist" ? $" ({a.Type})" : "")}"))} - {album.Name} ({album.ReleaseDate}) https://open.spotify.com/album/{album.Id}";
                 sb.AppendLine(line);
@@ -234,9 +179,7 @@ namespace SubgenreSheetBot.Commands
         }
 
         [Command("label"), Alias("l"), Summary("Get all releases from a label from a certain year")]
-        public async Task Label(
-            [Summary("Year to find releases for")] int year, [Remainder, Summary("Label name to search for")]
-            string labelName)
+        public async Task Label([Summary("Year to find releases for")] int year, [Remainder, Summary("Label name to search for")] string labelName)
         {
             labelName = labelName.Replace("\"", "");
             var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Album, $"label:\"{labelName}\" year:{year}"));

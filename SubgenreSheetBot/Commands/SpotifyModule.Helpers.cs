@@ -31,7 +31,7 @@ namespace SubgenreSheetBot.Commands
             }
         }
 
-        private async Task<string> GetIdFromUrl(string url)
+        private (string trackId, string albumId) GetIdFromUrl(string url)
         {
             if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
             {
@@ -40,49 +40,18 @@ namespace SubgenreSheetBot.Commands
                 if (locals.Length == 2)
                 {
                     if (locals[0] == "album")
-                    {
-                        return locals[1];
-                    }
+                        return (null, locals[1]);
 
-                    await ReplyAsync($"Url has to link to an album");
-                    return "";
+                    if (locals[0] == "track")
+                        return (locals[1], null);
+
+                    throw new InvalidDataException($"Unsupported link type: {locals[0]}");
                 }
 
-                await ReplyAsync($"{uri} is not a valid url");
-                return "";
+                throw new InvalidDataException($"Invalid link: {string.Join(" / ", locals)}");
             }
 
-            return url;
-        }
-
-        private static string IntToKey(int key)
-        {
-            return key switch
-            {
-                0 => "C",
-                1 => "C#",
-                2 => "D",
-                3 => "D#",
-                4 => "E",
-                5 => "F",
-                6 => "F#",
-                7 => "G",
-                8 => "G#",
-                9 => "A",
-                10 => "A#",
-                11 => "B",
-                _ => "?"
-            };
-        }
-
-        private static string IntToMode(int mode)
-        {
-            return mode switch
-            {
-                0 => "min",
-                1 => "maj",
-                _ => "?"
-            };
+            throw new InvalidDataException($"Not a url: {url}");
         }
 
         private static readonly Dictionary<string, FullAlbum> fullAlbumCache = new Dictionary<string, FullAlbum>();
@@ -107,26 +76,6 @@ namespace SubgenreSheetBot.Commands
             };
         }
 
-        private static readonly Dictionary<string, TrackAudioFeatures> audioFeaturesCache = new Dictionary<string, TrackAudioFeatures>();
-
-        private static async Task<TrackAudioFeatures> GetAudioFeaturesOrCache(string trackId)
-        {
-            if (!audioFeaturesCache.TryGetValue(trackId, out var album))
-            {
-                try
-                {
-                    album = await api.Tracks.GetAudioFeatures(trackId);
-                    audioFeaturesCache.Add(trackId, album);
-                }
-                catch (APIException ex) when (ex.Message == "analysis not found")
-                {
-                    return null;
-                }
-            }
-
-            return album;
-        }
-
         private async Task<IUserMessage> UpdateOrSend(IUserMessage message, string str)
         {
             if (message == null)
@@ -149,64 +98,6 @@ namespace SubgenreSheetBot.Commands
             {
                 await ReplyAsync(str);
             }
-        }
-
-        private static string FormatTrack(SimpleTrack track, TrackAudioFeatures features)
-        {
-            var featureList = new List<string>
-            {
-                TimeSpan.FromMilliseconds(track.DurationMs)
-                    .ToString("g")
-            };
-
-            if (features != null)
-            {
-                featureList.Add(BpmToString(features));
-
-                if (features.TimeSignature != 4)
-                {
-                    featureList.Add($"{features.TimeSignature}/4");
-                }
-
-                featureList.Add($"{IntToKey(features.Key)} {IntToMode(features.Mode)}");
-            }
-            else
-            {
-                //featureList.Add("**track analysis not available**");
-            }
-
-            var sb = new StringBuilder($"{track.TrackNumber}. {track.Name} [{string.Join(", ", featureList)}]");
-
-            return sb.ToString();
-        }
-
-        private static string BpmToString(TrackAudioFeatures features)
-        {
-            var bpm = features.Tempo;
-            var floating = bpm - (int) bpm;
-
-            if (floating < 0.3 || floating > 0.7)
-            {
-                features.Tempo = bpm = (float) Math.Round(bpm);
-            }
-            else
-            {
-                features.Tempo = bpm = (float) Math.Round(bpm, 1);
-            }
-
-            if (Math.Abs(floating - 0.5) < 0.03 && bpm < 95)
-            {
-                bpm *= 2;
-            }
-
-            var str = bpm.ToString(CultureInfo.GetCultureInfo("en-US"));
-
-            if (bpm != features.Tempo)
-            {
-                str = $"{features.Tempo} (Mark says {bpm})";
-            }
-
-            return str;
         }
 
         private async Task<FullPlaylist> CreateOrUpdatePlaylist(string name, FullAlbum[] albums)
