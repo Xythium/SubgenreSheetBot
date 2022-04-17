@@ -15,5 +15,8 @@ namespace BeatportApi.Beatport
 
         [JsonProperty("url"), JsonRequired]
         public string Url { get; set; }
+
+        [JsonProperty("enabled")]
+        public bool Enabled { get; set; }
     }
 }
