@@ -12,8 +12,13 @@ namespace Common.Beatport
 {
     public static class BeatportDbUtils
     {
-        public static async Task<BeatportRelease> GetAlbumOrCache(BAPI api, IDocumentSession session, int albumId)
+        public static async Task<BeatportRelease?> GetAlbumOrCache(BAPI api, IDocumentSession session, int albumId)
         {
+            var notFound = session.Load<BeatportNotFound>($"BeatportNotFound/{albumId}");
+
+            if (notFound != null)
+                return null;
+
             var t = session.Load<BeatportRelease>($"BeatportReleases/{albumId}");
 
             if (t == null)
@@ -22,7 +27,8 @@ namespace Common.Beatport
 
                 if (t == null)
                 {
-                    // todo: dont know if this can happen
+                    session.Store(new BeatportNotFound(), $"BeatportNotFound/{albumId}");
+                    session.SaveChanges();
                     return null;
                 }
 
@@ -67,6 +73,9 @@ namespace Common.Beatport
         public static async Task<BeatportTrack[]> GetTracksOrCache(BAPI api, IDocumentSession session, string[] trackUrls)
         {
             var tracks = new List<BeatportTrack>();
+
+            if (trackUrls == null || trackUrls.Length == 0)
+                return tracks.ToArray();
 
             foreach (var url in trackUrls)
             {
