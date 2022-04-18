@@ -8,6 +8,7 @@ namespace SubgenreSheetBot
     {
         public static readonly DataStore BeatportStore = new DataStore("beatport");
         public static readonly DataStore BeatsourceStore = new DataStore("beatsource");
+        public static readonly DataStore SpotifyStore = new DataStore("spotify");
 
         public SubgenreSheetBot(string token) : base(token) { }
 

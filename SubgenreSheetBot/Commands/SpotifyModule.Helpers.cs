@@ -31,49 +31,22 @@ namespace SubgenreSheetBot.Commands
             }
         }
 
-        private (string trackId, string albumId) GetIdFromUrl(string url)
+        private static async Task<FullAlbum> GetAlbum(string albumId)
         {
-            if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            {
-                var locals = uri.LocalPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-                if (locals.Length == 2)
-                {
-                    if (locals[0] == "album")
-                        return (null, locals[1]);
-
-                    if (locals[0] == "track")
-                        return (locals[1], null);
-
-                    throw new InvalidDataException($"Unsupported link type: {locals[0]}");
-                }
-
-                throw new InvalidDataException($"Invalid link: {string.Join(" / ", locals)}");
-            }
-
-            throw new InvalidDataException($"Not a url: {url}");
+            using var session = SubgenreSheetBot.SpotifyStore.OpenSession();
+            return await SpotifyDbUtils.GetAlbumOrCache(api, session, albumId);
         }
 
-        private static readonly Dictionary<string, FullAlbum> fullAlbumCache = new Dictionary<string, FullAlbum>();
-
-        private static async Task<AlbumCacheResult> GetAlbumOrCache(string albumId)
+        private static async Task<List<FullTrack>> GetTracks(FullAlbum album)
         {
-            if (!fullAlbumCache.TryGetValue(albumId, out var album))
-            {
-                album = await api.Albums.Get(albumId);
-                fullAlbumCache.Add(albumId, album);
-                return new AlbumCacheResult
-                {
-                    Album = album,
-                    Cached = false
-                };
-            }
+            using var session = SubgenreSheetBot.SpotifyStore.OpenSession();
+            return await SpotifyDbUtils.GetTracksOrCache(api, session, album.Tracks.Items);
+        }
 
-            return new AlbumCacheResult
-            {
-                Album = album,
-                Cached = true
-            };
+        private static async Task<List<TrackAudioFeatures>> GetFeatures(FullAlbum album)
+        {
+            using var session = SubgenreSheetBot.SpotifyStore.OpenSession();
+            return await SpotifyDbUtils.GetFeaturesOrCache(api, session, album.Tracks.Items);
         }
 
         private async Task<IUserMessage> UpdateOrSend(IUserMessage message, string str)
@@ -87,10 +60,12 @@ namespace SubgenreSheetBot.Commands
             return message;
         }
 
-        private async Task SendOrAttachment(string str)
+        private async Task SendOrAttachment(string str, bool removeQuotes = false)
         {
             if (str.Length > 2000)
             {
+                if (removeQuotes)
+                    str = str.Replace("`", "");
                 var writer = new MemoryStream(Encoding.UTF8.GetBytes(str));
                 await Context.Channel.SendFileAsync(writer, "content.txt", $"Message too long");
             }
@@ -125,12 +100,5 @@ namespace SubgenreSheetBot.Commands
 
             return await api.Playlists.Create((await api.UserProfile.Current()).Id, new PlaylistCreateRequest(name));
         }
-    }
-
-    internal class AlbumCacheResult
-    {
-        public FullAlbum Album { get; set; }
-
-        public bool Cached { get; set; }
     }
 }
