@@ -13,6 +13,7 @@ using MetaBrainz.MusicBrainz;
 using MetaBrainz.MusicBrainz.Interfaces.Entities;
 using MusicTools.Parsing.Track;
 using Newtonsoft.Json;
+using Raven.Client.Linq;
 
 namespace SubgenreSheetBot.Commands
 {
@@ -446,7 +447,7 @@ namespace SubgenreSheetBot.Commands
 
             if (tracks.Length < 1)
             {
-                await ReplyAsync($"Cannot find any tracks by the label `{test}`");
+                await Context.Message.ReplyAsync($"Cannot find any tracks by the label `{test}`");
                 return;
             }
 
@@ -501,7 +502,249 @@ namespace SubgenreSheetBot.Commands
                 sb.AppendLine($"`{subgenre.Key}` - {subgenre.Count}");
             }
 
-            await ReplyAsync(sb.ToString());
+            await Context.Message.ReplyAsync(sb.ToString());
+        }
+
+        [NamedArgumentType]
+        public class QueryArguments
+        {
+            public string Artist { get; set; }
+
+            public string ArtistCount { get; set; }
+
+            public string Subgenre { get; set; }
+
+            public string SubgenreCount { get; set; } //todo
+
+            public string Label { get; set; }
+
+            public string LabelCount { get; set; }
+
+            public string Before { get; set; }
+
+            public string After { get; set; }
+
+            public string Date { get; set; }
+
+            //meta
+            public string Select { get; set; }
+
+            public string Order { get; set; }
+        }
+
+        [Command("query"), Alias("q")]
+        public async Task Query(QueryArguments arguments)
+        {
+            await RevalidateCache();
+
+            var query = _entries.AsQueryable();
+
+            if (string.IsNullOrWhiteSpace(arguments.Artist) && string.IsNullOrWhiteSpace(arguments.ArtistCount) && string.IsNullOrWhiteSpace(arguments.Subgenre) && string.IsNullOrWhiteSpace(arguments.SubgenreCount) && string.IsNullOrWhiteSpace(arguments.Label) && string.IsNullOrWhiteSpace(arguments.LabelCount) && string.IsNullOrWhiteSpace(arguments.Before) && string.IsNullOrWhiteSpace(arguments.After) && string.IsNullOrWhiteSpace(arguments.Date))
+            {
+                await SendOrAttachment("No arguments specified");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(arguments.Artist))
+            {
+                query = query.Where(e => e.ActualArtists.Any(a => string.Equals(a, arguments.Artist, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(arguments.ArtistCount))
+            {
+                if (arguments.ArtistCount.StartsWith("<"))
+                {
+                    var count = int.Parse(arguments.ArtistCount.Substring(1));
+                    query = query.Where(e => e.ActualArtists.Length < count);
+                }
+                else if (arguments.ArtistCount.StartsWith(">"))
+                {
+                    var count = int.Parse(arguments.ArtistCount.Substring(1));
+                    query = query.Where(e => e.ActualArtists.Length > count);
+                }
+                else
+                {
+                    var count = int.Parse(arguments.ArtistCount);
+                    query = query.Where(e => e.ActualArtists.Length == count);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(arguments.Label))
+            {
+                if (arguments.Label.StartsWith("-") || arguments.Label.StartsWith("!"))
+                {
+                    query = query.Where(e => e.LabelList.Any(a => !string.Equals(a, arguments.Label.Substring(1), StringComparison.OrdinalIgnoreCase)));
+                }
+                else
+                {
+                    query = query.Where(e => e.LabelList.Any(a => string.Equals(a, arguments.Label, StringComparison.OrdinalIgnoreCase)));
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(arguments.LabelCount))
+            {
+                if (arguments.LabelCount.StartsWith("<"))
+                {
+                    var count = int.Parse(arguments.LabelCount.Substring(1));
+                    query = query.Where(e => e.LabelList.Count < count);
+                }
+                else if (arguments.LabelCount.StartsWith(">"))
+                {
+                    var count = int.Parse(arguments.LabelCount.Substring(1));
+                    query = query.Where(e => e.LabelList.Count > count);
+                }
+                else
+                {
+                    var count = int.Parse(arguments.LabelCount);
+                    query = query.Where(e => e.LabelList.Count == count);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(arguments.Before))
+            {
+                if (!DateOnly.TryParse(arguments.Before, out var before))
+                {
+                    throw new ArgumentException("Invalid date");
+                }
+
+                query = query.Where(e => e.Date != null && new DateOnly(e.Date.Year, e.Date.Month, e.Date.Day) < before);
+            }
+
+            if (!string.IsNullOrWhiteSpace(arguments.After))
+            {
+                if (!DateOnly.TryParse(arguments.After, out var after))
+                {
+                    throw new ArgumentException("Invalid date");
+                }
+
+                query = query.Where(e => e.Date != null && new DateOnly(e.Date.Year, e.Date.Month, e.Date.Day) > after);
+            }
+
+            if (!string.IsNullOrWhiteSpace(arguments.Date))
+            {
+                if (!DateOnly.TryParse(arguments.Date, out var date))
+                {
+                    throw new ArgumentException("Invalid date");
+                }
+
+                query = query.Where(e => e.Date != null && new DateOnly(e.Date.Year, e.Date.Month, e.Date.Day) == date);
+            }
+
+            if (!string.IsNullOrWhiteSpace(arguments.Subgenre))
+            {
+                if (arguments.Subgenre.StartsWith("-") || arguments.Subgenre.StartsWith("!"))
+                {
+                    query = query.Where(e => e.SubgenresList.Any(a => !string.Equals(a, arguments.Subgenre.Substring(1), StringComparison.OrdinalIgnoreCase)));
+                }
+                else
+                {
+                    query = query.Where(e => e.SubgenresList.Any(a => string.Equals(a, arguments.Subgenre, StringComparison.OrdinalIgnoreCase)));
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(arguments.Order))
+            {
+                switch (arguments.Order)
+                {
+                    case "+date":
+                        query = query.OrderBy(e => e.Date);
+                        break;
+
+                    case "-date":
+                        query = query.OrderByDescending(e => e.Date);
+                        break;
+
+                    case "+title":
+                        query = query.OrderBy(e => e.Title);
+                        break;
+
+                    case "-title":
+                        query = query.OrderByDescending(e => e.Title);
+                        break;
+
+                    case "+label":
+                    case "+labels":
+                        query = query.OrderBy(e => e.LabelList.FirstOrDefault());
+                        break;
+
+                    case "-label":
+                    case "-labels":
+                        query = query.OrderByDescending(e => e.LabelList.FirstOrDefault());
+                        break;
+
+                    case "+artist":
+                    case "+artists":
+                        query = query.OrderBy(e => e.FormattedArtists);
+                        break;
+
+                    case "-artist":
+                    case "-artists":
+                        query = query.OrderByDescending(e => e.FormattedArtists);
+                        break;
+                }
+            }
+
+            IQueryable<string> strs = null;
+
+            if (!string.IsNullOrWhiteSpace(arguments.Select))
+            {
+                switch (arguments.Select)
+                {
+                    case "track":
+                        break;
+
+                    case "artist":
+                    case "artists":
+                        strs = query.SelectMany(e => e.ActualArtists)
+                            .Distinct();
+                        break;
+
+                    case "label":
+                    case "labels":
+                        strs = query.SelectMany(e => e.LabelList)
+                            .Distinct();
+                        break;
+                }
+            }
+
+            if (strs.Any())
+            {
+                switch (arguments.Order)
+                {
+                    case "asc":
+                    case "+":
+                        strs = strs.OrderBy(e => e);
+                        break;
+
+                    case "desc":
+                    case "-":
+                        strs = strs.OrderByDescending(e => e);
+                        break;
+                }
+            }
+
+            var stringResults = strs?.ToArray();
+            var entryResults = query.ToArray();
+
+            if (stringResults.Length > 0)
+            {
+                var sb = new StringBuilder($"Found {stringResults.Length} results:\r\n");
+
+                sb.AppendLine($"{string.Join(", ", stringResults)}");
+
+                await SendOrAttachment(sb.ToString());
+            }
+            else if (entryResults.Length > 0)
+            {
+                var sb = new StringBuilder($"Found {entryResults.Length} results:\r\n");
+
+                foreach (var result in entryResults)
+                {
+                    sb.AppendLine($"{string.Join(", ", result.ArtistsList)} - {result.Title} [{string.Join(", ", result.LabelList)}]");
+                }
+
+                await SendOrAttachment(sb.ToString());
+            }
         }
 
         static SortedSet<IRecording> _recordings = new SortedSet<IRecording>(new MusicBrainzTrackComparer());

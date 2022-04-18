@@ -4,7 +4,9 @@
         <OutputType>Exe</OutputType>
         <TargetFramework>net7.0</TargetFramework>
         <LangVersion>preview</LangVersion>
-        <AssemblyVersion>1.17.0</AssemblyVersion>
+        <AssemblyVersion>1.18.0</AssemblyVersion>
+        <PackageVersion>1.18.0</PackageVersion>
+        <FileVersion>1.18.0</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
