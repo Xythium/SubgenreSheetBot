@@ -24,7 +24,7 @@ namespace BeatportApi.Beatport
         {
             var client = new RestClient();
 
-            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.GET);
+            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.Get);
             request.AddHeader("origin", "www.beatport.com");
             var response = await client.ExecuteAsync(request);
 
@@ -51,7 +51,7 @@ namespace BeatportApi.Beatport
                 {
                     case "Internal server error":
                         File.WriteAllText($"error-internal.{identifier}.txt", json);
-                        throw new InvalidDataException("Internal Beatport in " + memberName);
+                        throw new InvalidDataException($"Internal Beatport in {memberName}: {ex}");
 
                     case "Not found.":
                         File.WriteAllText($"error-notfound.{identifier}.txt", json);
@@ -59,11 +59,11 @@ namespace BeatportApi.Beatport
 
                     case "Territory Restricted.":
                         File.WriteAllText($"error-territory.{identifier}.txt", json);
-                        throw new InvalidDataException("Territory restricted in " + memberName);
+                        throw new InvalidDataException($"Territory restricted in {memberName}: {ex}");
 
                     default:
                         File.WriteAllText($"error.{identifier}.txt", json);
-                        throw new InvalidDataException("Unknown error in " + memberName);
+                        throw new InvalidDataException($"Unknown error in {memberName}: {ex}");
                 }
             }
 
@@ -74,7 +74,7 @@ namespace BeatportApi.Beatport
         {
             var client = new RestClient();
 
-            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases/{releaseId}/tracks/?per_page={itemsPerPage}&page={page}", Method.GET);
+            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases/{releaseId}/tracks/?per_page={itemsPerPage}&page={page}", Method.Get);
             request.AddHeader("origin", "www.beatport.com");
             var response = await client.ExecuteAsync(request);
 
@@ -87,7 +87,7 @@ namespace BeatportApi.Beatport
         {
             var client = new RestClient();
 
-            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases/{releaseId}", Method.GET);
+            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases/{releaseId}", Method.Get);
             request.AddHeader("origin", "www.beatport.com");
             var response = await client.ExecuteAsync(request);
 
@@ -99,7 +99,7 @@ namespace BeatportApi.Beatport
         public async Task<BeatportTrack?> GetTrackByTrackId(int trackId)
         {
             var client = new RestClient();
-            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks/{trackId}", Method.GET);
+            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks/{trackId}", Method.Get);
             request.AddHeader("origin", "www.beatport.com");
             var response = await client.ExecuteAsync(request);
 
@@ -111,7 +111,7 @@ namespace BeatportApi.Beatport
         public async Task<BeatportTrack> GetTrackByTrackId(string trackId)
         {
             var client = new RestClient();
-            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks/{trackId}", Method.GET);
+            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks/{trackId}", Method.Get);
             request.AddHeader("origin", "www.beatport.com");
             var response = await client.ExecuteAsync(request);
 

@@ -27,8 +27,8 @@ namespace SubgenreSheetBot.Commands
             }
 
             var client = new RestClient();
-            var request = new RestRequest(uri, Method.GET);
-            var response = client.Execute(request);
+            var request = new RestRequest(uri, Method.Get);
+            var response = await client.ExecuteAsync(request);
 
             var document = new HtmlDocument();
             document.LoadHtml(response.Content);
