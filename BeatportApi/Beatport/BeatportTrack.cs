@@ -9,7 +9,7 @@ namespace BeatportApi.Beatport
     {
         [JsonProperty("artists"), JsonRequired]
         public List<BeatportArtistSummary> Artists { get; set; }
-        
+
         [JsonProperty("audio_format")] // todo
         public object AudioFormat { get; set; }
 
@@ -29,10 +29,10 @@ namespace BeatportApi.Beatport
 
         [JsonProperty("current_status"), JsonRequired]
         public BeatportStatusSummary CurrentStatus { get; set; }
-        
+
         [JsonProperty("desc")] // optional
         public string Description { get; set; }
-        
+
         [JsonProperty("enabled")] // todo
         public bool IsEnabled { get; set; }
 
@@ -55,7 +55,7 @@ namespace BeatportApi.Beatport
         public DateTime? FreeDownloadStartDate { get; set; }
 
         [JsonProperty("free_downloads"), JsonRequired]
-        public object[] FreeDownloads { get; set; }
+        public BeatportFreeDownload[] FreeDownloads { get; set; }
 
         [JsonProperty("genre"), JsonRequired]
         public BeatportGenreSummary Genre { get; set; }

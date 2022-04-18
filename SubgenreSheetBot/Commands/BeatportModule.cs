@@ -90,70 +90,19 @@ namespace SubgenreSheetBot.Commands
                 throw new Exception("this release has no tracks, maybe because mark fucked up");
             }
 
-            var genres = new List<string>();
+            using var session = SubgenreSheetBot.BeatportStore.OpenSession();
 
-            var sb1 = new StringBuilder();
-            var sb2 = new StringBuilder();
-            var sb3 = new StringBuilder();
+            var (embed, file) = AlbumEmbed.EmbedBuilder(GenericAlbum.FromAlbum(album, tracks.ToList()));
 
-            //2009-09-22	House	Tech House | Progressive House	deadmau5	Lack of a Better Name	mau5trap	8:15	FALSE	128	FALSE	F min
-            foreach (var track in tracks)
+            if (file != null)
             {
-                var line = FormatTrack(track);
-
-                if (track.Subgenre != null)
-                {
-                    if (!genres.Contains(track.Subgenre.Name))
-                        genres.Add(track.Subgenre.Name);
-                }
-                else
-                {
-                    if (!genres.Contains(track.Genre.Name))
-                        genres.Add(track.Genre.Name);
-                }
-
-                if (sb2.Length + line.Length >= 1023)
-                {
-                    sb3.AppendLine(line);
-                }
-                else if (sb1.Length + line.Length >= 1023)
-                {
-                    sb2.AppendLine(line);
-                }
-                else
-                {
-                    sb1.AppendLine(line);
-                }
+                await Context.Channel.SendFileAsync(file, "tracklist.txt", embed: embed.Build(), messageReference: new MessageReference(Context.Message.Id));
+                file.Close();
             }
-
-            var albumArtistString = album.ArtistConcat;
-            var allTrackArtists = tracks.SelectMany(t => t.Artists.Select(a => a.Name))
-                .Distinct()
-                .ToArray();
-
-            if (allTrackArtists.Length >= tracks.Length && tracks.Length >= 3)
+            else
             {
-                albumArtistString = "Various Artists";
+                await Context.Message.ReplyAsync(embed: embed.Build());
             }
-
-            var embed = new EmbedBuilder().WithTitle($"{albumArtistString} - {album.Name}")
-                .WithThumbnailUrl(album.Image.DynamicUri.Replace("{w}", "1400")
-                    .Replace("{h}", "1400"))
-                .AddField("Release Date", album.NewReleaseDate.ToString("yyyy-MM-dd"), true)
-                .AddField("Type", album.Type?.Name ?? "None", true);
-
-            if (genres.Count > 0)
-                embed = embed.AddField("Genre", string.Join(", ", genres), true);
-
-            embed = embed.AddField("Label", album.Label?.Name ?? "oopsie no label", true)
-                .AddField("Tracklist", sb1.ToString());
-
-            if (sb2.Length > 0)
-                embed = embed.AddField("Tracklist (cont.)", sb2.ToString());
-            if (sb3.Length > 0)
-                embed = embed.AddField("Tracklist (cont. again)", sb3.ToString());
-
-            await Context.Message.ReplyAsync(embed: embed.Build());
         }
 
         [Command("isrc"), Alias("i"), Summary("Search by ISRC")]

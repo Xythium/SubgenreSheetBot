@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading.Tasks;
 using BeatportApi.Beatport;
@@ -73,11 +74,18 @@ namespace Common
                 releaseDate = "(error)";
             embed = embed.AddField("Release Date", releaseDate, true);
 
-            if (!string.IsNullOrWhiteSpace(album.CatalogNumber))
-                embed = embed.AddField("Catalog", album.CatalogNumber, true);
+            if (!string.IsNullOrWhiteSpace(album.CatalogNumber) && !string.IsNullOrWhiteSpace(album.Barcode) && album.CatalogNumber == album.Barcode)
+            {
+                embed = embed.AddField("Barcode/Catalog", album.CatalogNumber, true);
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(album.CatalogNumber))
+                    embed = embed.AddField("Catalog", album.CatalogNumber, true);
 
-            if (!string.IsNullOrWhiteSpace(album.Barcode))
-                embed = embed.AddField("Barcode", album.Barcode, true);
+                if (!string.IsNullOrWhiteSpace(album.Barcode))
+                    embed = embed.AddField("Barcode", album.Barcode, true);
+            }
 
             MemoryStream ms = null;
 
@@ -103,22 +111,32 @@ namespace Common
                     embed = embed.AddField(name, text);
                 }
 
+            if (album.FreeDownloads.Count > 0)
+            {
+                var sb = new StringBuilder();
+                foreach (var download in album.FreeDownloads)
+                    sb.AppendLine($"`{download.Start:yyyy-MM-dd} - {download.End:yyyy-MM-dd}`");
+                
+                embed = embed.AddField("Free Downloads", sb.ToString());
+            }
+
             if (!string.IsNullOrWhiteSpace(album.Description))
-                embed = embed.WithDescription(album.Description);
+                embed = embed.WithDescription(new string(album.Description.Take(150)
+                    .ToArray()));
 
             return (embed, ms);
         }
 
-        public static string FormatTrack(GenericTrack track, bool includeArtist = false)
+        private static string FormatTrack(GenericTrack track, bool includeArtist = false)
         {
             var featureList = new List<string>
             {
                 track.Duration.ToString("m':'ss")
             };
 
-            if (track.Bpm != null && track.Bpm != 0)
+            if (!string.IsNullOrWhiteSpace(track.Bpm) && track.Bpm != "0")
             {
-                featureList.Add(track.Bpm.ToString());
+                featureList.Add(track.Bpm);
             }
 
             if (track.Key != null)

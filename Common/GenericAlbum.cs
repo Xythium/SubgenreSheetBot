@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using BeatportApi.Beatport;
 using Common.AppleMusic;
 using Serilog;
 using SpotifyAPI.Web;
@@ -10,6 +11,8 @@ namespace Common
     public class GenericAlbum
     {
         public List<GenericTrack> Tracks { get; set; }
+
+        public List<GenericFreeDownload> FreeDownloads { get; set; }
 
         public string FirstBillingArtist { get; set; }
 
@@ -72,7 +75,7 @@ namespace Common
             return genericAlbum;
         }
 
-        public static GenericAlbum FromAlbum(FullAlbum album)
+        public static GenericAlbum FromAlbum(FullAlbum album, List<FullTrack> tracks, List<TrackAudioFeatures> features)
         {
             var images = album.Images.OrderByDescending(i => i.Width)
                 .ToArray();
@@ -86,22 +89,65 @@ namespace Common
                     .ToList(),
                 FirstBillingArtist = album.Artists.First()
                     .Name,
-                Barcode = album.ExternalIds["upc"],
+                Barcode = album.ExternalIds.ContainsKey("upc") ? album.ExternalIds["upc"] : null,
                 CatalogNumber = null,
                 Description = null,
-                Image = images[0]
-                    .Url,
+                Image = images.FirstOrDefault()
+                    ?.Url,
                 Name = album.Name,
                 ReleaseDate = album.ReleaseDate,
                 Url = album.ExternalUrls["spotify"],
                 Label = album.Label,
-                Tracks = album.Tracks.Items.Select(GenericTrack.FromTrack)
+                Tracks = tracks.Select(t => GenericTrack.FromTrack(t, features.SingleOrDefault(f => f.Uri == t.Uri)))
                     .ToList()
             };
-            
-            Log.Information("ccc");
 
             return genericAlbum;
+        }
+
+        public static GenericAlbum FromAlbum(BeatportRelease album, List<BeatportTrack> tracks)
+        {
+            var images = album.Image.DynamicUri.Replace("{w}", "1400")
+                .Replace("{h}", "1400");
+
+            var genericAlbum = new GenericAlbum
+            {
+                Artists = album.Artists.Select(a => a.Name)
+                    .ToList(),
+                FirstBillingArtist = album.Artists.First()
+                    .Name,
+                Barcode = album.Upc,
+                CatalogNumber = album.CatalogNumber,
+                Description = album.Description,
+                Image = images,
+                Name = album.Name,
+                ReleaseDate = album.NewReleaseDate.ToString("yyyy-MM-dd"),
+                Url = $"https://www.beatport.com/release/{album.Slug}/{album.Id}",
+                Label = album.Label.Name,
+                Tracks = tracks.Select(GenericTrack.FromTrack)
+                    .ToList(),
+                FreeDownloads = tracks.SelectMany(t => t.FreeDownloads)
+                    .Select(GenericFreeDownload.FromTrack)
+                    .ToList()
+            };
+
+            return genericAlbum;
+        }
+    }
+
+    public class GenericFreeDownload
+    {
+        public DateTime Start { get; set; }
+
+        public DateTime End { get; set; }
+
+        public static GenericFreeDownload FromTrack(BeatportFreeDownload dl)
+        {
+            return new GenericFreeDownload
+            {
+                Start = dl.StartDate,
+                End = dl.EndDate
+            };
         }
     }
 }
