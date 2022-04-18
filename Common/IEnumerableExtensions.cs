@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Common
 {
-    public static class IEnumerableExtensions
+    /*public static class EnumerableExtensions
     {
         public static IEnumerable<TSource> ExceptBy<TSource, TSelector>(this IEnumerable<TSource> first, IEnumerable<TSelector> second, Func<TSource, TSelector> selector)
         {
@@ -49,5 +49,5 @@ namespace Common
                 }
             }
         }
-    }
+    }*/
 }

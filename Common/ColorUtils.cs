@@ -11,8 +11,8 @@ namespace Common
         public static uint MostCommonColor(string url)
         {
             var client = new RestClient();
-            var request = new RestRequest(url, Method.GET);
-            var data = client.DownloadData(request);
+            var request = new RestRequest(url, Method.Get);
+            var data = client.DownloadDataAsync(request).GetAwaiter().GetResult();
 
             using (var ms = new MemoryStream(data))
             using (var bitmap = new Bitmap(ms))

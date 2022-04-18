@@ -25,7 +25,7 @@ namespace BeatportApi.Beatsource
 
         public async Task<BeatsourceLogin> Login(string username, string password)
         {
-            var request = new RestRequest("https://www.beatsource.com/api/auth/login", Method.POST);
+            var request = new RestRequest("https://www.beatsource.com/api/auth/login", Method.Post);
             request.AddJsonBody(new
             {
                 data = new
@@ -66,7 +66,7 @@ namespace BeatportApi.Beatsource
 
         public async Task<BeatsourceResponse<BeatsourceRelease>> GetReleasesByLabelId(string labelId, int itemsPerPage = 200, int page = 1)
         {
-            var request = new RestRequest($"https://api.beatsource.com/v4/catalog/releases/?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.GET);
+            var request = new RestRequest($"https://api.beatsource.com/v4/catalog/releases/?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.Get);
 
             var response = await client.ExecuteAsync(request);
 
@@ -92,7 +92,7 @@ namespace BeatportApi.Beatsource
 
         public async Task<BeatsourceResponse<BeatsourceTrack>> GetTracksByReleaseId(int releaseId, int itemsPerPage = 200, int page = 1)
         {
-            var request = new RestRequest($"https://api.beatsource.com/v4/catalog/releases/{releaseId}/tracks/?per_page={itemsPerPage}&page={page}/", Method.GET);
+            var request = new RestRequest($"https://api.beatsource.com/v4/catalog/releases/{releaseId}/tracks/?per_page={itemsPerPage}&page={page}/", Method.Get);
 
             var response = await client.ExecuteAsync(request);
 
@@ -118,7 +118,7 @@ namespace BeatportApi.Beatsource
 
         public async Task<BeatsourceRelease> GetReleaseById(int releaseId)
         {
-            var request = new RestRequest($"https://api.beatsource.com/v4/catalog/releases/{releaseId}/", Method.GET);
+            var request = new RestRequest($"https://api.beatsource.com/v4/catalog/releases/{releaseId}/", Method.Get);
 
             var response = await client.ExecuteAsync(request);
 
@@ -144,7 +144,7 @@ namespace BeatportApi.Beatsource
 
         public async Task<BeatsourceTrack> GetTrackByTrackId(int trackId)
         {
-            var request = new RestRequest($"https://api.beatsource.com/v4/catalog/tracks/{trackId}/", Method.GET);
+            var request = new RestRequest($"https://api.beatsource.com/v4/catalog/tracks/{trackId}/", Method.Get);
 
             var response = await client.ExecuteAsync(request);
 
@@ -158,7 +158,7 @@ namespace BeatportApi.Beatsource
 
         public async Task<BeatsourceTrack> GetTrackByTrackId(string trackId)
         {
-            var request = new RestRequest($"https://api.beatsource.com/v4/catalog/tracks/{trackId}/", Method.GET);
+            var request = new RestRequest($"https://api.beatsource.com/v4/catalog/tracks/{trackId}/", Method.Get);
 
             var response = await client.ExecuteAsync(request);
 
