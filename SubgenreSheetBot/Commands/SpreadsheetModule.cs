@@ -278,6 +278,8 @@ namespace SubgenreSheetBot.Commands
             var description = BuildTopNumberOfTracksList(tracks, 10, out var top, out var numArtists);
             var bpmList = BuildBpmList(tracks, 20);
 
+            var subgenres = BuildTopSubgenreList(tracks, 10, true, out var topSubgenre);
+
             var earliest = tracks.Last();
             var latest = tracks.First();
             var now = DateTime.Now;
@@ -287,6 +289,7 @@ namespace SubgenreSheetBot.Commands
                 .WithDescription($"We have {tracks.Length} {search} tracks, from {numArtists} artists.\r\n" + $"The first track {IsWas(earliest.Date, now)} on {earliest.Date:Y} by {earliest.FormattedArtists} and the latest {IsWas(latest.Date, now)} on {latest.Date:Y} by {latest.FormattedArtists}")
                 .WithColor(color)
                 .AddField($"Top {top} Artists", description.ToString(), true)
+                .AddField($"Top {topSubgenre} Subgenres", subgenres.ToString(), true)
                 .AddField("BPM", bpmList.ToString(), true);
 
             await Context.Message.ReplyAsync(embed: embed.Build());
