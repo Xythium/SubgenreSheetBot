@@ -26,7 +26,7 @@ namespace SubgenreSheetBot.Commands
 
             if (game != null)
             {
-                await ReplyAsync($"There is already a game between players {string.Join(" vs ", actualPlayers.Select(u => $"`{u}`"))}");
+                await Context.Message.ReplyAsync($"There is already a game between players {string.Join(" vs ", actualPlayers.Select(u => $"`{u}`"))}");
                 return;
             }
 
@@ -36,7 +36,7 @@ namespace SubgenreSheetBot.Commands
             };
             games.Add(game);
 
-            await ReplyAsync($"Starting match: {string.Join(" vs ", actualPlayers.Select(u => $"`{u}`"))}");
+            await Context.Message.ReplyAsync($"Starting match: {string.Join(" vs ", actualPlayers.Select(u => $"`{u}`"))}");
             await PrintScores(game);
         }
     }

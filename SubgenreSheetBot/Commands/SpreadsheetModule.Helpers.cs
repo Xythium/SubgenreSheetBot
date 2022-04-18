@@ -55,7 +55,7 @@ namespace SubgenreSheetBot.Commands
         private async Task RevalidateCache()
         {
             if (_lastTime == null || DateTime.UtcNow.Subtract(_lastTime.Value)
-                .TotalSeconds > 60)
+                    .TotalSeconds > 60)
             {
                 var now = DateTime.UtcNow;
 
@@ -360,7 +360,7 @@ namespace SubgenreSheetBot.Commands
             var builder = new EmbedBuilder().WithColor(GetGenreColor(track.Genre))
                 .WithFields(fields)
                 .Build();
-            await ReplyAsync(null, false, builder);
+            await Context.Message.ReplyAsync(null, false, builder);
         }
 
         private string BoolToEmoji(bool value)
@@ -398,13 +398,13 @@ namespace SubgenreSheetBot.Commands
 
             var builder = new EmbedBuilder().WithFields(fields)
                 .Build();
-            await ReplyAsync(null, false, builder);
+            await Context.Message.ReplyAsync(null, false, builder);
         }
 
         private async Task SendTrackList(string search, string[] artists, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
         {
             var sb = BuildTrackList(search, artists, tracks, includeGenreless, numLatest, numEarliest, includeIndex, includeArtist, includeTitle, includeLabel, includeDate);
-            await ReplyAsync(sb.ToString());
+            await Context.Message.ReplyAsync(sb.ToString());
         }
 
         private static StringBuilder BuildTrackList(string search, string[] artists, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
@@ -486,7 +486,7 @@ namespace SubgenreSheetBot.Commands
             var bpms = tracks.SelectMany(t => t.BpmList)
                 .Select(d => new
                 {
-                    From = (int) (d / range) * range + 1,
+                    From = (int)(d / range) * range + 1,
                     //To = (int)(d / 10) * 10 + 10,
                 })
                 .GroupBy(d => d, d => d, (d, e) => new
@@ -658,8 +658,8 @@ namespace SubgenreSheetBot.Commands
                     }
                     catch (Exception ex)
                     {
-                        await ReplyAsync($"({row.Count}) {string.Join(", ", row)}");
-                        await ReplyAsync(ex.ToString());
+                        await Context.Message.ReplyAsync($"({row.Count}) {string.Join(", ", row)}");
+                        await Context.Message.ReplyAsync(ex.ToString());
                         return null;
                     }
                 }
@@ -677,7 +677,7 @@ namespace SubgenreSheetBot.Commands
             }
             else
             {
-                await ReplyAsync(str);
+                await Context.Message.ReplyAsync(str);
             }
         }
 
@@ -685,7 +685,7 @@ namespace SubgenreSheetBot.Commands
         {
             if (message == null)
             {
-                return message = await ReplyAsync(str);
+                return message = await Context.Message.ReplyAsync(str);
             }
 
             await message.ModifyAsync(m => m.Content = str);
@@ -890,7 +890,7 @@ namespace SubgenreSheetBot.Commands
             if (index >= row.Count)
                 return def;
 
-            var str = (string) row[index];
+            var str = (string)row[index];
             if (string.IsNullOrWhiteSpace(str))
                 return def;
 
@@ -902,7 +902,7 @@ namespace SubgenreSheetBot.Commands
             if (index >= row.Count)
                 return def;
 
-            var str = (string) row[index];
+            var str = (string)row[index];
             if (string.IsNullOrWhiteSpace(str))
                 return def;
 
@@ -920,7 +920,7 @@ namespace SubgenreSheetBot.Commands
             if (index >= row.Count)
                 return def;
 
-            var str = (string) row[index];
+            var str = (string)row[index];
             if (string.IsNullOrWhiteSpace(str) || str == "--:--")
                 return def;
 
@@ -938,7 +938,7 @@ namespace SubgenreSheetBot.Commands
             if (index >= row.Count)
                 return def;
 
-            var str = (string) row[index];
+            var str = (string)row[index];
             if (string.IsNullOrWhiteSpace(str))
                 return def;
 

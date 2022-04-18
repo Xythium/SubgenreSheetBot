@@ -19,9 +19,7 @@ namespace SubgenreSheetBot.Commands
     public partial class SpreadsheetModule : ModuleBase
     {
         [Command("track"), Alias("t"), Summary("Search for a track on the sheet")]
-        public async Task Track(
-            [Remainder, Summary("Track to search for")]
-            string search)
+        public async Task Track([Remainder, Summary("Track to search for")] string search)
         {
             await RevalidateCache();
 
@@ -38,7 +36,7 @@ namespace SubgenreSheetBot.Commands
             }
             else if (split.Length != 2)
             {
-                await ReplyAsync($"cannot parse `{search}` into `Artist - Title` or `Title`");
+                await Context.Message.ReplyAsync($"cannot parse `{search}` into `Artist - Title` or `Title`");
                 return;
             }
             else
@@ -48,7 +46,7 @@ namespace SubgenreSheetBot.Commands
 
                 if (tracksByArtist.Count == 0)
                 {
-                    await ReplyAsync($"no tracks found by artist `{artist}`");
+                    await Context.Message.ReplyAsync($"no tracks found by artist `{artist}`");
                     return;
                 }
 
@@ -57,14 +55,14 @@ namespace SubgenreSheetBot.Commands
 
                 if (tracks.Count == 0)
                 {
-                    await ReplyAsync($"i found the artist `{artist}` but i cannot find the track `{title}`");
+                    await Context.Message.ReplyAsync($"i found the artist `{artist}` but i cannot find the track `{title}`");
                     return;
                 }
             }
 
             if (tracks.Count == 0)
             {
-                await ReplyAsync($"pissed left pant");
+                await Context.Message.ReplyAsync($"pissed left pant");
                 return;
             }
 
@@ -75,9 +73,7 @@ namespace SubgenreSheetBot.Commands
         }
 
         [Command("trackexact"), Alias("te"), Summary("Search for a track on the sheet")]
-        public async Task TrackExact(
-            [Remainder, Summary("Track to search for")]
-            string search)
+        public async Task TrackExact([Remainder, Summary("Track to search for")] string search)
         {
             await RevalidateCache();
 
@@ -88,7 +84,7 @@ namespace SubgenreSheetBot.Commands
 
             if (split.Length != 2)
             {
-                await ReplyAsync($"cannot parse `{search}` into `Artist - Title`");
+                await Context.Message.ReplyAsync($"cannot parse `{search}` into `Artist - Title`");
                 return;
             }
 
@@ -97,7 +93,7 @@ namespace SubgenreSheetBot.Commands
 
             if (tracksByArtist.Count == 0)
             {
-                await ReplyAsync($"no tracks found by artist `{artist}`");
+                await Context.Message.ReplyAsync($"no tracks found by artist `{artist}`");
                 return;
             }
 
@@ -106,7 +102,7 @@ namespace SubgenreSheetBot.Commands
 
             if (tracks.Count == 0)
             {
-                await ReplyAsync($"i found the artist `{artist}` but i cannot find the track `{title}`");
+                await Context.Message.ReplyAsync($"i found the artist `{artist}` but i cannot find the track `{title}`");
                 return;
             }
 
@@ -117,9 +113,7 @@ namespace SubgenreSheetBot.Commands
         }
 
         [Command("trackinfoexact"), Alias("tie"), Summary("Search for a track on the sheet")]
-        public async Task TrackInfoExact(
-            [Remainder, Summary("Track to search for")]
-            string search)
+        public async Task TrackInfoExact([Remainder, Summary("Track to search for")] string search)
         {
             await RevalidateCache();
 
@@ -130,7 +124,7 @@ namespace SubgenreSheetBot.Commands
 
             if (split.Length != 2)
             {
-                await ReplyAsync($"cannot parse `{search}` into `Artist - Title` [{string.Join(", ", split)}]");
+                await Context.Message.ReplyAsync($"cannot parse `{search}` into `Artist - Title` [{string.Join(", ", split)}]");
                 return;
             }
 
@@ -139,7 +133,7 @@ namespace SubgenreSheetBot.Commands
 
             if (tracksByArtist.Count == 0)
             {
-                await ReplyAsync($"no tracks found by artist `{artist}`");
+                await Context.Message.ReplyAsync($"no tracks found by artist `{artist}`");
                 return;
             }
 
@@ -148,7 +142,7 @@ namespace SubgenreSheetBot.Commands
 
             if (tracks.Count == 0)
             {
-                await ReplyAsync($"i found the artist `{artist}` but i cannot find the track `{title}`");
+                await Context.Message.ReplyAsync($"i found the artist `{artist}` but i cannot find the track `{title}`");
                 return;
             }
 
@@ -160,9 +154,7 @@ namespace SubgenreSheetBot.Commands
         }
 
         [Command("trackinfoforce"), Alias("tif"), Summary("Get information about a track")]
-        public async Task TrackInfoForce(
-            [Remainder, Summary("Track to search for")]
-            string search)
+        public async Task TrackInfoForce([Remainder, Summary("Track to search for")] string search)
         {
             var split = search.Split(new[]
             {
@@ -171,7 +163,7 @@ namespace SubgenreSheetBot.Commands
 
             if (split.Length < 2)
             {
-                await ReplyAsync($"cannot parse `{search}` into `Artist - Title` [{string.Join(", ", split)}]");
+                await Context.Message.ReplyAsync($"cannot parse `{search}` into `Artist - Title` [{string.Join(", ", split)}]");
                 return;
             }
 
@@ -183,9 +175,7 @@ namespace SubgenreSheetBot.Commands
         }
 
         [Command("artist"), Alias("a"), Summary("Returns info about an artist")]
-        public async Task Artist(
-            [Remainder, Summary("Artist to search for")]
-            string artist)
+        public async Task Artist([Remainder, Summary("Artist to search for")] string artist)
         {
             await RevalidateCache();
 
@@ -200,7 +190,7 @@ namespace SubgenreSheetBot.Commands
 
             if (tracksByArtist.Count == 0)
             {
-                await ReplyAsync($"no tracks found by artist `{artist}`");
+                await Context.Message.ReplyAsync($"no tracks found by artist `{artist}`");
                 return;
             }
 
@@ -208,9 +198,7 @@ namespace SubgenreSheetBot.Commands
         }
 
         [Command("artistdebug"), Alias("ad"), Summary("Returns a list of up to 15 artists most similar to the given input")]
-        public async Task ArtistDebug(
-            [Remainder, Summary("Artist to search for")]
-            string artist)
+        public async Task ArtistDebug([Remainder, Summary("Artist to search for")] string artist)
         {
             await RevalidateCache();
 
@@ -226,13 +214,11 @@ namespace SubgenreSheetBot.Commands
                 sb.AppendLine($"{Array.IndexOf(artists, track) + 1}. `{track.Value}` {track.Score}% similar");
             }
 
-            await ReplyAsync(sb.ToString());
+            await Context.Message.ReplyAsync(sb.ToString());
         }
 
         [Command("genre"), Alias("g"), Summary("Returns a list of up to 8 tracks of a given genre")]
-        public async Task Genre(
-            [Remainder, Summary("Genre to search for")]
-            string genre)
+        public async Task Genre([Remainder, Summary("Genre to search for")] string genre)
         {
             await RevalidateCache();
 
@@ -243,7 +229,7 @@ namespace SubgenreSheetBot.Commands
 
             if (test == null)
             {
-                await ReplyAsync($"Genre `{genre}` not found. Here is every genre I found: {string.Join(", ", genres)}");
+                await Context.Message.ReplyAsync($"Genre `{genre}` not found. Here is every genre I found: {string.Join(", ", genres)}");
                 return;
             }
 
@@ -253,7 +239,7 @@ namespace SubgenreSheetBot.Commands
 
             if (tracks.Count == 0)
             {
-                await ReplyAsync($"No tracks with genre `{test}` found");
+                await Context.Message.ReplyAsync($"No tracks with genre `{test}` found");
                 return;
             }
 
@@ -264,9 +250,7 @@ namespace SubgenreSheetBot.Commands
         }
 
         [Command("genreinfo"), Alias("gi"), Summary("Returns information of a genre")]
-        public async Task GenreInfo(
-            [Remainder, Summary("Genre to search for")]
-            string genre)
+        public async Task GenreInfo([Remainder, Summary("Genre to search for")] string genre)
         {
             await RevalidateCache();
 
@@ -277,7 +261,7 @@ namespace SubgenreSheetBot.Commands
 
             if (search == null)
             {
-                await ReplyAsync($"Genre `{genre}` not found. Here is every genre I found: {string.Join(", ", genres)}");
+                await Context.Message.ReplyAsync($"Genre `{genre}` not found. Here is every genre I found: {string.Join(", ", genres)}");
                 return;
             }
 
@@ -287,7 +271,7 @@ namespace SubgenreSheetBot.Commands
 
             if (tracks.Length == 0)
             {
-                await ReplyAsync($"No tracks with genre `{search}` found");
+                await Context.Message.ReplyAsync($"No tracks with genre `{search}` found");
                 return;
             }
 
@@ -305,13 +289,11 @@ namespace SubgenreSheetBot.Commands
                 .AddField($"Top {top} Artists", description.ToString(), true)
                 .AddField("BPM", bpmList.ToString(), true);
 
-            await ReplyAsync(embed: embed.Build());
+            await Context.Message.ReplyAsync(embed: embed.Build());
         }
 
         [Command("subgenre"), Alias("sg"), Summary("Returns a list of up to 8 tracks of a given subgenre")]
-        public async Task Subgenre(
-            [Remainder, Summary("Genre to search for")]
-            string genre)
+        public async Task Subgenre([Remainder, Summary("Genre to search for")] string genre)
         {
             await RevalidateCache();
 
@@ -320,7 +302,7 @@ namespace SubgenreSheetBot.Commands
 
             if (test == null)
             {
-                await ReplyAsync($"Subgenre `{genre}` not found");
+                await Context.Message.ReplyAsync($"Subgenre `{genre}` not found");
                 return;
             }
 
@@ -330,7 +312,7 @@ namespace SubgenreSheetBot.Commands
 
             if (tracks.Count == 0)
             {
-                await ReplyAsync($"No tracks with genre `{test}` found");
+                await Context.Message.ReplyAsync($"No tracks with genre `{test}` found");
                 return;
             }
 
@@ -341,9 +323,7 @@ namespace SubgenreSheetBot.Commands
         }
 
         [Command("subgenreexact"), Alias("sge"), Summary("Returns a list of up to 8 tracks of a given subgenre")]
-        public async Task SubgenreExact(
-            [Remainder, Summary("Genre to search for")]
-            string genre)
+        public async Task SubgenreExact([Remainder, Summary("Genre to search for")] string genre)
         {
             await RevalidateCache();
 
@@ -354,7 +334,7 @@ namespace SubgenreSheetBot.Commands
 
             if (test == null)
             {
-                await ReplyAsync($"Genre `{genre}` not found");
+                await Context.Message.ReplyAsync($"Genre `{genre}` not found");
                 return;
             }
 
@@ -364,7 +344,7 @@ namespace SubgenreSheetBot.Commands
 
             if (tracks.Count == 0)
             {
-                await ReplyAsync($"No tracks with genre `{test}` found");
+                await Context.Message.ReplyAsync($"No tracks with genre `{test}` found");
                 return;
             }
 
@@ -410,7 +390,7 @@ namespace SubgenreSheetBot.Commands
 
             if (string.IsNullOrWhiteSpace(test))
             {
-                await ReplyAsync($"Cannot find the label `{label}`");
+                await Context.Message.ReplyAsync($"Cannot find the label `{label}`");
                 return;
             }
 
@@ -418,7 +398,7 @@ namespace SubgenreSheetBot.Commands
 
             if (tracks.Length < 1)
             {
-                await ReplyAsync($"Cannot find any tracks by the label `{test}`");
+                await Context.Message.ReplyAsync($"Cannot find any tracks by the label `{test}`");
                 return;
             }
 
@@ -443,7 +423,7 @@ namespace SubgenreSheetBot.Commands
             if (File.Exists($"logo_{test}.jpg"))
                 embed = embed.WithThumbnailUrl($"https://raw.githubusercontent.com/Xythium/SubgenreSheetBot/master/SubgenreSheetBot/logo_{HttpUtility.UrlPathEncode(test)}.jpg");
 
-            await ReplyAsync(embed: embed.Build());
+            await Context.Message.ReplyAsync(embed: embed.Build());
         }
 
         [Command("labelartists"), Alias("la")]
@@ -455,7 +435,7 @@ namespace SubgenreSheetBot.Commands
 
             if (string.IsNullOrWhiteSpace(test))
             {
-                await ReplyAsync($"Cannot find the label `{label}`");
+                await Context.Message.ReplyAsync($"Cannot find the label `{label}`");
                 return;
             }
 
@@ -535,7 +515,7 @@ namespace SubgenreSheetBot.Commands
             var sb = new StringBuilder("This would be submitted if Mark enabled it:\r\n");
             sb.AppendLine($"User Agent: {GetQuery().UserAgent}");
 
-            var message = await ReplyAsync("recordings found: 0");
+            var message = await Context.Message.ReplyAsync("recordings found: 0");
             var found = 0;
             var lastSend = new DateTime(1970, 1, 1);
 
@@ -552,7 +532,7 @@ namespace SubgenreSheetBot.Commands
 
                 if (label == null)
                 {
-                    await ReplyAsync($"{l} not found");
+                    await Context.Message.ReplyAsync($"{l} not found");
                     continue;
                 }
 
@@ -580,16 +560,16 @@ namespace SubgenreSheetBot.Commands
                 _addedLabels.Add(l);
             }
 
-            await ReplyAsync($"{_recordings.Count} tracks");
+            await Context.Message.ReplyAsync($"{_recordings.Count} tracks");
 
             var notFound = new List<Entry>();
 
             foreach (var entry in _entries)
             {
                 if (entry.SubgenresList.SequenceEqual(new[]
-                {
-                    "?"
-                }))
+                    {
+                        "?"
+                    }))
                     continue;
 
                 var tags = GetQuery()
@@ -611,7 +591,7 @@ namespace SubgenreSheetBot.Commands
                         found++;
 
                         if (DateTime.UtcNow.Subtract(lastSend)
-                            .TotalSeconds > 10)
+                                .TotalSeconds > 10)
                         {
                             message = await UpdateOrSend(message, $"recordings found: {++found}");
                             lastSend = DateTime.UtcNow;
@@ -648,7 +628,7 @@ namespace SubgenreSheetBot.Commands
 
             if (guild == null)
             {
-                await ReplyAsync($"server not found. {string.Join(", ", guilds.Select(g => g.Name))}");
+                await Context.Message.ReplyAsync($"server not found. {string.Join(", ", guilds.Select(g => g.Name))}");
                 return;
             }
 
@@ -657,7 +637,7 @@ namespace SubgenreSheetBot.Commands
 
             if (chl == null)
             {
-                await ReplyAsync($"channel not found. {string.Join(", ", channels.Select(g => g.Name))}");
+                await Context.Message.ReplyAsync($"channel not found. {string.Join(", ", channels.Select(g => g.Name))}");
                 return;
             }
 

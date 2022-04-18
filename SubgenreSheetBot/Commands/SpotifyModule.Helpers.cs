@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Common.Spotify;
 using Discord;
 using Serilog;
 using SpotifyAPI.Web;
@@ -53,7 +54,7 @@ namespace SubgenreSheetBot.Commands
         {
             if (message == null)
             {
-                return message = await ReplyAsync(str);
+                return message = await Context.Message.ReplyAsync(str);
             }
 
             await message.ModifyAsync(m => m.Content = str);
@@ -71,7 +72,7 @@ namespace SubgenreSheetBot.Commands
             }
             else
             {
-                await ReplyAsync(str);
+                await Context.Message.ReplyAsync(str);
             }
         }
 

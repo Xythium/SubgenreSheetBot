@@ -27,7 +27,7 @@ namespace SubgenreSheetBot.Commands
                 embed = embed.AddField(player.Username, sb.ToString(), true);
             }
 
-            await ReplyAsync(embed: embed.Build());
+            await Context.Message.ReplyAsync(embed: embed.Build());
         }
     }
 }
