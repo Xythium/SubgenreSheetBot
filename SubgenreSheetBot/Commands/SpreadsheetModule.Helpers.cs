@@ -516,12 +516,38 @@ namespace SubgenreSheetBot.Commands
                     Key = d,
                     Count = e.Count()
                 })
+                .Where(k => k.Key != "Release")
                 .Where(d => ignoreUnknown && d.Key != "?")
                 .OrderByDescending(d => d.Count)
                 .ThenBy(d => d.Key)
                 .Take(top)
                 .ToArray();
 
+            var genreList = new StringBuilder();
+
+            foreach (var grouping in genres)
+            {
+                genreList.AppendLine($"{grouping.Key}: {grouping.Count}");
+            }
+
+            return genreList;
+        }
+
+        private static StringBuilder BuildTopSubgenreList(Entry[] tracks, int top, bool ignoreUnknown, out int topSubgenre)
+        {
+            var genres = tracks.SelectMany(t => t.SubgenresList)
+                .GroupBy(d => d, d => d, (d, e) => new KeyCount
+                {
+                    Key = d,
+                    Count = e.Count()
+                })
+                .Where(k => k.Key != "Release")
+                .Where(d => ignoreUnknown && d.Key != "?")
+                .OrderByDescending(d => d.Count)
+                .ThenBy(d => d.Key)
+                .Take(top)
+                .ToArray();
+            topSubgenre = genres.Length;
             var genreList = new StringBuilder();
 
             foreach (var grouping in genres)
@@ -615,9 +641,12 @@ namespace SubgenreSheetBot.Commands
             var embed = new EmbedBuilder().WithTitle(string.Join(", ", artists))
                 .WithDescription($"`{search}` matches the artists {string.Join(", ", artists)}. The latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and the first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**")
                 .AddField("Tracks", BuildTrackList(search, artists, tracks, includeArtist: false)
-                    .ToString());
+                    .ToString())
+                .AddField("Genres", BuildTopGenreList(tracks.ToArray(), 5)
+                    .ToString(), true);
+            ;
 
-            await ReplyAsync(embed: embed.Build());
+            await Context.Message.ReplyAsync(embed: embed.Build());
         }
 
         private async Task<List<Entry>> BatchRequest(params string[] ranges)
@@ -850,6 +879,7 @@ namespace SubgenreSheetBot.Commands
             var spotify = GetBoolArgument(row, B, false);
             var soundcloud = GetBoolArgument(row, C, false);
             var beatport = GetBoolArgument(row, D, false);
+            var bandcamp = GetBoolArgument(row, E, false);
             var genre = GetStringArgument(row, F, null);
             var subgenre = GetStringArgument(row, G, null);
             var artists = GetStringArgument(row, H, null);
