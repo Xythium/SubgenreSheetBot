@@ -11,7 +11,11 @@ namespace SubgenreSheetBot
 
         public SubgenreSheetBot(string token) : base(token) { }
 
-        public SubgenreSheetBot(string token, string commandPrefix) : base(token, commandPrefix) { }
+        public SubgenreSheetBot(string token, string commandPrefix) : base(token, commandPrefix)
+        {
+            BeatportStore.GetStore()
+                .Conventions.MaxNumberOfRequestsPerSession = 200;
+        }
 
         public SubgenreSheetBot(string token, string commandPrefix, DiscordSocketConfig socketConfig) : base(token, commandPrefix, socketConfig) { }
     }

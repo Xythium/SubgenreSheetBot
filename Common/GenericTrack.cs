@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using BeatportApi.Beatport;
 using Common.AppleMusic;
+using Common.Spotify;
 using Serilog;
 using SpotifyAPI.Web;
 
@@ -11,7 +13,7 @@ namespace Common
     {
         public TimeSpan Duration { get; set; }
 
-        public int? Bpm { get; set; }
+        public string Bpm { get; set; }
 
         public string Key { get; set; }
 
@@ -41,15 +43,31 @@ namespace Common
             };
         }
 
-        public static GenericTrack FromTrack(SimpleTrack track)
+        public static GenericTrack FromTrack(BeatportTrack song)
         {
-            Log.Information("ddd");
+           
+            return new GenericTrack
+            {
+                Duration = song.Length,
+                Bpm = song.Bpm?.ToString(),
+                Key = song.Key?.Name,
+                Isrc = song.Isrc,
+                Name = song.Name,
+                MixName = song.MixName,
+                Number = song.Number,
+                Artists = song.Artists.Select(a => a.Name)
+                    .ToList()
+            };
+        }
+
+        public static GenericTrack FromTrack(FullTrack track, TrackAudioFeatures? features)
+        {
             return new GenericTrack
             {
                 Duration = TimeSpan.FromMilliseconds(track.DurationMs),
-                Bpm = null,
-                Key = null,
-                Isrc = null,
+                Bpm = features != null ? SpotifyUtils.BpmToString(features) : null,
+                Key = features != null ? $"{SpotifyUtils.IntToKey(features.Key)} {SpotifyUtils.IntToMode(features.Mode)}" : null,
+                Isrc = track.ExternalIds.ContainsKey("isrc") ? track.ExternalIds["isrc"] : null,
                 Name = track.Name,
                 MixName = null,
                 Number = track.TrackNumber,
