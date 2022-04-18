@@ -172,14 +172,27 @@ namespace SubgenreSheetBot.Commands
         {
             using var session = SubgenreSheetBot.BeatportStore.OpenSession();
 
-            var albums = session.Query<BeatportRelease>("ReleaseByLabel")
-                .Search(r => r.Label.Name, labelName)
-                .ToList();
+            var albums = new List<BeatportRelease>();
+
+            var query = session.Advanced.Stream(session.Query<BeatportRelease>("ReleaseByLabel"));
+
+            while (query.MoveNext())
+            {
+                if (query.Current == null)
+                    throw new Exception();
+
+                var album = query.Current.Document;
+                if (!album.Label.Name.StartsWith(labelName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                albums.Add(album);
+            }
+
             var sb = new StringBuilder();
 
             foreach (var album in albums.OrderByDescending(a => a.NewReleaseDate))
             {
-                var line = $"{album.ArtistConcat} - {album.Name} ({album.NewReleaseDate:yyyy-MM-dd})";
+                var line = $"{album.ArtistConcat} - {album.Name} ({album.CatalogNumber} {album.NewReleaseDate:yyyy-MM-dd})";
                 sb.AppendLine(line);
             }
 
