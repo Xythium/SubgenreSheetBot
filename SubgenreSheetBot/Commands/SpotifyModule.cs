@@ -173,11 +173,11 @@ namespace SubgenreSheetBot.Commands
 
             if (sb.Length < 1)
             {
-                await ReplyAsync("pissed my pant");
+                await Context.Message.ReplyAsync("pissed my pant");
                 return;
             }
 
-            //  await ReplyAsync($"{playlist.Uri}");
+            //  await Context.Message.ReplyAsync($"{playlist.Uri}");
             if (sb.Length > 2000)
             {
                 var writer = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
@@ -185,61 +185,7 @@ namespace SubgenreSheetBot.Commands
             }
             else
             {
-                await ReplyAsync(sb.ToString());
-            }
-        }
-
-        [Command("label"), Alias("l"), Summary("Get all releases from a label from a certain year")]
-        public async Task Label([Summary("Year to find releases for")] int year, [Remainder, Summary("Label name to search for")] string labelName)
-        {
-            labelName = labelName.Replace("\"", "");
-            var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Album, $"label:\"{labelName}\" year:{year}"));
-
-            var albums = new List<FullAlbum>();
-            var sb = new StringBuilder();
-
-            await foreach (var album in api.Paginate(response.Albums, s => s.Albums))
-            {
-                var cacheResult = await GetAlbumOrCache(album.Id);
-
-                if (labelName.Contains("mau5trap", StringComparison.OrdinalIgnoreCase) && !labelName.Contains("mmj mau5trap", StringComparison.OrdinalIgnoreCase) && cacheResult.Album.Label.Contains("mmj mau5trap", StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                albums.Add(cacheResult.Album);
-
-                if (albums.Count == 2000)
-                {
-                    await ReplyAsync("reached 2000 album limit");
-                    break;
-                }
-            }
-
-            if (albums.Count < 1)
-            {
-                await ReplyAsync("no albums found");
-                return;
-            }
-
-            foreach (var album in albums.OrderByDescending(a => a.ReleaseDate))
-            {
-                var line = $"{string.Join(" & ", album.Artists.Select(a => $"{a.Name}{(a.Type != "artist" ? $" ({a.Type})" : "")}"))} - {album.Name} ({album.ReleaseDate})";
-                sb.AppendLine(line);
-            }
-
-            if (sb.Length < 1)
-            {
-                await ReplyAsync("pissed my pant");
-                return;
-            }
-
-            if (sb.Length > 2000)
-            {
-                var writer = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
-                await Context.Channel.SendFileAsync(writer, $"{labelName}-{year}.txt", $"I found {albums.Count} albums which does not fit in a discord message");
-            }
-            else
-            {
-                await ReplyAsync(sb.ToString());
+                await Context.Message.ReplyAsync(sb.ToString());
             }
         }
 
@@ -262,7 +208,7 @@ namespace SubgenreSheetBot.Commands
             }
             else
             {
-                await ReplyAsync($"couldnt find anything for {labelName}");
+                await Context.Message.ReplyAsync($"couldnt find anything for {labelName}");
             }
         }
 
@@ -297,7 +243,7 @@ namespace SubgenreSheetBot.Commands
 
                 if (++count == 2000)
                 {
-                    await ReplyAsync("too many tracks");
+                    await Context.Message.ReplyAsync("too many tracks");
                     break;
                 }
 
@@ -309,7 +255,7 @@ namespace SubgenreSheetBot.Commands
 
             if (message == null)
             {
-                await ReplyAsync($"Checking {searchedArtists.Count} artists & {trackArtists.Count} artists from every track");
+                await Context.Message.ReplyAsync($"Checking {searchedArtists.Count} artists & {trackArtists.Count} artists from every track");
             }
             else
             {
@@ -332,7 +278,7 @@ namespace SubgenreSheetBot.Commands
             }
             else
             {
-                await ReplyAsync($"couldnt find anything for {labelName}");
+                await Context.Message.ReplyAsync($"couldnt find anything for {labelName}");
             }
         }
 

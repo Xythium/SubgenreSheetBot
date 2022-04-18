@@ -22,7 +22,7 @@ namespace SubgenreSheetBot.Commands
         {
             if (!Uri.TryCreate(text, UriKind.Absolute, out var uri))
             {
-                await ReplyAsync($"{text} is not a valid URL");
+                await Context.Message.ReplyAsync($"{text} is not a valid URL");
                 return;
             }
 
@@ -37,7 +37,7 @@ namespace SubgenreSheetBot.Commands
 
             if (elem == null)
             {
-                await ReplyAsync("Could not find shoebox-media-api-cache-amp-music");
+                await Context.Message.ReplyAsync("Could not find shoebox-media-api-cache-amp-music");
                 return;
             }
 
@@ -56,7 +56,7 @@ namespace SubgenreSheetBot.Commands
                 }
                 else
                 {
-                    await ReplyAsync($"{property.Name}");
+                    await Context.Message.ReplyAsync($"{property.Name}");
                     return;
                 }
             }
@@ -69,7 +69,7 @@ namespace SubgenreSheetBot.Commands
                 file.Close();
             }
             else
-                await ReplyAsync(embed: embed.Build());
+                await Context.Message.ReplyAsync(embed: embed.Build());
         }
     }
 }

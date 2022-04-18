@@ -27,7 +27,7 @@ namespace SubgenreSheetBot.Commands
 
             if (!string.IsNullOrWhiteSpace(idResult.Error))
             {
-                await ReplyAsync($"{idResult.Error}");
+                await Context.Message.ReplyAsync($"{idResult.Error}");
                 return;
             }
 
@@ -36,7 +36,7 @@ namespace SubgenreSheetBot.Commands
 
             if (albumArtists.Count == 0)
             {
-                await ReplyAsync("the artist count is 0");
+                await Context.Message.ReplyAsync("the artist count is 0");
                 return;
             }
 
@@ -49,7 +49,7 @@ namespace SubgenreSheetBot.Commands
 
             if (!tracks.Any())
             {
-                await ReplyAsync("no tracks");
+                await Context.Message.ReplyAsync("no tracks");
             }
 
             //2009-09-22	House	Tech House | Progressive House	deadmau5	Lack of a Better Name	mau5trap	8:15	FALSE	128	FALSE	F min
@@ -58,8 +58,8 @@ namespace SubgenreSheetBot.Commands
                 sb.AppendLine($"`{album.NewReleaseDate},?,?,{track.ArtistConcat},{track.Name},{album.Label.Name},{TimeSpan.FromMilliseconds(track.LengthMs):m':'ss}`");
             }
 
-            await ReplyAsync(embed: embed.Build());
-            await ReplyAsync(sb.ToString());
+            await Context.Message.ReplyAsync(embed: embed.Build());
+            await Context.Message.ReplyAsync(sb.ToString());
         }
 
         [Command("album"), Alias("a", "release"), Summary("Get all tracks from an album")]
@@ -71,7 +71,7 @@ namespace SubgenreSheetBot.Commands
 
             if (!string.IsNullOrWhiteSpace(idResult.Error))
             {
-                await ReplyAsync($"{idResult.Error}");
+                await Context.Message.ReplyAsync($"{idResult.Error}");
                 return;
             }
 
@@ -253,11 +253,11 @@ namespace SubgenreSheetBot.Commands
 
             if (sb.Length < 1)
             {
-                await ReplyAsync("pissed my pant");
+                await Context.Message.ReplyAsync("pissed my pant");
                 return;
             }
 
-            //  await ReplyAsync($"{playlist.Uri}");
+            //  await Context.Message.ReplyAsync($"{playlist.Uri}");
             if (sb.Length > 2000)
             {
                 var writer = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
@@ -265,7 +265,7 @@ namespace SubgenreSheetBot.Commands
             }
             else
             {
-                await ReplyAsync(sb.ToString());
+                await Context.Message.ReplyAsync(sb.ToString());
             }
         }
     }
