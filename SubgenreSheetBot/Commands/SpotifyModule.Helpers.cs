@@ -21,7 +21,7 @@ namespace SubgenreSheetBot.Commands
 
         public SpotifyModule()
         {
-            if (api == null)
+            if (api is null)
             {
                 var config = SpotifyClientConfig.CreateDefault()
                     .WithAuthenticator(new ClientCredentialsAuthenticator(File.ReadAllText("spotify_id"), File.ReadAllText("spotify_secret")))
@@ -52,7 +52,7 @@ namespace SubgenreSheetBot.Commands
 
         private async Task<IUserMessage> UpdateOrSend(IUserMessage message, string str)
         {
-            if (message == null)
+            if (message is null)
             {
                 return message = await Context.Message.ReplyAsync(str);
             }

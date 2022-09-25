@@ -11,7 +11,7 @@ namespace BeatportApi.Beatport
     {
         private string _bearerToken;
 
-        private static JsonSerializerSettings serializerSettings = new JsonSerializerSettings
+        private static readonly JsonSerializerSettings serializerSettings = new()
         {
             MissingMemberHandling = MissingMemberHandling.Error
         };
@@ -53,7 +53,7 @@ namespace BeatportApi.Beatport
             try
             {
                 var res = JsonConvert.DeserializeObject<T>(json, serializerSettings);
-                if (res == null)
+                if (res is null)
                     throw new Exception($"Deserialization failed in {memberName}");
 
                 return res;

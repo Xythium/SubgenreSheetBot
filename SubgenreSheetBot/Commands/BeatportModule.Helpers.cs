@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using BeatportApi;
 using BeatportApi.Beatport;
 using Common;
@@ -68,7 +69,7 @@ namespace SubgenreSheetBot.Commands
             return sb.ToString();
         }
 
-        private static Task<BeatportRelease> GetAlbum(int albumId)
+        private static Task<BeatportRelease?> GetAlbum(int albumId)
         {
             using var session = SubgenreSheetBot.BeatportStore.OpenSession();
             return BeatportDbUtils.GetAlbumOrCache(api, session, albumId);
@@ -78,6 +79,53 @@ namespace SubgenreSheetBot.Commands
         {
             using var session = SubgenreSheetBot.BeatportStore.OpenSession();
             return album.GetTracksOrCache(api, session);
+        }
+
+        private static async Task<List<BeatportRelease>> GetAlbums(int labelId)
+        {
+            var releases = new List<BeatportRelease>();
+            var response = await api.GetReleasesByLabelId(labelId, 200);
+            return await GetAlbums(labelId, releases, response);
+        }
+
+        private static async Task<List<BeatportRelease>> GetAlbums(int labelId, List<BeatportRelease> releases, BeatportResponse<BeatportRelease> response)
+        {
+            if (response.Results == null || response.Results.Count < 1)
+                return releases;
+
+            await Task.WhenAll(response.Results.Select(async release =>
+            {
+                using var session = SubgenreSheetBot.BeatportStore.OpenSession();
+                var realRelease = await BeatportDbUtils.GetAlbumOrCache(api, session, release.Id);
+                if (realRelease == null)
+                    return;
+
+                if (realRelease.TrackUrls == null || realRelease.TrackUrls.Length < 1)
+                {
+                    //Log($"ERROR {release.Id} {release.Name}: no track urls");
+                    return;
+                }
+
+                session.SaveChanges();
+                releases.Add(realRelease);
+            }));
+
+            if (response.Next != null)
+            {
+                var url = new Uri($"https://{response.Next}");
+                var query = HttpUtility.ParseQueryString(url.Query);
+                var page = query.Get("page");
+
+                if (!int.TryParse(page, out var realPage))
+                {
+                    //Log($"ERROR: no page query {labelReleases.Next}");
+                }
+
+                response = await api.GetReleasesByLabelId(labelId, 200, realPage);
+                return await GetAlbums(labelId, releases, response);
+            }
+
+            return releases;
         }
     }
 }

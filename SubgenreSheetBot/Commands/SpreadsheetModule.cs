@@ -228,7 +228,7 @@ namespace SubgenreSheetBot.Commands
                 .ToArray();
             var test = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
 
-            if (test == null)
+            if (test is null)
             {
                 await Context.Message.ReplyAsync($"Genre `{genre}` not found. Here is every genre I found: {string.Join(", ", genres)}");
                 return;
@@ -260,7 +260,7 @@ namespace SubgenreSheetBot.Commands
                 .ToArray();
             var search = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
 
-            if (search == null)
+            if (search is null)
             {
                 await Context.Message.ReplyAsync($"Genre `{genre}` not found. Here is every genre I found: {string.Join(", ", genres)}");
                 return;
@@ -304,7 +304,7 @@ namespace SubgenreSheetBot.Commands
             var genres = GetAllSubgenres();
             var test = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
 
-            if (test == null)
+            if (test is null)
             {
                 await Context.Message.ReplyAsync($"Subgenre `{genre}` not found");
                 return;
@@ -336,7 +336,7 @@ namespace SubgenreSheetBot.Commands
                 .ToArray();
             var test = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
 
-            if (test == null)
+            if (test is null)
             {
                 await Context.Message.ReplyAsync($"Genre `{genre}` not found");
                 return;
@@ -725,7 +725,7 @@ namespace SubgenreSheetBot.Commands
                 }
             }
 
-            IQueryable<string> strs = null;
+            IQueryable<string>? strs = null;
 
             if (!string.IsNullOrWhiteSpace(arguments.Select))
             {
@@ -748,7 +748,7 @@ namespace SubgenreSheetBot.Commands
                 }
             }
 
-            if (strs.Any())
+            if (strs?.Any() ?? false)
             {
                 switch (arguments.Order)
                 {
@@ -767,7 +767,7 @@ namespace SubgenreSheetBot.Commands
             var stringResults = strs?.ToArray();
             var entryResults = query.ToArray();
 
-            if (stringResults.Length > 0)
+            if (stringResults?.Length > 0)
             {
                 var sb = new StringBuilder($"Found {stringResults.Length} results:\r\n");
 
@@ -788,8 +788,8 @@ namespace SubgenreSheetBot.Commands
             }
         }
 
-        static SortedSet<IRecording> _recordings = new SortedSet<IRecording>(new MusicBrainzTrackComparer());
-        static SortedSet<string> _addedLabels = new SortedSet<string>();
+        static SortedSet<IRecording> _recordings = new(new MusicBrainzTrackComparer());
+        static SortedSet<string> _addedLabels = new();
 
         [Command("mbsubmit")]
         public async Task MusicBrainzSubmit()
@@ -817,7 +817,7 @@ namespace SubgenreSheetBot.Commands
                         .FindLabelsAsync($"label:\"{l}\"", 1)).Results.FirstOrDefault()
                     ?.Item;
 
-                if (label == null)
+                if (label is null)
                 {
                     await Context.Message.ReplyAsync($"{l} not found");
                     continue;
@@ -828,12 +828,12 @@ namespace SubgenreSheetBot.Commands
 
                 foreach (var release in releases.Results)
                 {
-                    if (release.Media == null)
+                    if (release.Media is null)
                         continue;
 
                     foreach (var medium in release.Media)
                     {
-                        if (medium.Tracks == null)
+                        if (medium.Tracks is null)
                             continue;
 
                         foreach (var track in medium.Tracks)
@@ -913,7 +913,7 @@ namespace SubgenreSheetBot.Commands
             var guilds = await Context.Client.GetGuildsAsync();
             var guild = guilds.FirstOrDefault(g => string.Equals(g.Name, server, StringComparison.OrdinalIgnoreCase));
 
-            if (guild == null)
+            if (guild is null)
             {
                 await Context.Message.ReplyAsync($"server not found. {string.Join(", ", guilds.Select(g => g.Name))}");
                 return;
@@ -922,7 +922,7 @@ namespace SubgenreSheetBot.Commands
             var channels = await guild.GetChannelsAsync();
             var chl = (IMessageChannel) channels.FirstOrDefault(c => string.Equals(c.Name, channel, StringComparison.OrdinalIgnoreCase));
 
-            if (chl == null)
+            if (chl is null)
             {
                 await Context.Message.ReplyAsync($"channel not found. {string.Join(", ", channels.Select(g => g.Name))}");
                 return;
@@ -1018,7 +1018,7 @@ namespace SubgenreSheetBot.Commands
 
         public bool Equals(IRecording x, IRecording y)
         {
-            if (x == null || y == null)
+            if (x is null || y is null)
                 return false;
 
             return x.Id == y.Id;

@@ -8,12 +8,12 @@ namespace Common
     {
         public static IEnumerable<TSource> ExceptBy<TSource, TSelector>(this IEnumerable<TSource> first, IEnumerable<TSelector> second, Func<TSource, TSelector> selector)
         {
-            if (first == null)
+            if (first is null)
             {
                 throw new ArgumentNullException(nameof(first));
             }
 
-            if (second == null)
+            if (second is null)
             {
                 throw new ArgumentNullException(nameof(second));
             }
@@ -23,12 +23,12 @@ namespace Common
 
         public static IEnumerable<TSource> ExceptBy<TSource, TSelector>(this IEnumerable<TSource> first, IEnumerable<TSelector> second, Func<TSource, TSelector> selector, IEqualityComparer<TSelector> comparer)
         {
-            if (first == null)
+            if (first is null)
             {
                 throw new ArgumentNullException(nameof(first));
             }
 
-            if (second == null)
+            if (second is null)
             {
                 throw new ArgumentNullException(nameof(second));
             }

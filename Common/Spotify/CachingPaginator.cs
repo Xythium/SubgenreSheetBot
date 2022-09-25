@@ -15,11 +15,11 @@ namespace Common.Spotify
 
         public Task<IList<T>> PaginateAll<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector) { throw new NotImplementedException(); }
 
-        public async IAsyncEnumerable<T> Paginate<T>(IPaginatable<T> firstPage, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new CancellationToken())
+        public async IAsyncEnumerable<T> Paginate<T>(IPaginatable<T> firstPage, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new())
         {
-            if (firstPage == null)
+            if (firstPage is null)
                 throw new ArgumentNullException(nameof(firstPage));
-            if (connector == null)
+            if (connector is null)
                 throw new ArgumentNullException(nameof(connector));
 
             var page = firstPage;
@@ -41,13 +41,13 @@ namespace Common.Spotify
             }
         }
 
-        public async IAsyncEnumerable<T> Paginate<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new CancellationToken())
+        public async IAsyncEnumerable<T> Paginate<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new())
         {
-            if (firstPage == null)
+            if (firstPage is null)
                 throw new ArgumentNullException(nameof(firstPage));
-            if (mapper == null)
+            if (mapper is null)
                 throw new ArgumentNullException(nameof(mapper));
-            if (connector == null)
+            if (connector is null)
                 throw new ArgumentNullException(nameof(connector));
 
             var page = firstPage;

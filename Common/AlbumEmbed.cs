@@ -19,7 +19,7 @@ namespace Common
         {
             var tracklist = new List<StringBuilder>
             {
-                new StringBuilder()
+                new()
             };
 
             foreach (var track in album.Tracks)
@@ -38,7 +38,7 @@ namespace Common
                     break;
                 }
 
-                if (sb == null)
+                if (sb is null)
                 {
                     sb = new StringBuilder();
                     tracklist.Add(sb);
@@ -111,7 +111,7 @@ namespace Common
                     embed = embed.AddField(name, text);
                 }
 
-            if (album.FreeDownloads.Count > 0)
+            if (album.FreeDownloads?.Count > 0)
             {
                 var sb = new StringBuilder();
                 foreach (var download in album.FreeDownloads)
