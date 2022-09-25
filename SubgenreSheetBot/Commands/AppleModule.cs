@@ -26,42 +26,11 @@ namespace SubgenreSheetBot.Commands
                 return;
             }
 
-            var client = new RestClient();
-            var request = new RestRequest(uri, Method.Get);
-            var response = await client.ExecuteAsync(request);
+            var api = new AppleMusic();
+            using var session = SubgenreSheetBot.AppleMusicStore.OpenSession();
+            var apiCache = await AppleMusicDbUtils.GetAlbumOrCache(api, session, uri);
 
-            var document = new HtmlDocument();
-            document.LoadHtml(response.Content);
-
-            var elem = document.GetElementbyId("shoebox-media-api-cache-amp-music");
-
-            if (elem == null)
-            {
-                await Context.Message.ReplyAsync("Could not find shoebox-media-api-cache-amp-music");
-                return;
-            }
-
-            var apiCache = new ApiCache();
-            var obj = JObject.Parse(elem.InnerHtml);
-
-            foreach (var property in obj.Properties())
-            {
-                if (property.Name.Contains("storefronts"))
-                {
-                    apiCache.StoreFronts = JsonConvert.DeserializeObject<StoreFronts>(property.Value.ToString());
-                }
-                else if (property.Name.Contains("catalog"))
-                {
-                    apiCache.Catalog = JsonConvert.DeserializeObject<Catalog>(property.Value.ToString());
-                }
-                else
-                {
-                    await Context.Message.ReplyAsync($"{property.Name}");
-                    return;
-                }
-            }
-
-            var (embed, file) =  AlbumEmbed.EmbedBuilder(GenericAlbum.FromAlbum(apiCache.Catalog));
+            var (embed, file) = AlbumEmbed.EmbedBuilder(GenericAlbum.FromAlbum(apiCache.Catalog));
 
             if (file != null)
             {
