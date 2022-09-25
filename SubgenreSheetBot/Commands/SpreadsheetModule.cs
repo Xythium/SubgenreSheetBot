@@ -505,6 +505,47 @@ namespace SubgenreSheetBot.Commands
             await Context.Message.ReplyAsync(sb.ToString());
         }
 
+        [Command("markwhen")]
+        public async Task Markwhen()
+        {
+            await RevalidateCache();
+
+            var sb = new StringBuilder($"title: Timeline\r\n\r\n");
+
+            var subgenres = _entries.SelectMany(e => e.SubgenresList)
+                .Distinct()
+                .ToArray();
+
+            var (mostCommonToSubgenre, subgenreToEntry) = ByGenre(subgenres);
+
+            foreach (var (mostCommon, bySubgenres) in mostCommonToSubgenre)
+            {
+                sb.AppendLine($"group {mostCommon}");
+
+                foreach (var subgenre in bySubgenres)
+                {
+                    var entries = subgenreToEntry[subgenre];
+
+                    var dates = entries.Select(e => e.Date)
+                        .OrderBy(d => d)
+                        .ToArray();
+                    var first = dates.First();
+                    var last = dates.Last();
+
+                    if (first.ToString("MM/yyyy") == last.ToString("MM/yyyy"))
+                        sb.AppendLine($"{first:MM/yyyy}: {subgenre} #{mostCommon}");
+                    else if (DateTime.UtcNow.Subtract(last) < TimeSpan.FromDays(90))
+                        sb.AppendLine($"{first:MM/yyyy}-now: {subgenre} #{mostCommon}");
+                    else
+                        sb.AppendLine($"{first:MM/yyyy}-{last:MM/yyyy}: {subgenre} #{mostCommon}");
+                }
+
+                sb.AppendLine("endGroup");
+            }
+
+            await SendOrAttachment(sb.ToString());
+        }
+
         [NamedArgumentType]
         public class QueryArguments
         {
