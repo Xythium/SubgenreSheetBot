@@ -6,11 +6,17 @@ namespace SubgenreSheetBot
 {
     public class SubgenreSheetBot : Bot
     {
-        public static readonly DataStore BeatportStore = new DataStore("beatport");
-        public static readonly DataStore BeatsourceStore = new DataStore("beatsource");
-        public static readonly DataStore SpotifyStore = new DataStore("spotify");
+        public static readonly DataStore BeatportStore = new("beatport");
+        public static readonly DataStore BeatsourceStore = new("beatsource");
+        public static readonly DataStore SpotifyStore = new("spotify");
+        public static readonly DataStore AppleMusicStore = new("apple-music");
+        public static readonly DataStore MonstercatStore = new("monstercat");
 
-        public SubgenreSheetBot(string token) : base(token) { }
+        public SubgenreSheetBot(string token) : base(token)
+        {
+            BeatportStore.GetStore()
+                .Conventions.MaxNumberOfRequestsPerSession = 200;
+        }
 
         public SubgenreSheetBot(string token, string commandPrefix) : base(token, commandPrefix)
         {
@@ -18,6 +24,10 @@ namespace SubgenreSheetBot
                 .Conventions.MaxNumberOfRequestsPerSession = 200;
         }
 
-        public SubgenreSheetBot(string token, string commandPrefix, DiscordSocketConfig socketConfig) : base(token, commandPrefix, socketConfig) { }
+        public SubgenreSheetBot(string token, string commandPrefix, DiscordSocketConfig socketConfig) : base(token, commandPrefix, socketConfig)
+        {
+            BeatportStore.GetStore()
+                .Conventions.MaxNumberOfRequestsPerSession = 200;
+        }
     }
 }
