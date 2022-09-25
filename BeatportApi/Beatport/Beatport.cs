@@ -33,6 +33,21 @@ namespace BeatportApi.Beatport
             return result;
         }
 
+        public Task<BeatportResponse<BeatportTrack?>> GetTracksByLabelId(int labelId, int itemsPerPage = 200, int page = 1) { return GetTracksByLabelId(labelId.ToString(), itemsPerPage, page); }
+
+        public async Task<BeatportResponse<BeatportTrack>?> GetTracksByLabelId(string labelId, int itemsPerPage = 200, int page = 1)
+        {
+            var client = new RestClient();
+
+            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.Get);
+            request.AddHeader("origin", "www.beatport.com");
+            var response = await client.ExecuteAsync(request);
+
+            var result = Deserialize<BeatportResponse<BeatportTrack>>(response.Content, $"label{labelId}");
+
+            return result;
+        }
+
         private static T? Deserialize<T>(string json, string identifier, [CallerMemberName] string memberName = "")
         {
             try
@@ -45,25 +60,37 @@ namespace BeatportApi.Beatport
             }
             catch (Exception ex)
             {
-                var error = JsonConvert.DeserializeObject<BeatportError>(json);
-
-                switch (error.Detail)
+                try
                 {
-                    case "Internal server error":
-                        File.WriteAllText($"error-internal.{identifier}.txt", json);
-                        throw new InvalidDataException($"Internal Beatport in {memberName}: {ex}");
+                    var error = JsonConvert.DeserializeObject<BeatportError>(json);
 
-                    case "Not found.":
-                        File.WriteAllText($"error-notfound.{identifier}.txt", json);
-                        return default;
+                    switch (error.Detail)
+                    {
+                        case "Internal server error":
+                            File.WriteAllText($"errorbeatport-internal.{identifier}.txt", json);
+                            throw new InvalidDataException($"Internal Beatport in {memberName}: {ex}");
 
-                    case "Territory Restricted.":
-                        File.WriteAllText($"error-territory.{identifier}.txt", json);
-                        throw new InvalidDataException($"Territory restricted in {memberName}: {ex}");
+                        case "Not found.":
+                            File.WriteAllText($"errorbeatport-notfound.{identifier}.txt", json);
+                            return default;
 
-                    default:
-                        File.WriteAllText($"error.{identifier}.txt", json);
-                        throw new InvalidDataException($"Unknown error in {memberName}: {ex}");
+                        case "Territory Restricted.":
+                            File.WriteAllText($"errorbeatport-territory.{identifier}.txt", json);
+                            throw new InvalidDataException($"Territory restricted in {memberName}: {ex}");
+
+                        case "Authentication credentials were not provided.":
+                            File.WriteAllText($"errorbeatport-creds.{identifier}.txt", json);
+                            throw new InvalidDataException($"Authentication in {memberName}: {ex}");
+
+                        default:
+                            File.WriteAllText($"errorbeatport.{identifier}.txt", json);
+                            throw new InvalidDataException($"Unknown error in {memberName}: {ex}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    File.WriteAllText($"fatalbeatport.{identifier}.txt", json);
+                    throw new Exception($"Error parsing error {memberName} {identifier}: ```\r\n{json}\r\n```");
                 }
             }
 

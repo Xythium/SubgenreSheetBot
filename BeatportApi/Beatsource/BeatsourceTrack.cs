@@ -167,5 +167,11 @@ namespace BeatportApi.Beatsource
 
         [JsonProperty("is_dj_edit"), JsonRequired]
         public bool IsDjEdit { get; set; }
+        
+        [JsonProperty("is_dj_remix"),JsonRequired]
+        public bool IsDjRemix { get; set; }
+        
+        [JsonProperty("bsrc_remixer"),JsonRequired]
+        public string[] BsrcRemixer { get; set; }
     }
 }

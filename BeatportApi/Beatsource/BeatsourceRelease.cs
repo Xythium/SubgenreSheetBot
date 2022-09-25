@@ -34,7 +34,7 @@ namespace BeatportApi.Beatsource
         public bool IsExplicit { get; set; }
 
         [JsonProperty("grid")]
-        public string Grid { get; set; }
+        public string GrId { get; set; }
 
         [JsonProperty("id"), JsonRequired]
         public new int Id { get; set; }
@@ -98,5 +98,8 @@ namespace BeatportApi.Beatsource
 
         [JsonProperty("is_dj_edit"), JsonRequired]
         public bool IsDjEdit { get; set; }
+
+        [JsonProperty("is_dj_remix"),JsonRequired]
+        public bool IsDjRemix { get; set; }
     }
 }
