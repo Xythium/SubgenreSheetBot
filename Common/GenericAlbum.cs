@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using BeatportApi.Beatport;
+using BeatportApi.Beatsource;
 using Common.AppleMusic;
+using Common.AppleMusic.Api;
+using Common.Monstercat;
 using Serilog;
 using SpotifyAPI.Web;
 
@@ -69,7 +72,8 @@ namespace Common
                 ReleaseDate = album.Attributes.ReleaseDate,
                 Url = null, // todo
                 Label = album.Attributes.RecordLabel,
-                Tracks = songs
+                Tracks = songs,
+                FreeDownloads = new List<GenericFreeDownload>()
             };
 
             return genericAlbum;
@@ -99,7 +103,8 @@ namespace Common
                 Url = album.ExternalUrls["spotify"],
                 Label = album.Label,
                 Tracks = tracks.Select(t => GenericTrack.FromTrack(t, features.SingleOrDefault(f => f.Uri == t.Uri)))
-                    .ToList()
+                    .ToList(),
+                FreeDownloads = new List<GenericFreeDownload>()
             };
 
             return genericAlbum;
@@ -133,21 +138,79 @@ namespace Common
 
             return genericAlbum;
         }
-    }
 
-    public class GenericFreeDownload
-    {
-        public DateTime Start { get; set; }
-
-        public DateTime End { get; set; }
-
-        public static GenericFreeDownload FromTrack(BeatportFreeDownload dl)
+        public static GenericAlbum FromAlbum(BeatsourceRelease album, List<BeatsourceTrack> tracks)
         {
-            return new GenericFreeDownload
+            var images = album.Image.DynamicUri.Replace("{w}", "1400")
+                .Replace("{h}", "1400");
+
+            var genericAlbum = new GenericAlbum
             {
-                Start = dl.StartDate,
-                End = dl.EndDate
+                Artists = album.Artists.Select(a => a.Name)
+                    .ToList(),
+                FirstBillingArtist = album.Artists.First()
+                    .Name,
+                Barcode = album.Upc,
+                CatalogNumber = album.CatalogNumber,
+                Description = album.Description,
+                Image = images,
+                Name = album.Name,
+                ReleaseDate = album.NewReleaseDate.ToString("yyyy-MM-dd"),
+                Url = $"https://www.beatsource.com/release/{album.Slug}/{album.Id}",
+                Label = album.Label.Name,
+                Tracks = tracks.Select(GenericTrack.FromTrack)
+                    .ToList()
             };
+
+            return genericAlbum;
+        }
+
+        public static GenericAlbum FromAlbum(MonstercatReleaseSummary album, List<MonstercatTrack> tracks)
+        {
+            var genericAlbum = new GenericAlbum
+            {
+                Artists = new List<string>
+                {
+                    album.ArtistsTitle
+                },
+                FirstBillingArtist = album.ArtistsTitle,
+                Barcode = album.Upc,
+                CatalogNumber = album.CatalogId,
+                Description = album.Description,
+                Image = $"https://cdx.monstercat.com/?width=256&encoding=webp&url=https://www.monstercat.com/release/{album.CatalogId}/cover",
+                Name = album.Title,
+                ReleaseDate = album.ReleaseDate.ToString("yyyy-MM-dd"),
+                Url = $"https://player.monstercat.app/release/{album.CatalogId}",
+                Label = $"Monstercat {string.Join(", ", tracks.Select(t => t.Brand).Distinct())}",
+                Tracks = tracks.Select(GenericTrack.FromTrack)
+                    .ToList()
+            };
+
+            return genericAlbum;
+        }
+
+        public static GenericAlbum FromAlbum(MonstercatFullRelease album)
+        {
+            var genericAlbum = new GenericAlbum
+            {
+                Artists = new List<string>
+                {
+                    album.ArtistsTitle
+                },
+                FirstBillingArtist = album.ArtistsTitle,
+                Barcode = album.Upc,
+                CatalogNumber = album.CatalogId,
+                Description = album.Description,
+                Image = $"https://cdx.monstercat.com/?width=256&encoding=webp&url=https://www.monstercat.com/release/{album.CatalogId}/cover",
+                Name = album.Title,
+                ReleaseDate = album.ReleaseDate.ToString("yyyy-MM-dd"),
+                Url = $"https://player.monstercat.app/release/{album.CatalogId}",
+                Label = $"Monstercat {string.Join(", ", album.Tracks.Select(t => t.Brand).Distinct())}",
+                Tracks = album.Tracks.Select(GenericTrack.FromTrack)
+                    .ToList()
+            };
+
+            return genericAlbum;
         }
     }
 }
