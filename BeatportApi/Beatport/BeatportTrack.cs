@@ -36,8 +36,8 @@ namespace BeatportApi.Beatport
         [JsonProperty("enabled")] // todo
         public bool IsEnabled { get; set; }
 
-        [JsonProperty("encode_status"), JsonRequired]
-        public string EncodeStatus { get; set; }
+        [JsonProperty("encode_status")]
+        public string? EncodeStatus { get; set; }
 
         [JsonProperty("encoded_date"), JsonRequired]
         public DateTime EncodedDate { get; set; }
@@ -60,8 +60,8 @@ namespace BeatportApi.Beatport
         [JsonProperty("genre"), JsonRequired]
         public BeatportGenreSummary Genre { get; set; }
 
-        [JsonProperty("hidden"), JsonRequired]
-        public bool IsHidden { get; set; }
+        [JsonProperty("hidden")]
+        public bool? IsHidden { get; set; }
 
         [JsonProperty("id"), JsonRequired]
         public int Id { get; set; }
@@ -72,8 +72,8 @@ namespace BeatportApi.Beatport
         [JsonProperty("is_available_for_streaming"), JsonRequired]
         public bool IsStreaming { get; set; }
 
-        [JsonProperty("is_classic"), JsonRequired]
-        public bool IsClassic { get; set; }
+        [JsonProperty("is_classic")]
+        public bool? IsClassic { get; set; }
 
         [JsonProperty("is_hype"), JsonRequired]
         public bool IsHype { get; set; }
@@ -81,8 +81,8 @@ namespace BeatportApi.Beatport
         [JsonProperty("isrc")] // optional
         public string Isrc { get; set; }
 
-        [JsonProperty("key"), JsonRequired]
-        public BeatportKeySummary Key { get; set; }
+        [JsonProperty("key")]
+        public BeatportKeySummary? Key { get; set; }
 
         [JsonProperty("label_track_identifier")]
         public string LabelTrackIdentifier { get; set; }
@@ -102,8 +102,8 @@ namespace BeatportApi.Beatport
         [JsonProperty("new_release_date"), JsonRequired]
         public DateTime NewReleaseDate { get; set; }
 
-        [JsonProperty("number"), JsonRequired]
-        public int Number { get; set; }
+        [JsonProperty("number")]
+        public int? Number { get; set; }
 
         [JsonProperty("pre_order"), JsonRequired]
         public bool IsPreorder { get; set; }
@@ -130,16 +130,16 @@ namespace BeatportApi.Beatport
         public BeatportSaleTypeSummary SaleType { get; set; }
 
         [JsonProperty("sample_end")]
-        public TimeSpan SampleEnd => TimeSpan.FromMilliseconds(SampleEndMs);
+        public TimeSpan? SampleEnd => SampleEndMs != null ? TimeSpan.FromMilliseconds(SampleEndMs.Value) : null;
 
-        [JsonProperty("sample_end_ms"), JsonRequired]
-        public int SampleEndMs { get; set; }
+        [JsonProperty("sample_end_ms")]
+        public int? SampleEndMs { get; set; }
 
         [JsonProperty("sample_start")]
-        public TimeSpan SampleStart => TimeSpan.FromMilliseconds(SampleStartMs);
+        public TimeSpan? SampleStart => SampleStartMs != null ? TimeSpan.FromMilliseconds(SampleStartMs.Value) : null;
 
-        [JsonProperty("sample_start_ms"), JsonRequired]
-        public int SampleStartMs { get; set; }
+        [JsonProperty("sample_start_ms")]
+        public int? SampleStartMs { get; set; }
 
         [JsonProperty("sample_url"), JsonRequired]
         public string SampleUrl { get; set; }
@@ -156,7 +156,7 @@ namespace BeatportApi.Beatport
         [JsonProperty("url")] // optional
         public string Url { get; set; }
 
-        [JsonProperty("was_ever_exclusive"), JsonRequired]
-        public bool WasEverExclusive { get; set; }
+        [JsonProperty("was_ever_exclusive")]
+        public bool? WasEverExclusive { get; set; }
     }
 }

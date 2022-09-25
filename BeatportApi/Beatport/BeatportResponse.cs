@@ -15,10 +15,10 @@ namespace BeatportApi.Beatport
         public int Count { get; set; }
 
         [JsonProperty("next")] // optional
-        public string Next { get; set; }
+        public string? Next { get; set; }
 
         [JsonProperty("previous")] // optional
-        public string Previous { get; set; }
+        public string? Previous { get; set; }
 
         [JsonProperty("results"), JsonRequired]
         public List<T> Results { get; set; }
