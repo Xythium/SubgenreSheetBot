@@ -71,6 +71,13 @@ namespace SubgenreSheetBot.Commands
             }
 
             var album = await GetAlbum(idResult.Id);
+
+            if (album is null)
+            {
+                await Context.Message.ReplyAsync($"The album could not be loaded");
+                return;
+            }
+
             var tracks = await GetTracks(album);
 
             if (tracks.Length < 1)
@@ -167,6 +174,45 @@ namespace SubgenreSheetBot.Commands
             await Context.Message.ReplyAsync(embed: embed.Build());
         }
 
+        [Command("label"), Summary("Get all releases from a label")]
+        public async Task Label([Remainder, Summary("Label name to search for")] string labelName)
+        {
+            var idResult = BeatportUtils.GetIdFromUrl(labelName);
+
+            if (!string.IsNullOrWhiteSpace(idResult.Error))
+            {
+                await Context.Message.ReplyAsync(idResult.Error);
+                return;
+            }
+
+            var albums = await GetAlbums(idResult.Id);
+
+            var sb = new StringBuilder();
+
+            foreach (var album in albums.OrderByDescending(a => a.NewReleaseDate))
+            {
+                var line = $"{album.ArtistConcat} - {album.Name} ({album.CatalogNumber} {album.NewReleaseDate:yyyy-MM-dd})";
+                sb.AppendLine(line);
+            }
+
+            if (sb.Length < 1)
+            {
+                await Context.Message.ReplyAsync("pissed my pant");
+                return;
+            }
+
+            //  await Context.Message.ReplyAsync($"{playlist.Uri}");
+            if (sb.Length > 2000)
+            {
+                var writer = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
+                await Context.Channel.SendFileAsync(writer, $"{labelName}.txt", $"I found {albums.Count} albums which does not fit in a discord message");
+            }
+            else
+            {
+                await Context.Message.ReplyAsync(sb.ToString());
+            }
+        }
+
         [Command("labelcached"), Alias("labelc", "lc"), Summary("Get all releases from a label")]
         public async Task LabelCached([Remainder, Summary("Label name to search for")] string labelName)
         {
@@ -178,7 +224,7 @@ namespace SubgenreSheetBot.Commands
 
             while (query.MoveNext())
             {
-                if (query.Current == null)
+                if (query.Current is null)
                     throw new Exception();
 
                 var album = query.Current.Document;

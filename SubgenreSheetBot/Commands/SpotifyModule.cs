@@ -41,7 +41,7 @@ namespace SubgenreSheetBot.Commands
             {
                 var feature = features.FirstOrDefault(f => f.Uri == track.Uri);
 
-                sb.AppendLine($"`{album.ReleaseDate},TRUE,FALSE,FALSE,FALSE,?,?,{string.Join(" & ", track.Artists.Select(a => a.Name))},{track.Name},{album.Label},{TimeSpan.FromMilliseconds(track.DurationMs):m':'ss},{(feature == null ? "" : Math.Round(feature.Tempo).ToString())},{(feature == null ? "" : $"{SpotifyUtils.IntToKey(feature.Key)} {SpotifyUtils.IntToMode(feature.Mode)}")},,{track.ExternalIds["isrc"]}`");
+                sb.AppendLine($"`{album.ReleaseDate},TRUE,FALSE,FALSE,FALSE,?,?,{string.Join(" & ", track.Artists.Select(a => a.Name))},{track.Name},{album.Label},{TimeSpan.FromMilliseconds(track.DurationMs):m':'ss},{(feature is null ? "" : Math.Round(feature.Tempo).ToString())},{(feature is null ? "" : $"{SpotifyUtils.IntToKey(feature.Key)} {SpotifyUtils.IntToMode(feature.Mode)}")},,{track.ExternalIds["isrc"]}`");
             }
 
             await SendOrAttachment(sb.ToString(), true);
@@ -253,7 +253,7 @@ namespace SubgenreSheetBot.Commands
                 }
             }
 
-            if (message == null)
+            if (message is null)
             {
                 await Context.Message.ReplyAsync($"Checking {searchedArtists.Count} artists & {trackArtists.Count} artists from every track");
             }
@@ -262,7 +262,7 @@ namespace SubgenreSheetBot.Commands
                 await message.ModifyAsync(m => m.Content = $"Checking {searchedArtists.Count} artists & {trackArtists.Count} artists from every track");
             }
 
-            var notFound = searchedArtists.Where(searchedArtist => trackArtists.FirstOrDefault(trackArtist => string.Equals(trackArtist.Name, searchedArtist.Name, StringComparison.OrdinalIgnoreCase)) == null)
+            var notFound = searchedArtists.Where(searchedArtist => trackArtists.FirstOrDefault(trackArtist => string.Equals(trackArtist.Name, searchedArtist.Name, StringComparison.OrdinalIgnoreCase)) is null)
                 .ToArray();
 
             var sb = new StringBuilder();

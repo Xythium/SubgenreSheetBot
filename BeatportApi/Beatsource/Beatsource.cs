@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RestSharp;
@@ -8,10 +9,10 @@ namespace BeatportApi.Beatsource
 {
     public class Beatsource
     {
-        private string _bearerToken;
+        private string bearerToken = null!;
         private readonly RestClient client;
 
-        private static JsonSerializerSettings serializerSettings = new JsonSerializerSettings
+        private static readonly JsonSerializerSettings serializerSettings = new()
         {
             MissingMemberHandling = MissingMemberHandling.Error
         };

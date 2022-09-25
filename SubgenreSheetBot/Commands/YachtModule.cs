@@ -10,7 +10,7 @@ namespace SubgenreSheetBot.Commands
     [Group("yacht"), Alias("y")]
     public partial class YachtModule : ModuleBase
     {
-        private static readonly List<YachtGame> games = new List<YachtGame>();
+        private static readonly List<YachtGame> games = new();
 
         [Command("start")]
         public async Task Start(params IUser[] players)

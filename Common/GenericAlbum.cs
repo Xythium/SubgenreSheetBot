@@ -84,7 +84,7 @@ namespace Common
             var images = album.Images.OrderByDescending(i => i.Width)
                 .ToArray();
 
-            if (album.Tracks.Items == null)
+            if (album.Tracks.Items is null)
                 throw new Exception("Album has no tracks");
 
             var genericAlbum = new GenericAlbum

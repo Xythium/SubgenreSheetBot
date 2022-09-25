@@ -15,7 +15,7 @@ namespace Common.Spotify
         {
             var t = session.Load<FullAlbum>($"Album/{albumId}");
 
-            if (t == null)
+            if (t is null)
             {
                 t = await api.Albums.Get(albumId);
 
@@ -106,7 +106,7 @@ namespace Common.Spotify
 
                 foreach (var track in missingTracks.AudioFeatures)
                 {
-                    if (track == null)
+                    if (track is null)
                         continue;
 
                     session.Store(track, $"Feature/{track.Id}");

@@ -7,14 +7,14 @@
         <AssemblyVersion>1.18.0</AssemblyVersion>
         <PackageVersion>1.18.0</PackageVersion>
         <FileVersion>1.18.0</FileVersion>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="FuzzySharp" Version="2.0.2" />
       <PackageReference Include="Google.Apis.Sheets.v4" Version="1.51.0.2272" />
-      <PackageReference Include="HtmlAgilityPack" Version="1.11.40" />
       <PackageReference Include="MetaBrainz.MusicBrainz" Version="5.0.0" />
-      <PackageReference Include="MusicTools" Version="1.4.8.1" />
+      <PackageReference Include="MusicTools" Version="1.4.8.6" />
       <PackageReference Include="Serilog" Version="2.9.0" />
       <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
       <PackageReference Include="SpotifyAPI.Web" Version="6.2.2" />

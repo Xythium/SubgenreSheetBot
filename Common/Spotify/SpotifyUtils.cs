@@ -65,7 +65,7 @@ namespace Common.Spotify
                 Log.Error(ex, "Error while searching for tracks for label {labelName}", labelName);
             }
 
-            var notFound = searchedArtists.Where(searchedArtist => trackArtists.FirstOrDefault(trackArtist => trackArtist.Id == searchedArtist.Id) == null)
+            var notFound = searchedArtists.Where(searchedArtist => trackArtists.FirstOrDefault(trackArtist => trackArtist.Id == searchedArtist.Id) is null)
                 .ToList();
 
             var result = new List<FullArtist>();
@@ -81,7 +81,7 @@ namespace Common.Spotify
                         Market = "US"
                     });
 
-                    if (response.Tracks.Items == null)
+                    if (response.Tracks.Items is null)
                     {
                         throw new Exception($"null items {artist.Name}");
                     }

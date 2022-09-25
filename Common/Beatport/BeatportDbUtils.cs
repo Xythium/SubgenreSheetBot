@@ -21,19 +21,19 @@ namespace Common.Beatport
 
             var t = session.Load<BeatportRelease>($"BeatportReleases/{albumId}");
 
-            if (t == null)
+            if (t is null)
             {
                 t = await api.GetReleaseById(albumId);
 
-                if (t == null)
+                if (t is null)
                 {
                     session.Store(new BeatportNotFound(), $"BeatportNotFound/{albumId}");
                     session.SaveChanges();
                     return null;
                 }
-
-                await GetTracksOrCache(api, session, t.TrackUrls);
             }
+
+            await GetTracksOrCache(api, session, t.TrackUrls);
 
             // outside 'if' to force document changes
             session.Store(t);
@@ -46,11 +46,11 @@ namespace Common.Beatport
         {
             var t = session.Load<BeatsourceRelease>($"BeatsourceReleases/{albumId}");
 
-            if (t == null)
+            if (t is null)
             {
                 t = await api.GetReleaseById(albumId);
 
-                if (t == null)
+                if (t is null)
                 {
                     // todo: dont know if this can happen
                     return null;
@@ -74,7 +74,7 @@ namespace Common.Beatport
         {
             var tracks = new List<BeatportTrack>();
 
-            if (trackUrls == null || trackUrls.Length == 0)
+            if (trackUrls is null || trackUrls.Length == 0)
                 return tracks.ToArray();
 
             foreach (var url in trackUrls)
@@ -85,11 +85,11 @@ namespace Common.Beatport
 
                 var t = session.Load<BeatportTrack>($"BeatportTracks/{idResult.Id}");
 
-                if (t == null)
+                if (t is null)
                 {
                     t = await api.GetTrackByTrackId(idResult.Id);
 
-                    if (t == null)
+                    if (t is null)
                     {
                         // todo: silent ignore for now
                         /* return null;
@@ -121,11 +121,11 @@ namespace Common.Beatport
 
                 var t = session.Load<BeatsourceTrack>($"BeatsourceTracks/{idResult.Id}");
 
-                if (t == null)
+                if (t is null)
                 {
                     t = await api.GetTrackByTrackId(idResult.Id);
 
-                    if (t == null)
+                    if (t is null)
                     {
                         throw new Exception("oh nwwoo :( why");
                         // todo: silent ignore for now

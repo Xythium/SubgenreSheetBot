@@ -49,13 +49,13 @@ namespace SubgenreSheetBot.Commands
             });
         }
 
-        private static List<Entry> _entries = new List<Entry>();
+        private static List<Entry> _entries = new();
         private static DateTime? _lastTime = null;
 
         private async Task RevalidateCache()
         {
-            if (_lastTime == null || DateTime.UtcNow.Subtract(_lastTime.Value)
-                    .TotalSeconds > 60)
+            if (_lastTime is null || DateTime.UtcNow.Subtract(_lastTime.Value)
+                    .TotalSeconds > TimeSpan.FromMinutes(5).TotalSeconds)
             {
                 var now = DateTime.UtcNow;
 
@@ -69,7 +69,7 @@ namespace SubgenreSheetBot.Commands
             }
         }
 
-        private static readonly Dictionary<string, Color> _genreColors = new Dictionary<string, Color>
+        private static readonly Dictionary<string, Color> _genreColors = new()
         {
             {
                 "Hip Hop", new Color(215, 127, 125)
@@ -656,7 +656,7 @@ namespace SubgenreSheetBot.Commands
             var response = await request.ExecuteAsync();
 
             var valueRanges = response.ValueRanges;
-            if (valueRanges == null)
+            if (valueRanges is null)
                 return null;
             if (valueRanges.Count == 0)
                 return null;
@@ -666,7 +666,7 @@ namespace SubgenreSheetBot.Commands
             foreach (var range in valueRanges)
             {
                 //Log.Verbose($"{range.Range} | {range.ETag} | {range.MajorDimension}");
-                if (range.Values == null)
+                if (range.Values is null)
                     continue;
                 if (range.Values.Count == 0)
                     continue;
@@ -694,7 +694,8 @@ namespace SubgenreSheetBot.Commands
                 }
             }
 
-            return entries;
+            return entries.Where(e => e.Genre != "Release")
+                .ToList();
         }
 
         private async Task SendOrAttachment(string str)
@@ -712,7 +713,7 @@ namespace SubgenreSheetBot.Commands
 
         private async Task<IUserMessage> UpdateOrSend(IUserMessage message, string str)
         {
-            if (message == null)
+            if (message is null)
             {
                 return message = await Context.Message.ReplyAsync(str);
             }
@@ -906,7 +907,7 @@ namespace SubgenreSheetBot.Commands
         {
             var date = GetDateArgument(row, A, null);
 
-            if (date == null)
+            if (date is null)
             {
                 entry = null;
                 return false;
