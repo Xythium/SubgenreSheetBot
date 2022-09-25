@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Common.AppleMusic
+﻿namespace Common.AppleMusic.Api
 {
     public class ApiCache
     {

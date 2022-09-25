@@ -1,8 +1,8 @@
 using Newtonsoft.Json;
 
-namespace Common.AppleMusic
+namespace Common.AppleMusic.Api
 {
-    public class Composers
+    public class RecordLabels
     {
         [JsonProperty("href")]
         public string Href { get; set; }
