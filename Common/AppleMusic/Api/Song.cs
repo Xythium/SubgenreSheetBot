@@ -1,8 +1,8 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 
-namespace Common.AppleMusic
+namespace Common.AppleMusic.Api
 {
-    public class Albums
+    public class Song
     {
         [JsonProperty("id")]
         public string Id { get; set; }
@@ -14,9 +14,12 @@ namespace Common.AppleMusic
         public string Href { get; set; }
 
         [JsonProperty("attributes")]
-        public Attributes Attributes { get; set; }
+        public SongAttributes Attributes { get; set; }
 
         [JsonProperty("relationships")]
-        public Relationships Relationships { get; set; }
+        public SongRelationships Relationships { get; set; }
+
+        [JsonProperty("meta")]
+        public Meta Meta { get; set; }
     }
 }

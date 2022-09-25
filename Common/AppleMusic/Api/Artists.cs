@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Common.AppleMusic
+namespace Common.AppleMusic.Api
 {
     public class Artists
 

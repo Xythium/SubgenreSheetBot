@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace Common.AppleMusic
+namespace Common.AppleMusic.Api
 {
     public class Artwork
     {
