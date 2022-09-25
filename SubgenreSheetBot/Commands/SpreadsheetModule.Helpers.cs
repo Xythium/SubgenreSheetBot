@@ -720,6 +720,42 @@ namespace SubgenreSheetBot.Commands
             await message.ModifyAsync(m => m.Content = str);
             return message;
         }
+
+        private (Dictionary<string, List<string>>, Dictionary<string, Entry[]>) ByGenre(string[] subgenres)
+        {
+            var toMostCommon = new Dictionary<string, List<string>>();
+            var toEntries = new Dictionary<string, Entry[]>();
+
+            foreach (var subgenre in subgenres)
+            {
+                var entries = _entries.Where(e => e.SubgenresList.Contains(subgenre))
+                    .ToArray();
+
+                if (!toEntries.ContainsKey(subgenre))
+                    toEntries.Add(subgenre, entries);
+
+                var genres = entries.Where(e => e.SubgenresList.First() == subgenre)
+                    .Select(e => e.Genre)
+                    .ToArray();
+                var mostCommon = genres.GroupBy(g => g)
+                    .OrderByDescending(g => g.Count())
+                    .Select(g => g.Key)
+                    .FirstOrDefault();
+                if (mostCommon == "?" || string.IsNullOrWhiteSpace(mostCommon))
+                    mostCommon = "Unknown";
+                mostCommon = mostCommon.Replace(' ', '\0');
+                mostCommon = mostCommon.Replace('[', '\0');
+                mostCommon = mostCommon.Replace(']', '\0');
+                mostCommon = mostCommon.Replace('&', 'N');
+
+                if (!toMostCommon.ContainsKey(mostCommon))
+                    toMostCommon.Add(mostCommon, new List<string>());
+                toMostCommon[mostCommon]
+                    .Add(subgenre);
+            }
+
+            return (toMostCommon, toEntries);
+        }
     }
 
     public class Entry
