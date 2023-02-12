@@ -1,12 +1,12 @@
 ﻿using System.Threading.Tasks;
 using Discord;
-using Discord.Commands;
+using Discord.Interactions;
 using SubgenreSheetBot.Services;
 
-namespace SubgenreSheetBot.Commands;
+namespace SubgenreSheetBot.Interactions;
 
-[Group("Spotify"), Alias("s")]
-public class SpotifyModule : ModuleBase
+[Group("spotify", "Spotify")]
+public class SpotifyInteractionModule : InteractionModuleBase
 {
     private readonly SpotifyService spotify;
 
@@ -15,51 +15,51 @@ public class SpotifyModule : ModuleBase
         Timeout = 15
     };
 
-    public SpotifyModule(SpotifyService spotify) { this.spotify = spotify; }
+    public SpotifyInteractionModule(SpotifyService spotify) { this.spotify = spotify; }
 
-    [Command("tracks"), Alias("t"), Summary("Get all tracks from an album")]
-    public async Task Tracks([Remainder, Summary("Album ID to search for")] string url)
+    [SlashCommand("tracks", "Get all tracks from an album")]
+    public async Task Tracks([Summary(nameof(url), "Album ID to search for")] string url)
     {
         await spotify.TracksCommand(url, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("info"), Alias("i"), Summary("Get all tracks from an album")]
-    public async Task Info([Remainder, Summary("Album ID to search for")] string url)
+    [SlashCommand("album", "Get all tracks from an album")]
+    public async Task Info([Summary(nameof(url), "Album ID to search for")] string url)
     {
         await spotify.AlbumCommand(url, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("label"), Alias("l"), Summary("Get all releases from a label")]
-    public async Task Label([Remainder, Summary("Label name to search for")] string labelName)
+    [SlashCommand("label", "Get all releases from a label")]
+    public async Task Label([Summary(nameof(labelName), "Label name to search for")] string labelName)
     {
         await spotify.LabelCommand(labelName, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("label"), Alias("l"), Summary("Get all releases from a label from a certain year")]
-    public async Task Label([Summary("Year to find releases for")] int year, [Remainder, Summary("Label name to search for")] string labelName)
+    [SlashCommand("label-year", "Get all releases from a label from a certain year")]
+    public async Task Label([Summary(nameof(year), "Year to find releases for")] int year, [Summary(nameof(labelName), "Label name to search for")] string labelName)
     {
         await spotify.LabelCommand(labelName, year, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("artist"), Alias("a"), Summary("Get all releases from an artist")]
-    public async Task Artist([Remainder, Summary("Artist to search for")] string artistName)
+    [SlashCommand("artist", "Get all releases from an artist")]
+    public async Task Artist([Summary(nameof(artistName), "Artist to search for")] string artistName)
     {
         await spotify.ArtistCommand(artistName, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("peep")]
-    public async Task Peep([Remainder] string labelName)
+    [SlashCommand("peep", "Peep")]
+    public async Task Peep([Summary(nameof(labelName))] string labelName)
     {
         await spotify.PeepCommand(labelName, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("peepn"), Alias("pn")]
-    public async Task PeepNoDoubleCheck([Remainder] string labelName)
+    [SlashCommand("peepn", "Peep No double check")]
+    public async Task PeepNoDoubleCheck([Summary(nameof(labelName))] string labelName)
     {
         await spotify.PeepNoDoubleCheckCommand(labelName, new DynamicContext(Context), false, defaultOptions);
     }
 
-    /*[Command("isrc")]
+    /*[SlashCommand("isrc")]
     public async Task Isrc(
         [Remainder, Summary("Label name to search for")]
         string labelName)

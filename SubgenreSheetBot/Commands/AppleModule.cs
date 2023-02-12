@@ -1,44 +1,25 @@
-﻿using System;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
-using Common;
-using Common.AppleMusic;
-using Common.Beatport;
+﻿using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using HtmlAgilityPack;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using RestSharp;
+using SubgenreSheetBot.Services;
 
-namespace SubgenreSheetBot.Commands
+namespace SubgenreSheetBot.Commands;
+
+[Group("Apple"), Alias("a", "am")]
+public  class AppleModule : ModuleBase
 {
-    [Group("Apple"), Alias("a", "am")]
-    public partial class AppleModule : ModuleBase
+    private readonly AppleMusicService apple;
+
+    private readonly RequestOptions defaultOptions = new()
     {
-        [Command("album"), Summary("Get all ISRCs from an album")]
-        public async Task Album([Remainder, Summary("Album ID to search for")] string text)
-        {
-            if (!Uri.TryCreate(text, UriKind.Absolute, out var uri))
-            {
-                await Context.Message.ReplyAsync($"{text} is not a valid URL");
-                return;
-            }
+        Timeout = 15
+    };
 
-            var api = new AppleMusic();
-            using var session = SubgenreSheetBot.AppleMusicStore.OpenSession();
-            var apiCache = await AppleMusicDbUtils.GetAlbumOrCache(api, session, uri);
-
-            var (embed, file) = AlbumEmbed.EmbedBuilder(GenericAlbum.FromAlbum(apiCache.Catalog));
-
-            if (file != null)
-            {
-                await Context.Channel.SendFileAsync(file, "tracklist.txt", embed: embed.Build(), messageReference: new MessageReference(Context.Message.Id));
-                file.Close();
-            }
-            else
-                await Context.Message.ReplyAsync(embed: embed.Build());
-        }
+    public AppleModule(AppleMusicService apple) { this.apple = apple; }
+    
+    [Command("album"), Summary("Get all ISRCs from an album")]
+    public async Task Album([Remainder, Summary("Album ID to search for")] string text)
+    {
+        await apple.AlbumCommand(text, new DynamicContext(Context), false, defaultOptions);
     }
 }

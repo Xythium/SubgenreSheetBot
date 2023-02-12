@@ -1,8 +1,6 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Common;
-using Common.AppleMusic;
 using Common.Monstercat;
 using Discord;
 using Discord.Commands;
