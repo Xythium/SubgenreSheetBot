@@ -1,16 +1,15 @@
 using Newtonsoft.Json;
 
-namespace Common.AppleMusic.Api
+namespace Common.AppleMusic.Api;
+
+public class Relationships
 {
-    public class Relationships
-    {
-        [JsonProperty("artists")]
-        public Artists Artists { get; set; }
+    [JsonProperty("artists")]
+    public Artists Artists { get; set; }
 
-        [JsonProperty("record-labels")]
-        public RecordLabels RecordLabels { get; set; }
+    [JsonProperty("record-labels")]
+    public RecordLabels RecordLabels { get; set; }
 
-        [JsonProperty("tracks")]
-        public Tracks Tracks { get; set; }
-    }
+    [JsonProperty("tracks")]
+    public Tracks Tracks { get; set; }
 }

@@ -1,10 +1,9 @@
 using Newtonsoft.Json;
 
-namespace Common.AppleMusic.Api
+namespace Common.AppleMusic.Api;
+
+public class Preview
 {
-    public class Preview
-    {
-        [JsonProperty("url")]
-        public string Url { get; set; }
-    }
+    [JsonProperty("url")]
+    public string Url { get; set; }
 }

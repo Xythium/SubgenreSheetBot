@@ -2,52 +2,51 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Common
+namespace Common;
+
+/*public static class EnumerableExtensions
 {
-    /*public static class EnumerableExtensions
+    public static IEnumerable<TSource> ExceptBy<TSource, TSelector>(this IEnumerable<TSource> first, IEnumerable<TSelector> second, Func<TSource, TSelector> selector)
     {
-        public static IEnumerable<TSource> ExceptBy<TSource, TSelector>(this IEnumerable<TSource> first, IEnumerable<TSelector> second, Func<TSource, TSelector> selector)
+        if (first is null)
         {
-            if (first is null)
-            {
-                throw new ArgumentNullException(nameof(first));
-            }
-
-            if (second is null)
-            {
-                throw new ArgumentNullException(nameof(second));
-            }
-
-            return ExceptIterator(first, second, selector, null);
+            throw new ArgumentNullException(nameof(first));
         }
 
-        public static IEnumerable<TSource> ExceptBy<TSource, TSelector>(this IEnumerable<TSource> first, IEnumerable<TSelector> second, Func<TSource, TSelector> selector, IEqualityComparer<TSelector> comparer)
+        if (second is null)
         {
-            if (first is null)
-            {
-                throw new ArgumentNullException(nameof(first));
-            }
-
-            if (second is null)
-            {
-                throw new ArgumentNullException(nameof(second));
-            }
-
-            return ExceptIterator(first, second, selector, comparer);
+            throw new ArgumentNullException(nameof(second));
         }
 
-        private static IEnumerable<TSource> ExceptIterator<TSource, TSelector>(IEnumerable<TSource> first, IEnumerable<TSelector> second, Func<TSource, TSelector> selector, IEqualityComparer<TSelector> comparer)
-        {
-            var set = new HashSet<TSelector>(comparer);
-            set.UnionWith(second);
+        return ExceptIterator(first, second, selector, null);
+    }
 
-            foreach (var element in first)
+    public static IEnumerable<TSource> ExceptBy<TSource, TSelector>(this IEnumerable<TSource> first, IEnumerable<TSelector> second, Func<TSource, TSelector> selector, IEqualityComparer<TSelector> comparer)
+    {
+        if (first is null)
+        {
+            throw new ArgumentNullException(nameof(first));
+        }
+
+        if (second is null)
+        {
+            throw new ArgumentNullException(nameof(second));
+        }
+
+        return ExceptIterator(first, second, selector, comparer);
+    }
+
+    private static IEnumerable<TSource> ExceptIterator<TSource, TSelector>(IEnumerable<TSource> first, IEnumerable<TSelector> second, Func<TSource, TSelector> selector, IEqualityComparer<TSelector> comparer)
+    {
+        var set = new HashSet<TSelector>(comparer);
+        set.UnionWith(second);
+
+        foreach (var element in first)
+        {
+            if (set.Add(selector(element)))
             {
-                if (set.Add(selector(element)))
-                {
-                    yield return element;
-                }
+                yield return element;
             }
         }
-    }*/
-}
+    }
+}*/

@@ -1,16 +1,15 @@
 ﻿using Newtonsoft.Json;
 
-namespace BeatportApi.Beatport
+namespace BeatportApi.Beatport;
+
+public class BeatportStatusSummary
 {
-    public class BeatportStatusSummary
-    {
-        [JsonProperty("id"), JsonRequired]
-        public int Id { get; set; }
+    [JsonProperty("id"), JsonRequired]
+    public int Id { get; set; } = default!;
 
-        [JsonProperty("name"), JsonRequired]
-        public string Name { get; set; }
+    [JsonProperty("name"), JsonRequired]
+    public string Name { get; set; } = default!;
 
-        [JsonProperty("url"), JsonRequired]
-        public string Url { get; set; }
-    }
+    [JsonProperty("url"), JsonRequired]
+    public string Url { get; set; } = default!;
 }

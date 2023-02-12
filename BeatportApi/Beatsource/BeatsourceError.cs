@@ -5,8 +5,8 @@ namespace BeatportApi.Beatsource;
 public class BeatsourceError
 {
     [JsonProperty("detail")]
-    public string Detail { get; set; }
-    
+    public string Detail { get; set; } = default!;
+
     [JsonProperty("Error")]
-    public string Error { get; set; }
+    public string Error { get; set; } = default!;
 }

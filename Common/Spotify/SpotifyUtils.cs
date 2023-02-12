@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 using Serilog;
 using SpotifyAPI.Web;
 
-namespace Common.Spotify
+namespace Common.Spotify;
+
+public static class SpotifyUtils
 {
-    public static class SpotifyUtils
-    {
-        #if !NET48
+#if !NET48
         public static async Task<List<FullArtist>> Peep(SpotifyClient api, string labelName)
         {
             var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Artist | SearchRequest.Types.Track, $"label:\"{labelName}\"")
@@ -124,63 +124,62 @@ namespace Common.Spotify
             throw new InvalidDataException($"Not a url: {url}");
         }
 #endif
-        public static string BpmToString(TrackAudioFeatures features)
+    public static string BpmToString(TrackAudioFeatures features)
+    {
+        var bpm = features.Tempo;
+        var floating = bpm - (int)bpm;
+
+        if (floating < 0.3 || floating > 0.7)
         {
-            var bpm = features.Tempo;
-            var floating = bpm - (int)bpm;
-
-            if (floating < 0.3 || floating > 0.7)
-            {
-                features.Tempo = bpm = (float)Math.Round(bpm);
-            }
-            else
-            {
-                features.Tempo = bpm = (float)Math.Round(bpm, 1);
-            }
-
-            if (Math.Abs(floating - 0.5) < 0.03 && bpm < 95)
-            {
-                bpm *= 2;
-            }
-
-            var str = bpm.ToString(CultureInfo.GetCultureInfo("en-US"));
-
-            if (bpm != features.Tempo)
-            {
-                str = $"{features.Tempo} (Mark says {bpm})";
-            }
-
-            return str;
+            features.Tempo = bpm = (float)Math.Round(bpm);
+        }
+        else
+        {
+            features.Tempo = bpm = (float)Math.Round(bpm, 1);
         }
 
-        public static string IntToKey(int key)
+        if (Math.Abs(floating - 0.5) < 0.03 && bpm < 95)
         {
-            return key switch
-            {
-                0 => "C",
-                1 => "C#",
-                2 => "D",
-                3 => "D#",
-                4 => "E",
-                5 => "F",
-                6 => "F#",
-                7 => "G",
-                8 => "G#",
-                9 => "A",
-                10 => "A#",
-                11 => "B",
-                _ => "?"
-            };
+            bpm *= 2;
         }
 
-        public static string IntToMode(int mode)
+        var str = bpm.ToString(CultureInfo.GetCultureInfo("en-US"));
+
+        if (bpm != features.Tempo)
         {
-            return mode switch
-            {
-                0 => "min",
-                1 => "maj",
-                _ => "?"
-            };
+            str = $"{features.Tempo} (Mark says {bpm})";
         }
+
+        return str;
+    }
+
+    public static string IntToKey(int key)
+    {
+        return key switch
+        {
+            0 => "C",
+            1 => "C#",
+            2 => "D",
+            3 => "D#",
+            4 => "E",
+            5 => "F",
+            6 => "F#",
+            7 => "G",
+            8 => "G#",
+            9 => "A",
+            10 => "A#",
+            11 => "B",
+            _ => "?"
+        };
+    }
+
+    public static string IntToMode(int mode)
+    {
+        return mode switch
+        {
+            0 => "min",
+            1 => "maj",
+            _ => "?"
+        };
     }
 }

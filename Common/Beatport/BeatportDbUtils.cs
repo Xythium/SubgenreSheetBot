@@ -8,142 +8,141 @@ using BeatportApi.Beatsource;
 using Raven.Client;
 using BAPI = BeatportApi.Beatport.Beatport;
 
-namespace Common.Beatport
+namespace Common.Beatport;
+
+public static class BeatportDbUtils
 {
-    public static class BeatportDbUtils
+    public static async Task<BeatportRelease?> GetAlbumOrCache(BAPI api, IDocumentSession session, int albumId)
     {
-        public static async Task<BeatportRelease?> GetAlbumOrCache(BAPI api, IDocumentSession session, int albumId)
+        var notFound = session.Load<BeatportNotFound>($"BeatportNotFound/{albumId}");
+
+        if (notFound != null)
+            return null;
+
+        var t = session.Load<BeatportRelease>($"BeatportReleases/{albumId}");
+
+        if (t is null)
         {
-            var notFound = session.Load<BeatportNotFound>($"BeatportNotFound/{albumId}");
-
-            if (notFound != null)
-                return null;
-
-            var t = session.Load<BeatportRelease>($"BeatportReleases/{albumId}");
+            t = await api.GetReleaseById(albumId);
 
             if (t is null)
             {
-                t = await api.GetReleaseById(albumId);
+                session.Store(new BeatportNotFound(), $"BeatportNotFound/{albumId}");
+                session.SaveChanges();
+                return null;
+            }
+        }
 
-                if (t is null)
-                {
-                    session.Store(new BeatportNotFound(), $"BeatportNotFound/{albumId}");
-                    session.SaveChanges();
-                    return null;
-                }
+        await GetTracksOrCache(api, session, t.TrackUrls);
+
+        // outside 'if' to force document changes
+        session.Store(t);
+        session.SaveChanges();
+
+        return t;
+    }
+
+    public static async Task<BeatsourceRelease> GetAlbumOrCache(Beatsource api, IDocumentSession session, int albumId)
+    {
+        var t = session.Load<BeatsourceRelease>($"BeatsourceReleases/{albumId}");
+
+        if (t is null)
+        {
+            t = await api.GetReleaseById(albumId);
+
+            if (t is null)
+            {
+                // todo: dont know if this can happen
+                return null;
             }
 
             await GetTracksOrCache(api, session, t.TrackUrls);
-
-            // outside 'if' to force document changes
-            session.Store(t);
-            session.SaveChanges();
-
-            return t;
         }
 
-        public static async Task<BeatsourceRelease> GetAlbumOrCache(Beatsource api, IDocumentSession session, int albumId)
+        // outside 'if' to force document changes
+        session.Store(t);
+        session.SaveChanges();
+
+        return t;
+    }
+
+    public static Task<BeatportTrack[]> GetTracksOrCache(this BeatportRelease album, BAPI api, IDocumentSession session) { return GetTracksOrCache(api, session, album.TrackUrls); }
+
+    public static Task<BeatsourceTrack[]> GetTracksOrCache(this BeatsourceRelease album, Beatsource api, IDocumentSession session) { return GetTracksOrCache(api, session, album.TrackUrls); }
+
+    public static async Task<BeatportTrack[]> GetTracksOrCache(BAPI api, IDocumentSession session, string[] trackUrls)
+    {
+        var tracks = new List<BeatportTrack>();
+
+        if (trackUrls is null || trackUrls.Length == 0)
+            return tracks.ToArray();
+
+        foreach (var url in trackUrls)
         {
-            var t = session.Load<BeatsourceRelease>($"BeatsourceReleases/{albumId}");
+            var idResult = BeatportUtils.GetIdFromUrl(url);
+            if (!string.IsNullOrWhiteSpace(idResult.Error))
+                continue;
+
+            var t = session.Load<BeatportTrack>($"BeatportTracks/{idResult.Id}");
 
             if (t is null)
             {
-                t = await api.GetReleaseById(albumId);
+                t = await api.GetTrackByTrackId(idResult.Id);
 
                 if (t is null)
                 {
-                    // todo: dont know if this can happen
-                    return null;
+                    // todo: silent ignore for now
+                    /* return null;
+                     throw new Exception("oh nwwoo :( why");*/
                 }
 
-                await GetTracksOrCache(api, session, t.TrackUrls);
+                session.Store(t);
             }
 
-            // outside 'if' to force document changes
-            session.Store(t);
-            session.SaveChanges();
-
-            return t;
+            tracks.Add(t);
         }
 
-        public static Task<BeatportTrack[]> GetTracksOrCache(this BeatportRelease album, BAPI api, IDocumentSession session) { return GetTracksOrCache(api, session, album.TrackUrls); }
+        session.SaveChanges();
 
-        public static Task<BeatsourceTrack[]> GetTracksOrCache(this BeatsourceRelease album, Beatsource api, IDocumentSession session) { return GetTracksOrCache(api, session, album.TrackUrls); }
+        return tracks.OrderBy(t => t.Number)
+            .ThenBy(t => t.Isrc)
+            .ToArray();
+    }
 
-        public static async Task<BeatportTrack[]> GetTracksOrCache(BAPI api, IDocumentSession session, string[] trackUrls)
+    public static async Task<BeatsourceTrack[]> GetTracksOrCache(Beatsource api, IDocumentSession session, string[] trackUrls)
+    {
+        var tracks = new List<BeatsourceTrack>();
+
+        foreach (var url in trackUrls)
         {
-            var tracks = new List<BeatportTrack>();
+            var idResult = BeatportUtils.GetIdFromUrl(url);
+            if (!string.IsNullOrWhiteSpace(idResult.Error))
+                continue;
 
-            if (trackUrls is null || trackUrls.Length == 0)
-                return tracks.ToArray();
+            var t = session.Load<BeatsourceTrack>($"BeatsourceTracks/{idResult.Id}");
 
-            foreach (var url in trackUrls)
+            if (t is null)
             {
-                var idResult = BeatportUtils.GetIdFromUrl(url);
-                if (!string.IsNullOrWhiteSpace(idResult.Error))
-                    continue;
-
-                var t = session.Load<BeatportTrack>($"BeatportTracks/{idResult.Id}");
+                t = await api.GetTrackByTrackId(idResult.Id);
 
                 if (t is null)
                 {
-                    t = await api.GetTrackByTrackId(idResult.Id);
-
-                    if (t is null)
-                    {
-                        // todo: silent ignore for now
-                        /* return null;
-                         throw new Exception("oh nwwoo :( why");*/
-                    }
-
-                    session.Store(t);
+                    throw new Exception("oh nwwoo :( why");
+                    // todo: silent ignore for now
+                    /* return null;
+                     */
                 }
 
-                tracks.Add(t);
+                session.Store(t);
             }
 
-            session.SaveChanges();
-
-            return tracks.OrderBy(t => t.Number)
-                .ThenBy(t => t.Isrc)
-                .ToArray();
+            tracks.Add(t);
         }
 
-        public static async Task<BeatsourceTrack[]> GetTracksOrCache(Beatsource api, IDocumentSession session, string[] trackUrls)
-        {
-            var tracks = new List<BeatsourceTrack>();
+        session.SaveChanges();
 
-            foreach (var url in trackUrls)
-            {
-                var idResult = BeatportUtils.GetIdFromUrl(url);
-                if (!string.IsNullOrWhiteSpace(idResult.Error))
-                    continue;
-
-                var t = session.Load<BeatsourceTrack>($"BeatsourceTracks/{idResult.Id}");
-
-                if (t is null)
-                {
-                    t = await api.GetTrackByTrackId(idResult.Id);
-
-                    if (t is null)
-                    {
-                        throw new Exception("oh nwwoo :( why");
-                        // todo: silent ignore for now
-                        /* return null;
-                         */
-                    }
-
-                    session.Store(t);
-                }
-
-                tracks.Add(t);
-            }
-
-            session.SaveChanges();
-
-            return tracks.OrderBy(t => t.Number)
-                .ThenBy(t => t.Isrc)
-                .ToArray();
-        }
+        return tracks.OrderBy(t => t.Number)
+            .ThenBy(t => t.Isrc)
+            .ToArray();
     }
 }

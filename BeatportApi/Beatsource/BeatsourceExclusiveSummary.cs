@@ -1,19 +1,18 @@
 ﻿using Newtonsoft.Json;
 
-namespace BeatportApi.Beatsource
+namespace BeatportApi.Beatsource;
+
+public class BeatsourceExclusiveSummary
 {
-    public class BeatsourceExclusiveSummary
-    {
-        [JsonProperty("days"), JsonRequired]
-        public int Days { get; set; }
+    [JsonProperty("days"), JsonRequired]
+    public int Days { get; set; } = default!;
 
-        [JsonProperty("description"), JsonRequired]
-        public string Description { get; set; }
+    [JsonProperty("description"), JsonRequired]
+    public string Description { get; set; } = default!;
 
-        [JsonProperty("id"), JsonRequired]
-        public int Id { get; set; }
+    [JsonProperty("id"), JsonRequired]
+    public int Id { get; set; } = default!;
 
-        [JsonProperty("url"), JsonRequired]
-        public string Url { get; set; }
-    }
+    [JsonProperty("url"), JsonRequired]
+    public string Url { get; set; } = default!;
 }
