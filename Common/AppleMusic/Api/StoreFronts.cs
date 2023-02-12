@@ -1,12 +1,11 @@
 ﻿using Newtonsoft.Json;
 
-namespace Common.AppleMusic.Api
-{
-    public class StoreFronts
-    {
-        [JsonProperty("x")]
-        public long X { get; set; }
+namespace Common.AppleMusic.Api;
 
-        // d
-    }
+public class StoreFronts
+{
+    [JsonProperty("x")]
+    public long X { get; set; }
+
+    // d
 }

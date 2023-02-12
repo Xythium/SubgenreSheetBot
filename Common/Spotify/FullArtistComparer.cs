@@ -2,18 +2,17 @@
 using System.Collections.Generic;
 using SpotifyAPI.Web;
 
-namespace Common.Spotify
+namespace Common.Spotify;
+
+public class FullArtistComparer : IEqualityComparer<FullArtist>
 {
-    public class FullArtistComparer : IEqualityComparer<FullArtist>
+    public bool Equals(FullArtist x, FullArtist y)
     {
-        public bool Equals(FullArtist x, FullArtist y)
-        {
-            if (x is null || y is null)
-                return false;
+        if (x is null || y is null)
+            return false;
 
-            return x.Id == y.Id;
-        }
-
-        public int GetHashCode(FullArtist obj) { return obj.Id.GetHashCode(); }
+        return x.Id == y.Id;
     }
+
+    public int GetHashCode(FullArtist obj) { return obj.Id.GetHashCode(); }
 }

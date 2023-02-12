@@ -7,75 +7,74 @@ using Serilog;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
 
-namespace Common.Spotify
+namespace Common.Spotify;
+
+public class CachingPaginator : IPaginator
 {
-    public class CachingPaginator : IPaginator
+    public Task<IList<T>> PaginateAll<T>(IPaginatable<T> firstPage, IAPIConnector connector) { throw new NotImplementedException(); }
+
+    public Task<IList<T>> PaginateAll<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector) { throw new NotImplementedException(); }
+
+    public async IAsyncEnumerable<T> Paginate<T>(IPaginatable<T> firstPage, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new())
     {
-        public Task<IList<T>> PaginateAll<T>(IPaginatable<T> firstPage, IAPIConnector connector) { throw new NotImplementedException(); }
+        if (firstPage is null)
+            throw new ArgumentNullException(nameof(firstPage));
+        if (connector is null)
+            throw new ArgumentNullException(nameof(connector));
 
-        public Task<IList<T>> PaginateAll<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector) { throw new NotImplementedException(); }
+        var page = firstPage;
 
-        public async IAsyncEnumerable<T> Paginate<T>(IPaginatable<T> firstPage, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new())
+        foreach (var item in page.Items)
         {
-            if (firstPage is null)
-                throw new ArgumentNullException(nameof(firstPage));
-            if (connector is null)
-                throw new ArgumentNullException(nameof(connector));
-
-            var page = firstPage;
-
-            foreach (var item in page.Items)
-            {
-                yield return item;
-            }
-
-            while (!string.IsNullOrWhiteSpace(page.Next))
-            {
-                page = await connector.Get<Paging<T>>(new Uri(page.Next, UriKind.Absolute))
-                    .ConfigureAwait(false);
-
-                foreach (var item in page.Items!)
-                {
-                    yield return item;
-                }
-            }
+            yield return item;
         }
 
-        public async IAsyncEnumerable<T> Paginate<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new())
+        while (!string.IsNullOrWhiteSpace(page.Next))
         {
-            if (firstPage is null)
-                throw new ArgumentNullException(nameof(firstPage));
-            if (mapper is null)
-                throw new ArgumentNullException(nameof(mapper));
-            if (connector is null)
-                throw new ArgumentNullException(nameof(connector));
-
-            var page = firstPage;
+            page = await connector.Get<Paging<T>>(new Uri(page.Next, UriKind.Absolute))
+                .ConfigureAwait(false);
 
             foreach (var item in page.Items!)
             {
                 yield return item;
             }
+        }
+    }
 
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            while (!string.IsNullOrWhiteSpace(page.Next))
+    public async IAsyncEnumerable<T> Paginate<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new())
+    {
+        if (firstPage is null)
+            throw new ArgumentNullException(nameof(firstPage));
+        if (mapper is null)
+            throw new ArgumentNullException(nameof(mapper));
+        if (connector is null)
+            throw new ArgumentNullException(nameof(connector));
+
+        var page = firstPage;
+
+        foreach (var item in page.Items!)
+        {
+            yield return item;
+        }
+
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+        while (!string.IsNullOrWhiteSpace(page.Next))
+        {
+            try
             {
-                try
-                {
-                    var next = await connector.Get<TNext>(new Uri(page.Next, UriKind.Absolute));
+                var next = await connector.Get<TNext>(new Uri(page.Next, UriKind.Absolute));
 
-                    page = mapper(next);
-                }
-                catch (Exception ex)
-                {
-                    Log.Fatal(ex, "Error ");
-                    yield break;
-                }
+                page = mapper(next);
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Error ");
+                yield break;
+            }
 
-                foreach (var item in page.Items!)
-                {
-                    yield return item;
-                }
+            foreach (var item in page.Items!)
+            {
+                yield return item;
             }
         }
     }

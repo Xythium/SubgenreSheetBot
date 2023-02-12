@@ -1,13 +1,12 @@
 ﻿using Newtonsoft.Json;
 
-namespace BeatportApi.Beatsource
-{
-    public class BeatsourceBpmRange
-    {
-        [JsonProperty("min")]
-        public int? Min { get; set; }
+namespace BeatportApi.Beatsource;
 
-        [JsonProperty("max")]
-        public int? Max { get; set; }
-    }
+public class BeatsourceBpmRange
+{
+    [JsonProperty("min")]
+    public int? Min { get; set; }
+
+    [JsonProperty("max")]
+    public int? Max { get; set; }
 }

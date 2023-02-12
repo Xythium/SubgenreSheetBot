@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
 using Discord;
 
-namespace SubgenreSheetBot.Yacht
+namespace SubgenreSheetBot.Yacht;
+
+public class YachtGame
 {
-    public class YachtGame
-    {
-        public List<IUser> Players { get; set; }
-    }
+    public List<IUser> Players { get; set; }
 }

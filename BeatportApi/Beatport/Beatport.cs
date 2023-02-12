@@ -5,144 +5,148 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RestSharp;
 
-namespace BeatportApi.Beatport
+namespace BeatportApi.Beatport;
+
+public class Beatport
 {
-    public class Beatport
+    private string _bearerToken;
+
+    private static readonly JsonSerializerSettings serializerSettings = new()
     {
-        private string _bearerToken;
+        MissingMemberHandling = MissingMemberHandling.Error
+    };
 
-        private static readonly JsonSerializerSettings serializerSettings = new()
+    public Beatport(string bearerToken) { _bearerToken = bearerToken; }
+
+    public Task<BeatportResponse<BeatportRelease>?> GetReleasesByLabelId(int labelId, int itemsPerPage = 200, int page = 1) { return GetReleasesByLabelId(labelId.ToString(), itemsPerPage, page); }
+
+    public async Task<BeatportResponse<BeatportRelease>?> GetReleasesByLabelId(string labelId, int itemsPerPage = 200, int page = 1)
+    {
+        var client = new RestClient();
+
+        var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.Get);
+        request.AddHeader("origin", "www.beatport.com");
+        var response = await client.ExecuteAsync(request);
+
+        var result = Deserialize<BeatportResponse<BeatportRelease>>(response.Content, $"label{labelId}");
+
+        return result;
+    }
+
+    public Task<BeatportResponse<BeatportTrack>?> GetTracksByLabelId(int labelId, int itemsPerPage = 200, int page = 1) { return GetTracksByLabelId(labelId.ToString(), itemsPerPage, page); }
+
+    public async Task<BeatportResponse<BeatportTrack>?> GetTracksByLabelId(string labelId, int itemsPerPage = 200, int page = 1)
+    {
+        var client = new RestClient();
+
+        var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.Get);
+        request.AddHeader("origin", "www.beatport.com");
+        var response = await client.ExecuteAsync(request);
+
+        var result = Deserialize<BeatportResponse<BeatportTrack>>(response.Content, $"label{labelId}");
+
+        return result;
+    }
+
+    private static T? Deserialize<T>(string? json, string identifier, [CallerMemberName] string memberName = "")
+    {
+        if (string.IsNullOrWhiteSpace(json) || json is null)
+            throw new ArgumentNullException(nameof(json));
+
+        try
         {
-            MissingMemberHandling = MissingMemberHandling.Error
-        };
+            var res = JsonConvert.DeserializeObject<T>(json, serializerSettings);
+            if (res is null)
+                throw new Exception($"Deserialization failed in {memberName}");
 
-        public Beatport(string bearerToken) { _bearerToken = bearerToken; }
-
-        public Task<BeatportResponse<BeatportRelease>> GetReleasesByLabelId(int labelId, int itemsPerPage = 200, int page = 1) { return GetReleasesByLabelId(labelId.ToString(), itemsPerPage, page); }
-
-        public async Task<BeatportResponse<BeatportRelease>?> GetReleasesByLabelId(string labelId, int itemsPerPage = 200, int page = 1)
-        {
-            var client = new RestClient();
-
-            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.Get);
-            request.AddHeader("origin", "www.beatport.com");
-            var response = await client.ExecuteAsync(request);
-
-            var result = Deserialize<BeatportResponse<BeatportRelease>>(response.Content, $"label{labelId}");
-
-            return result;
+            return res;
         }
-
-        public Task<BeatportResponse<BeatportTrack?>> GetTracksByLabelId(int labelId, int itemsPerPage = 200, int page = 1) { return GetTracksByLabelId(labelId.ToString(), itemsPerPage, page); }
-
-        public async Task<BeatportResponse<BeatportTrack>?> GetTracksByLabelId(string labelId, int itemsPerPage = 200, int page = 1)
+        catch (Exception ex)
         {
-            var client = new RestClient();
-
-            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.Get);
-            request.AddHeader("origin", "www.beatport.com");
-            var response = await client.ExecuteAsync(request);
-
-            var result = Deserialize<BeatportResponse<BeatportTrack>>(response.Content, $"label{labelId}");
-
-            return result;
-        }
-
-        private static T? Deserialize<T>(string json, string identifier, [CallerMemberName] string memberName = "")
-        {
+            BeatportError error;
             try
             {
-                var res = JsonConvert.DeserializeObject<T>(json, serializerSettings);
-                if (res is null)
-                    throw new Exception($"Deserialization failed in {memberName}");
-
-                return res;
+                error = JsonConvert.DeserializeObject<BeatportError>(json);
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                try
-                {
-                    var error = JsonConvert.DeserializeObject<BeatportError>(json);
-
-                    switch (error.Detail)
-                    {
-                        case "Internal server error":
-                            File.WriteAllText($"errorbeatport-internal.{identifier}.txt", json);
-                            throw new InvalidDataException($"Internal Beatport in {memberName}: {ex}");
-
-                        case "Not found.":
-                            File.WriteAllText($"errorbeatport-notfound.{identifier}.txt", json);
-                            return default;
-
-                        case "Territory Restricted.":
-                            File.WriteAllText($"errorbeatport-territory.{identifier}.txt", json);
-                            throw new InvalidDataException($"Territory restricted in {memberName}: {ex}");
-
-                        case "Authentication credentials were not provided.":
-                            File.WriteAllText($"errorbeatport-creds.{identifier}.txt", json);
-                            throw new InvalidDataException($"Authentication in {memberName}: {ex}");
-
-                        default:
-                            File.WriteAllText($"errorbeatport.{identifier}.txt", json);
-                            throw new InvalidDataException($"Unknown error in {memberName}: {ex}");
-                    }
-                }
-                catch (Exception e)
-                {
-                    File.WriteAllText($"fatalbeatport.{identifier}.txt", json);
-                    throw new Exception($"Error parsing error {memberName} {identifier}: ```\r\n{json}\r\n```");
-                }
+                File.WriteAllText($"fatalbeatport.{identifier}.txt", json);
+                throw new Exception($"Error parsing error {memberName} {identifier}: ```\r\n{json}\r\n```");
             }
 
-            return default;
+            switch (error.Detail)
+            {
+                case "Internal server error":
+                    File.WriteAllText($"errorbeatport-internal.{identifier}.txt", json);
+                    throw new InvalidDataException($"Internal Beatport in {memberName}: {ex}");
+
+                case "Not found.":
+                    File.WriteAllText($"errorbeatport-notfound.{identifier}.txt", json);
+                    return default;
+
+                case "Territory Restricted.":
+                    File.WriteAllText($"errorbeatport-territory.{identifier}.txt", json);
+                    throw new InvalidDataException($"Territory restricted in {memberName}: {ex}");
+
+                case "Authentication credentials were not provided.":
+                    File.WriteAllText($"errorbeatport-creds.{identifier}.txt", json);
+                    throw new InvalidDataException($"Authentication in {memberName}: {ex}");
+
+                default:
+                    File.WriteAllText($"errorbeatport.{identifier}.txt", json);
+                    throw new InvalidDataException($"Unknown error in {memberName}: {ex}");
+            }
+
         }
 
-        public async Task<BeatportResponse<BeatportTrack>?> GetTracksByReleaseId(int releaseId, int itemsPerPage = 200, int page = 1)
-        {
-            var client = new RestClient();
+        return default;
+    }
 
-            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases/{releaseId}/tracks/?per_page={itemsPerPage}&page={page}", Method.Get);
-            request.AddHeader("origin", "www.beatport.com");
-            var response = await client.ExecuteAsync(request);
+    public async Task<BeatportResponse<BeatportTrack>?> GetTracksByReleaseId(int releaseId, int itemsPerPage = 200, int page = 1)
+    {
+        var client = new RestClient();
 
-            var result = Deserialize<BeatportResponse<BeatportTrack>>(response.Content, $"release{releaseId}");
+        var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases/{releaseId}/tracks/?per_page={itemsPerPage}&page={page}", Method.Get);
+        request.AddHeader("origin", "www.beatport.com");
+        var response = await client.ExecuteAsync(request);
 
-            return result;
-        }
+        var result = Deserialize<BeatportResponse<BeatportTrack>>(response.Content, $"release{releaseId}");
 
-        public async Task<BeatportRelease?> GetReleaseById(int releaseId)
-        {
-            var client = new RestClient();
+        return result;
+    }
 
-            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases/{releaseId}", Method.Get);
-            request.AddHeader("origin", "www.beatport.com");
-            var response = await client.ExecuteAsync(request);
+    public async Task<BeatportRelease?> GetReleaseById(int releaseId)
+    {
+        var client = new RestClient();
 
-            var result = Deserialize<BeatportRelease>(response.Content, $"release{releaseId}");
+        var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases/{releaseId}", Method.Get);
+        request.AddHeader("origin", "www.beatport.com");
+        var response = await client.ExecuteAsync(request);
 
-            return result;
-        }
+        var result = Deserialize<BeatportRelease>(response.Content, $"release{releaseId}");
 
-        public async Task<BeatportTrack?> GetTrackByTrackId(int trackId)
-        {
-            var client = new RestClient();
-            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks/{trackId}", Method.Get);
-            request.AddHeader("origin", "www.beatport.com");
-            var response = await client.ExecuteAsync(request);
+        return result;
+    }
 
-            var result = Deserialize<BeatportTrack>(response.Content, $"track{trackId}");
+    public async Task<BeatportTrack?> GetTrackByTrackId(int trackId)
+    {
+        var client = new RestClient();
+        var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks/{trackId}", Method.Get);
+        request.AddHeader("origin", "www.beatport.com");
+        var response = await client.ExecuteAsync(request);
 
-            return result;
-        }
+        var result = Deserialize<BeatportTrack>(response.Content, $"track{trackId}");
 
-        public async Task<BeatportTrack> GetTrackByTrackId(string trackId)
-        {
-            var client = new RestClient();
-            var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks/{trackId}", Method.Get);
-            request.AddHeader("origin", "www.beatport.com");
-            var response = await client.ExecuteAsync(request);
+        return result;
+    }
 
-            return JsonConvert.DeserializeObject<BeatportTrack>(response.Content, serializerSettings);
-        }
+    public async Task<BeatportTrack> GetTrackByTrackId(string trackId)
+    {
+        var client = new RestClient();
+        var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks/{trackId}", Method.Get);
+        request.AddHeader("origin", "www.beatport.com");
+        var response = await client.ExecuteAsync(request);
+
+        return JsonConvert.DeserializeObject<BeatportTrack>(response.Content, serializerSettings);
     }
 }

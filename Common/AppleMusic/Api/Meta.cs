@@ -1,10 +1,9 @@
 using Newtonsoft.Json;
 
-namespace Common.AppleMusic.Api
+namespace Common.AppleMusic.Api;
+
+public class Meta
 {
-    public class Meta
-    {
-        [JsonProperty("popularity")]
-        public decimal Popularity { get; set; }
-    }
+    [JsonProperty("popularity")]
+    public decimal Popularity { get; set; }
 }
