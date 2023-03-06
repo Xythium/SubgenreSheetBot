@@ -148,17 +148,17 @@ public class SheetInteractionModule : InteractionModuleBase
 
 
     [SlashCommand(SheetService.CMD_QUERY_NAME, SheetService.CMD_QUERY_DESCRIPTION)]
-    public async Task Query([Summary(nameof(artist), "todo")]string? artist = null,
-                            [Summary(nameof(artistCount), "todo")]string? artistCount = null,
-                            [Summary(nameof(subgenre), "todo")]string? subgenre = null,
-                            [Summary(nameof(subgenreCount), "todo")]string? subgenreCount = null,
-                            [Summary(nameof(label), "todo")]string? label = null,
-                            [Summary(nameof(labelCount), "todo")]string? labelCount = null,
-                            [Summary(nameof(before), "todo")]string? before = null,
-                            [Summary(nameof(after), "todo")]string? after = null,
-                            [Summary(nameof(date), "todo")]string? date = null,
-                            [Summary(nameof(select), "todo")]string? select = null,
-                            [Summary(nameof(order), "todo")]string? order = null)
+    public async Task Query([Summary(nameof(artist), SheetService.CMD_QUERY_ARTIST_DESCRIPTION)]string? artist = null,
+                            [Summary(nameof(artistCount), SheetService.CMD_QUERY_ARTIST_COUNT_DESCRIPTION)]string? artistCount = null,
+                            [Summary(nameof(subgenre), SheetService.CMD_QUERY_SUBGENRE_DESCRIPTION)]string? subgenre = null,
+                            [Summary(nameof(subgenreCount), SheetService.CMD_QUERY_SUBGENRE_COUNT_DESCRIPTION)]string? subgenreCount = null,
+                            [Summary(nameof(label), SheetService.CMD_QUERY_LABEL_DESCRIPTION)]string? label = null,
+                            [Summary(nameof(labelCount), SheetService.CMD_QUERY_LABEL_COUNT_DESCRIPTION)]string? labelCount = null,
+                            [Summary(nameof(before), SheetService.CMD_QUERY_BEFORE_DESCRIPTION)]string? before = null,
+                            [Summary(nameof(after), SheetService.CMD_QUERY_AFTER_DESCRIPTION)]string? after = null,
+                            [Summary(nameof(date), SheetService.CMD_QUERY_DATE_DESCRIPTION)]string? date = null,
+                            [Summary(nameof(select), SheetService.CMD_QUERY_SELECT_DESCRIPTION)]string? select = null,
+                            [Summary(nameof(order), SheetService.CMD_QUERY_ORDER_DESCRIPTION)]string? order = null)
     {
         var arguments = new SheetService.QueryArguments
         {
