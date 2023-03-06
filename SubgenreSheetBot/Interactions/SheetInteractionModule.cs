@@ -1,17 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
-using System.Web;
 using Discord;
 using Discord.Interactions;
-using MetaBrainz.MusicBrainz;
-using MetaBrainz.MusicBrainz.Interfaces.Entities;
-using MusicTools.Parsing.Track;
-using SubgenreSheetBot.Commands;
 using SubgenreSheetBot.Services;
 
 namespace SubgenreSheetBot.Interactions;
@@ -26,65 +18,67 @@ public class SheetInteractionModule : InteractionModuleBase
         Timeout = 15
     };
 
-    public SheetInteractionModule(SheetService sheet) { this.sheet = sheet; }
+    public SheetInteractionModule(SheetService sheet)
+    {
+        this.sheet = sheet;
+    }
 
-
-    [SlashCommand("track", "Search for a track on the sheet")]
-    public async Task Track([Summary(nameof(search), "Track to search for")] string search)
+    [SlashCommand(SheetService.CMD_TRACK_NAME, SheetService.CMD_TRACK_DESC)]
+    public async Task Track([Summary(nameof(search), SheetService.CMD_TRACK_SEARCH_DESC)]string search)
     {
         await sheet.TrackCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand("trackexact", "Search for a track on the sheet")]
-    public async Task TrackExact([Summary(nameof(search), "Track to search for")] string search)
+    public async Task TrackExact([Summary(nameof(search), "Track to search for")]string search)
     {
         await sheet.TrackExactCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand("trackinfoexact", "Search for a track on the sheet")]
-    public async Task TrackInfoExact([Summary(nameof(search), "Track to search for")] string search)
+    public async Task TrackInfoExact([Summary(nameof(search), "Track to search for")]string search)
     {
         await sheet.TrackInfoExactCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand("trackinfoforce", "Get information about a track")]
-    public async Task TrackInfoForce([Summary(nameof(search), "Track to search for")] string search)
+    public async Task TrackInfoForce([Summary(nameof(search), "Track to search for")]string search)
     {
         await sheet.TrackInfoForceCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand("artist", "Returns info about an artist")]
-    public async Task Artist([Summary(nameof(artist), "Artist to search for")] string artist)
+    public async Task Artist([Summary(nameof(artist), "Artist to search for")]string artist)
     {
         await sheet.ArtistCommand(artist, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand("artistdebug", "Returns a list of up to 15 artists most similar to the given input")]
-    public async Task ArtistDebug([Summary(nameof(artist), "Artist to search for")] string artist)
+    public async Task ArtistDebug([Summary(nameof(artist), "Artist to search for")]string artist)
     {
         await sheet.ArtistDebugCommand(artist, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand("genre", "Returns a list of up to 8 tracks of a given genre")]
-    public async Task Genre([Summary(nameof(genre), "Genre to search for")] string genre)
+    public async Task Genre([Summary(nameof(genre), "Genre to search for")]string genre)
     {
         await sheet.GenreCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand("genreinfo", "Returns information of a genre")]
-    public async Task GenreInfo([Summary(nameof(genre), "Genre to search for")] string genre)
+    public async Task GenreInfo([Summary(nameof(genre), "Genre to search for")]string genre)
     {
         await sheet.GenreInfoCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand("subgenre", "Returns a list of up to 8 tracks of a given subgenre")]
-    public async Task Subgenre([Summary(nameof(genre), "Genre to search for")] string genre)
+    public async Task Subgenre([Summary(nameof(genre), "Genre to search for")]string genre)
     {
         await sheet.SubgenreCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand("subgenreexact", "Returns a list of up to 8 tracks of a given subgenre")]
-    public async Task SubgenreExact([Summary(nameof(genre), "Genre to search for")] string genre)
+    public async Task SubgenreExact([Summary(nameof(genre), "Genre to search for")]string genre)
     {
         await sheet.SubgenreExactCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
@@ -96,13 +90,13 @@ public class SheetInteractionModule : InteractionModuleBase
     }
 
     [SlashCommand("label", "todo")]
-    public async Task Label([Summary(nameof(label))] string label)
+    public async Task Label([Summary(nameof(label))]string label)
     {
         await sheet.LabelCommand(label, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand("labelartists", "todo")]
-    public async Task LabelArtists([Summary(nameof(label))] string label)
+    public async Task LabelArtists([Summary(nameof(label))]string label)
     {
         await sheet.LabelArtistsCommand(label, new DynamicContext(Context), false, defaultOptions);
     }
@@ -119,13 +113,35 @@ public class SheetInteractionModule : InteractionModuleBase
         await sheet.MarkwhenCommand(new DynamicContext(Context), false, defaultOptions);
     }
 
+    [SlashCommand(SheetService.CMD_SUBGENRE_GRAPH_NAME, SheetService.CMD_SUBGENRE_GRAPH_DESCRIPTION)]
+    public async Task SubgenreGraph(
+    [Summary(nameof(subgenre), SheetService.CMD_SUBGENRE_GRAPH_SEARCH_DESCRIPTION), Autocomplete(typeof(SubgenreAutocomplete))]string subgenre,
+    [Summary(nameof(engine), SheetService.CMD_SUBGENRE_GRAPH_ENGINE_DESCRIPTION), Choice("dot", "dot"), Choice("neato", "neato"), Choice("force-directed placement", "fdp"), Choice("scalable force-directed placement", "sfdp"), Choice("circo", "circo"), Choice("twopi", "twopi"), Choice("nop", "nop"), Choice("osage", "osage"), Choice("patchwork", "patchwork")]string engine = "dot",
+    [Summary(nameof(maxSubgenreDepth), SheetService.CMD_SUBGENRE_GRAPH_MAXDEPTH_DESCRIPTION)]int maxSubgenreDepth = 1)
+    {
+        var graphOptions = new SheetService.GraphCommandOptions
+        {
+            Subgenre = subgenre,
+            Engine = engine,
+            MaxSubgenreDepth = maxSubgenreDepth
+        };
+        await sheet.SubgenreGraphCommand(graphOptions, new DynamicContext(Context), false, defaultOptions);
+    } 
+    
+    [SlashCommand("subgenre-debug", SheetService.CMD_SUBGENRE_GRAPH_DESCRIPTION)]
+    public async Task SubgenreDebug(
+    [Summary(nameof(subgenre), SheetService.CMD_SUBGENRE_GRAPH_SEARCH_DESCRIPTION), Autocomplete(typeof(SubgenreAutocomplete))]string subgenre)
+    {
+      
+        await sheet.SubgenreDebugCommand(subgenre, new DynamicContext(Context), false, defaultOptions);
+    }
+
     /*[SlashCommand("query", "todo")]
     public async Task Query(SheetService.QueryArguments arguments)
     {
         await sheet.QueryCommand(arguments, new DynamicContext(Context), false, defaultOptions);
     }*/
 
-   
 
     /*[SlashCommand("mbsubmit", "todo")]
     public async Task MusicBrainzSubmit()
@@ -266,4 +282,28 @@ public class SheetInteractionModule : InteractionModuleBase
 
         await chl.SendMessageAsync(message);
     }*/
+}
+
+public class SubgenreAutocomplete : AutocompleteHandler
+{
+    private readonly SheetService sheetService;
+
+    public SubgenreAutocomplete(SheetService sheetService)
+    {
+        this.sheetService = sheetService;
+    }
+
+    public override Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+    {
+        var subgenres = sheetService.GetMostCommonSubgenres();
+        var value = autocompleteInteraction.Data.Current.Value.ToString();
+
+        IEnumerable<string> results;
+        if (string.IsNullOrWhiteSpace(value))
+            results = subgenres.Take(25);
+        else
+            results = subgenres.Where(sg => sg.Contains(value, StringComparison.OrdinalIgnoreCase)).Take(25);
+
+        return Task.FromResult(AutocompletionResult.FromSuccess(results.Select(sg => new AutocompleteResult(sg, sg))));
+    }
 }

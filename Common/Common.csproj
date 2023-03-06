@@ -2,8 +2,8 @@
 
     <PropertyGroup>
         <LangVersion>preview</LangVersion>
-        <TargetFrameworks>net48;net7.0</TargetFrameworks>
         <Nullable>enable</Nullable>
+        <TargetFramework>net7.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
@@ -19,6 +19,10 @@
       <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
       <PackageReference Include="SpotifyAPI.Web" Version="6.2.0" />
       <PackageReference Include="System.Drawing.Common" Version="5.0.2" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'net7.0'">
+      <PackageReference Include="MusicTools" Version="1.4.8.7" />
     </ItemGroup>
 
 </Project>
