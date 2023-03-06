@@ -81,17 +81,38 @@ public class GraphService
         return rootNode;
     }
 
-    public byte[] Render(GenreNode rootNode, SheetService.GraphCommandOptions options)
+    public byte[] Render(GenreNode rootNode, SheetService.SheetGraphCommandOptions options)
     {
         //Log.Verbose("finding {Node}", options.Subgenre);
         var subgenreNode = FindNode(rootNode, options.Subgenre);
         //Log.Verbose("node: {Node}", subgenreNode.Name);
         var sb = GenerateGraphString(subgenreNode, options); // subgenreNode
         //Log.Verbose("sb {L}", sb);
-        
+
         File.WriteAllText("layout.gv", sb);
         var graph = new GraphViz();
         var imageBytes = graph.LayoutAndRender(null, sb, null, options.Engine, "png");
+        return imageBytes;
+    }
+
+    public byte[] RenderCollabs(string[] artists, SheetService.CollabGraphCommandOptions options)
+    {
+        var sb = new StringBuilder($$"""
+graph G {
+graph [engine={{options.Engine}}]
+""");
+
+        foreach (var artist in artists)
+        {
+            if (string.Equals(artist, options.StartArtist, StringComparison.OrdinalIgnoreCase))
+                continue;
+            sb.AppendLine($"{Quote(options.StartArtist)}--{Quote(artist)}");
+        }
+
+        sb.AppendLine("}");
+
+        var graph = new GraphViz();
+        var imageBytes = graph.LayoutAndRender(null, sb.ToString(), null, options.Engine, "png");
         return imageBytes;
     }
 
@@ -114,7 +135,7 @@ public class GraphService
         return null;
     }
 
-    private static string GenerateGraphString(GenreNode rootNode, SheetService.GraphCommandOptions options)
+    private static string GenerateGraphString(GenreNode rootNode, SheetService.SheetGraphCommandOptions options)
     {
         var sb = new StringBuilder("digraph G {\r\n");
         sb.AppendLine($"graph [engine={options.Engine},splines=compound,overlap=false,fontname={Quote("Roboto,RobotoDraft,Helvetica,Arial,sans-serif")},fontsize=12,];"); //ratio=0.421940928 bgcolor={Quote("transparent")}

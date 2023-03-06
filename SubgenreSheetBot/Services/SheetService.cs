@@ -289,6 +289,68 @@ public class SheetService
 
         return tracks.OrderByDescending(e => e.Date).ToList();
     }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="artist"></param>
+    /// <param name="includeRemixes">Include XXX (artist Remix)</param>
+    /// <param name="includeRemixed">Include artist (XXX Remix)</param>
+    /// <param name="threshold"></param>
+    /// <returns></returns>
+    private static List<Entry> GetAllTracksByArtist(string artist, bool includeRemixes = true, bool includeRemixed = false, int threshold = 80)
+    {
+        var tracks = new List<Entry>();
+
+        foreach (var entry in _entries)
+        {
+            // include featured artists
+            if (entry.Info.Features.Any(s => string.Equals(s, artist, StringComparison.OrdinalIgnoreCase)))
+            {
+                tracks.Add(entry);
+            }
+
+            // remix by searching artist should be including
+            if (includeRemixes)
+            {
+                // track is a remix
+                if (entry.Info.Remixers.Count > 0)
+                {
+                    // remixers include searching artist
+                    if (entry.Info.Remixers.Any(s => string.Equals(s, artist, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        tracks.Add(entry);
+                    }
+                }
+            }
+
+            // remixes of searching artist should be included
+            if (includeRemixed)
+            {
+                // track is a remix
+                if (entry.Info.Remixers.Count > 0)
+                {
+                    // track is by searching artist
+                    if (entry.Info.Artists.Any(s => string.Equals(s, artist, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        tracks.Add(entry);
+                    }
+                }
+            }
+
+            // track is not a remix
+            if (entry.Info.Remixers.Count < 1)
+            {
+                // track is by searching artist
+                if (entry.Info.Artists.Any(s => string.Equals(s, artist, StringComparison.OrdinalIgnoreCase)))
+                {
+                    tracks.Add(entry);
+                }
+            }
+        }
+
+        return tracks.OrderByDescending(e => e.Date).ToList();
+    }
 
     private static List<Entry> GetTracksByTitleExact(List<Entry> tracksByArtist, string title)
     {
@@ -1491,7 +1553,7 @@ public class SheetService
     public const string CMD_SUBGENRE_GRAPH_ENGINE_DESCRIPTION = "todo";
     public const string CMD_SUBGENRE_GRAPH_MAXDEPTH_DESCRIPTION = "todo";
 
-    public class GraphCommandOptions
+    public class SheetGraphCommandOptions
     {
         public string Subgenre { get; set; }
 
@@ -1500,7 +1562,7 @@ public class SheetService
         public int MaxSubgenreDepth { get; set; }
     }
 
-    public async Task SubgenreGraphCommand(GraphCommandOptions graphOptions, DynamicContext context, bool ephemeral, RequestOptions options)
+    public async Task SubgenreGraphCommand(SheetGraphCommandOptions graphOptions, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
         await CheckIfCacheExpired(context);
@@ -1544,7 +1606,45 @@ Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
 """;
         await context.FollowupAsync(res);
     }
+    
+    public const string CMD_COLLAB_GRAPH_NAME = "collab-graph";
+    public const string CMD_COLLAB_GRAPH_DESCRIPTION = "todo";
+    public const string CMD_COLLAB_GRAPH_SEARCH_DESCRIPTION = "todo";
+    public const string CMD_COLLAB_GRAPH_ENGINE_DESCRIPTION = "todo";
+    public const string CMD_COLLAB_GRAPH_MAXDEPTH_DESCRIPTION = "todo";
+    
+    public class CollabGraphCommandOptions
+    {
+        public string StartArtist { get; set; }
 
+        public string Engine { get; set; }
+
+        public int MaxSubgenreDepth { get; set; }
+    }
+    
+    public async Task CollabGraphCommand(CollabGraphCommandOptions graphOptions, DynamicContext context, bool ephemeral, RequestOptions options)
+    {
+        await context.DeferAsync(ephemeral, options);
+        await CheckIfCacheExpired(context);
+
+        var tracks = GetAllTracksByArtist(graphOptions.StartArtist);
+        if (tracks.Count == 0)
+        {
+            await context.FollowupAsync("No tracks by artist");
+            return;
+        }
+        var artists = tracks.SelectMany(t => t.ActualArtists).Distinct().ToArray();
+        Log.Verbose("artists: {A}", string.Join(", ", artists));
+        if (artists.Length < 2)
+        {
+            await context.FollowupAsync("No collaborations");
+            return;
+        }
+        
+        var imageBytes = graphService.RenderCollabs(artists, graphOptions);
+        var image = new MemoryStream(imageBytes);
+        await context.FollowupWithFileAsync(image, $"{graphOptions.StartArtist}.png");
+    }
 
     static SortedSet<IRecording> _recordings = new(new MusicBrainzTrackComparer());
     static SortedSet<string> _addedLabels = new();
@@ -1654,7 +1754,8 @@ Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
         }
     }
 
-  
+
+    
 }
 
 public class GenreNode
