@@ -1371,7 +1371,18 @@ public class SheetService
 #region Query
 
     public const string CMD_QUERY_NAME = "query";
-    public const string CMD_QUERY_DESCRIPTION = "todo";
+    public const string CMD_QUERY_DESCRIPTION = "Query information from the spreadsheet";
+    public const string CMD_QUERY_ARTIST_DESCRIPTION = "Filter on artist names (Usage: `Name`)";
+    public const string CMD_QUERY_ARTIST_COUNT_DESCRIPTION = "Filter on artist count (Usage: `>Count`, `<Count`, or `Count`)";
+    public const string CMD_QUERY_SUBGENRE_DESCRIPTION = "Filter on subgenre (Usage: `-Subgenre` or `!Subgenre` for exclude, `Subgenre` for include)";
+    public const string CMD_QUERY_SUBGENRE_COUNT_DESCRIPTION = "Filter on subgenre count (Usage: `>Count`, `<Count`, or `Count`)";
+    public const string CMD_QUERY_LABEL_DESCRIPTION = "Filter on label (Usage: `-Name` or `!Name` for exclude, `Name` for include)";
+    public const string CMD_QUERY_LABEL_COUNT_DESCRIPTION = "Filter on label count (Usage: `>Count`, `<Count`, or `Count`)";
+    public const string CMD_QUERY_BEFORE_DESCRIPTION = "Filter on dates before (Usage: `Any date`)";
+    public const string CMD_QUERY_AFTER_DESCRIPTION = "Filter on dates after (Usage: `Any date`)";
+    public const string CMD_QUERY_DATE_DESCRIPTION = "Filter on exact date (Usage: `Any date`)";
+    public const string CMD_QUERY_SELECT_DESCRIPTION = "What to return (Usage: `track`, `artist`, or `label`)";
+    public const string CMD_QUERY_ORDER_DESCRIPTION = "How to order results (Usage: `date`, `title`, `label`, `artist`. `+` for asc, `-` for desc)";
 
     [Discord.Commands.NamedArgumentType]
     public class QueryArguments
