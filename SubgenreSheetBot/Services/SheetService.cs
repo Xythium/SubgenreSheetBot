@@ -75,7 +75,7 @@ public class SheetService
             await GetGenreTreeFromSheet(context);
 
             mostCommonSubgenres = null;
-            
+
             _lastTime = DateTime.UtcNow;
             Log.Information("Cache revalidation took {Milliseconds}ms", DateTime.UtcNow.Subtract(now).TotalMilliseconds);
         }
@@ -289,7 +289,7 @@ public class SheetService
 
         return tracks.OrderByDescending(e => e.Date).ToList();
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -398,16 +398,16 @@ public class SheetService
     }
 
     private static Dictionary<string, int>? mostCommonSubgenres;
-        
+
     public string[] GetMostCommonSubgenres()
     {
         if (mostCommonSubgenres != null)
             return mostCommonSubgenres.OrderByDescending(c => c.Value).Select(c => c.Key).ToArray();
-        
+
         var count = new Dictionary<string, int>();
         foreach (var subgenre in _entries.SelectMany(entry => entry.SubgenresList))
         {
-            if (!count.ContainsKey(subgenre)) 
+            if (!count.ContainsKey(subgenre))
                 count.Add(subgenre, 0);
             count[subgenre]++;
         }
@@ -792,6 +792,8 @@ public class SheetService
         return (toMostCommon, toEntries);
     }
 
+#region Track
+
     public const string CMD_TRACK_NAME = "track";
     public const string CMD_TRACK_DESC = "Search for a track on the sheet";
     public const string CMD_TRACK_SEARCH_DESC = "Search for a track on the sheet";
@@ -854,6 +856,10 @@ public class SheetService
         }
     }
 
+#endregion
+
+#region Track Exact
+
     public async Task TrackExactCommand(string search, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -896,6 +902,10 @@ public class SheetService
             await SendTrackEmbed(context, track);
         }
     }
+
+#endregion
+
+#region Track Info Exact
 
     public async Task TrackInfoExactCommand(string search, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -941,6 +951,10 @@ public class SheetService
         }
     }
 
+#endregion
+
+#region Track Info Force
+
     public async Task TrackInfoForceCommand(string search, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -963,6 +977,10 @@ public class SheetService
         await SendTrackInfoEmbed(context, info);
     }
 
+#endregion
+
+#region Artist
+
     public async Task ArtistCommand(string artist, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -982,6 +1000,10 @@ public class SheetService
         await SendArtistInfo(context, artist, artists, tracksByArtist);
     }
 
+#endregion
+
+#region Artist Debug
+
     public async Task ArtistDebugCommand(string artist, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -1000,6 +1022,10 @@ public class SheetService
         await context.FollowupAsync(sb.ToString());
         //await Context.Message.ReplyAsync(sb.ToString());
     }
+
+#endregion
+
+#region Genre
 
     public async Task GenreCommand(string genre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1030,6 +1056,10 @@ public class SheetService
             test
         }, tracks, false);
     }
+
+#endregion
+
+#region Genre Info
 
     public async Task GenreInfoCommand(string genre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1071,6 +1101,10 @@ public class SheetService
         //await Context.Message.ReplyAsync(embed: embed.Build());
     }
 
+#endregion
+
+#region Subgenre
+
     public async Task SubgenreCommand(string genre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -1100,6 +1134,10 @@ public class SheetService
             test
         }, tracks, false);
     }
+
+#endregion
+
+#region Subgenre Exact
 
     public async Task SubgenreExactCommand(string genre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1131,6 +1169,10 @@ public class SheetService
         }, tracks, false);
     }
 
+#endregion
+
+#region Labels
+
     public async Task LabelsCommand(DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -1154,6 +1196,10 @@ public class SheetService
 
         await context.SendOrAttachment(string.Join("\r\n", labels.Select(l => $"{l.Key} ({l.TrackCount} tracks, {l.ArtistCount} artists)")));
     }
+
+#endregion
+
+#region Label
 
     public async Task LabelCommand(string label, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1193,6 +1239,10 @@ public class SheetService
         await context.FollowupAsync(embed: embed.Build());
         //await Context.Message.ReplyAsync(embed: embed.Build());
     }
+
+#endregion
+
+#region Label Artists
 
     public async Task LabelArtistsCommand(string label, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1240,6 +1290,10 @@ public class SheetService
         await context.SendOrAttachment(sb.ToString());
     }
 
+#endregion
+
+#region Debug
+
     public async Task DebugCommand(DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -1270,6 +1324,10 @@ public class SheetService
         await context.FollowupAsync(sb.ToString());
         //await Context.Message.ReplyAsync(sb.ToString());
     }
+
+#endregion
+
+#region Markwhen
 
     public async Task MarkwhenCommand(DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1308,31 +1366,38 @@ public class SheetService
         await context.SendOrAttachment(sb.ToString());
     }
 
+#endregion
+
+#region Query
+
+    public const string CMD_QUERY_NAME = "query";
+    public const string CMD_QUERY_DESCRIPTION = "todo";
+
     [Discord.Commands.NamedArgumentType]
     public class QueryArguments
     {
-        public string Artist { get; set; }
+        public string? Artist { get; set; }
 
-        public string ArtistCount { get; set; }
+        public string? ArtistCount { get; set; }
 
-        public string Subgenre { get; set; }
+        public string? Subgenre { get; set; }
 
-        public string SubgenreCount { get; set; } //todo
+        public string? SubgenreCount { get; set; } //todo
 
-        public string Label { get; set; }
+        public string? Label { get; set; }
 
-        public string LabelCount { get; set; }
+        public string? LabelCount { get; set; }
 
-        public string Before { get; set; }
+        public string? Before { get; set; }
 
-        public string After { get; set; }
+        public string? After { get; set; }
 
-        public string Date { get; set; }
+        public string? Date { get; set; }
 
         //meta
-        public string Select { get; set; }
+        public string? Select { get; set; }
 
-        public string Order { get; set; }
+        public string? Order { get; set; }
     }
 
     public async Task QueryCommand(QueryArguments arguments, DynamicContext context, bool ephemeral, RequestOptions options)
@@ -1547,6 +1612,10 @@ public class SheetService
         }
     }
 
+#endregion
+
+#region Subgenre Graph
+
     public const string CMD_SUBGENRE_GRAPH_NAME = "subgenre-graph";
     public const string CMD_SUBGENRE_GRAPH_DESCRIPTION = "todo";
     public const string CMD_SUBGENRE_GRAPH_SEARCH_DESCRIPTION = "todo";
@@ -1586,14 +1655,18 @@ public class SheetService
         await context.FollowupWithFileAsync(image, $"{test}.png");
     }
 
+#endregion
+
+#region Subgenre Debug
+
     public async Task SubgenreDebugCommand(string subgenre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
         await CheckIfCacheExpired(context);
-        
+
         if (rootNode is null)
             throw new InvalidDataException("rootNode cant be null");
-        
+
         var node = graphService.FindNode(rootNode, subgenre);
         if (node is null)
             throw new InvalidDataException("node not found");
@@ -1606,13 +1679,17 @@ Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
 """;
         await context.FollowupAsync(res);
     }
-    
+
+#endregion
+
+#region Collab Graph
+
     public const string CMD_COLLAB_GRAPH_NAME = "collab-graph";
     public const string CMD_COLLAB_GRAPH_DESCRIPTION = "todo";
     public const string CMD_COLLAB_GRAPH_SEARCH_DESCRIPTION = "todo";
     public const string CMD_COLLAB_GRAPH_ENGINE_DESCRIPTION = "todo";
     public const string CMD_COLLAB_GRAPH_MAXDEPTH_DESCRIPTION = "todo";
-    
+
     public class CollabGraphCommandOptions
     {
         public string StartArtist { get; set; }
@@ -1621,7 +1698,7 @@ Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
 
         public int MaxSubgenreDepth { get; set; }
     }
-    
+
     public async Task CollabGraphCommand(CollabGraphCommandOptions graphOptions, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -1633,6 +1710,7 @@ Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
             await context.FollowupAsync("No tracks by artist");
             return;
         }
+
         var artists = tracks.SelectMany(t => t.ActualArtists).Distinct().ToArray();
         Log.Verbose("artists: {A}", string.Join(", ", artists));
         if (artists.Length < 2)
@@ -1640,17 +1718,21 @@ Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
             await context.FollowupAsync("No collaborations");
             return;
         }
-        
+
         var imageBytes = graphService.RenderCollabs(artists, graphOptions);
         var image = new MemoryStream(imageBytes);
         await context.FollowupWithFileAsync(image, $"{graphOptions.StartArtist}.png");
     }
 
+#endregion
+
+#region MusicBrainz Submit
+
     static SortedSet<IRecording> _recordings = new(new MusicBrainzTrackComparer());
     static SortedSet<string> _addedLabels = new();
 
     public async Task MusicBrainzSubmitCommand(DynamicContext context, bool ephemeral, RequestOptions options)
-    {    
+    {
         await context.DeferAsync(ephemeral, options);
         await CheckIfCacheExpired(context);
 
@@ -1754,8 +1836,7 @@ Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
         }
     }
 
-
-    
+#endregion
 }
 
 public class GenreNode
