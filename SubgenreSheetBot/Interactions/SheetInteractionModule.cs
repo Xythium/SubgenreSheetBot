@@ -114,10 +114,9 @@ public class SheetInteractionModule : InteractionModuleBase
     }
 
     [SlashCommand(SheetService.CMD_SUBGENRE_GRAPH_NAME, SheetService.CMD_SUBGENRE_GRAPH_DESCRIPTION)]
-    public async Task SubgenreGraph(
-    [Summary(nameof(subgenre), SheetService.CMD_SUBGENRE_GRAPH_SEARCH_DESCRIPTION), Autocomplete(typeof(SubgenreAutocomplete))]string subgenre,
-    [Summary(nameof(engine), SheetService.CMD_SUBGENRE_GRAPH_ENGINE_DESCRIPTION), Choice("dot", "dot"), Choice("neato", "neato"), Choice("force-directed placement", "fdp"), Choice("scalable force-directed placement", "sfdp"), Choice("circo", "circo"), Choice("twopi", "twopi"), Choice("nop", "nop"), Choice("osage", "osage"), Choice("patchwork", "patchwork")]string engine = "dot",
-    [Summary(nameof(maxSubgenreDepth), SheetService.CMD_SUBGENRE_GRAPH_MAXDEPTH_DESCRIPTION)]int maxSubgenreDepth = 1)
+    public async Task SubgenreGraph([Summary(nameof(subgenre), SheetService.CMD_SUBGENRE_GRAPH_SEARCH_DESCRIPTION), Autocomplete(typeof(SubgenreAutocomplete))]string subgenre,
+                                    [Summary(nameof(engine), SheetService.CMD_SUBGENRE_GRAPH_ENGINE_DESCRIPTION), Choice("dot", "dot"), Choice("neato", "neato"), Choice("force-directed placement", "fdp"), Choice("scalable force-directed placement", "sfdp"), Choice("circo", "circo"), Choice("twopi", "twopi"), Choice("nop", "nop"), Choice("osage", "osage"), Choice("patchwork", "patchwork")]string engine = "dot",
+                                    [Summary(nameof(maxSubgenreDepth), SheetService.CMD_SUBGENRE_GRAPH_MAXDEPTH_DESCRIPTION)]int maxSubgenreDepth = 1)
     {
         var graphOptions = new SheetService.SheetGraphCommandOptions
         {
@@ -129,8 +128,7 @@ public class SheetInteractionModule : InteractionModuleBase
     }
 
     [SlashCommand("subgenre-debug", SheetService.CMD_SUBGENRE_GRAPH_DESCRIPTION)]
-    public async Task SubgenreDebug(
-    [Summary(nameof(subgenre), SheetService.CMD_SUBGENRE_GRAPH_SEARCH_DESCRIPTION), Autocomplete(typeof(SubgenreAutocomplete))]string subgenre)
+    public async Task SubgenreDebug([Summary(nameof(subgenre), SheetService.CMD_SUBGENRE_GRAPH_SEARCH_DESCRIPTION), Autocomplete(typeof(SubgenreAutocomplete))]string subgenre)
     {
         await sheet.SubgenreDebugCommand(subgenre, new DynamicContext(Context), false, defaultOptions);
     }
@@ -148,11 +146,36 @@ public class SheetInteractionModule : InteractionModuleBase
         await sheet.CollabGraphCommand(graphOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
-    /*[SlashCommand("query", "todo")]
-    public async Task Query(SheetService.QueryArguments arguments)
+
+    [SlashCommand(SheetService.CMD_QUERY_NAME, SheetService.CMD_QUERY_DESCRIPTION)]
+    public async Task Query([Summary(nameof(artist), "todo")]string? artist = null,
+                            [Summary(nameof(artistCount), "todo")]string? artistCount = null,
+                            [Summary(nameof(subgenre), "todo")]string? subgenre = null,
+                            [Summary(nameof(subgenreCount), "todo")]string? subgenreCount = null,
+                            [Summary(nameof(label), "todo")]string? label = null,
+                            [Summary(nameof(labelCount), "todo")]string? labelCount = null,
+                            [Summary(nameof(before), "todo")]string? before = null,
+                            [Summary(nameof(after), "todo")]string? after = null,
+                            [Summary(nameof(date), "todo")]string? date = null,
+                            [Summary(nameof(select), "todo")]string? select = null,
+                            [Summary(nameof(order), "todo")]string? order = null)
     {
+        var arguments = new SheetService.QueryArguments
+        {
+            Artist = artist,
+            ArtistCount = artistCount,
+            Subgenre = subgenre,
+            SubgenreCount = subgenreCount,
+            Label = label,
+            LabelCount = labelCount,
+            Before = before,
+            After = after,
+            Date = date,
+            Select = select,
+            Order = order
+        };
         await sheet.QueryCommand(arguments, new DynamicContext(Context), false, defaultOptions);
-    }*/
+    }
 
 
     /*[SlashCommand("mbsubmit", "todo")]
