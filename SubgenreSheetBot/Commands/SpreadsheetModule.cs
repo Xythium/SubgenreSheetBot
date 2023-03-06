@@ -1,17 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Web;
 using Discord;
 using Discord.Commands;
-using FuzzySharp;
-using MetaBrainz.MusicBrainz;
 using MetaBrainz.MusicBrainz.Interfaces.Entities;
-using MusicTools.Parsing.Track;
 using SubgenreSheetBot.Services;
 
 namespace SubgenreSheetBot.Commands;
@@ -25,64 +16,67 @@ public class SpreadsheetModule : ModuleBase
         Timeout = 15
     };
 
-    public SpreadsheetModule(SheetService sheet) { this.sheet = sheet; }
+    public SpreadsheetModule(SheetService sheet)
+    {
+        this.sheet = sheet;
+    }
 
     [Command("track"), Alias("t"), Summary("Search for a track on the sheet")]
-    public async Task Track([Remainder, Summary("Track to search for")] string search)
+    public async Task Track([Remainder, Summary("Track to search for")]string search)
     {
         await sheet.TrackCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command("trackexact"), Alias("te"), Summary("Search for a track on the sheet")]
-    public async Task TrackExact([Remainder, Summary("Track to search for")] string search)
+    public async Task TrackExact([Remainder, Summary("Track to search for")]string search)
     {
         await sheet.TrackExactCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command("trackinfoexact"), Alias("tie"), Summary("Search for a track on the sheet")]
-    public async Task TrackInfoExact([Remainder, Summary("Track to search for")] string search)
+    public async Task TrackInfoExact([Remainder, Summary("Track to search for")]string search)
     {
         await sheet.TrackInfoExactCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command("trackinfoforce"), Alias("tif"), Summary("Get information about a track")]
-    public async Task TrackInfoForce([Remainder, Summary("Track to search for")] string search)
+    public async Task TrackInfoForce([Remainder, Summary("Track to search for")]string search)
     {
         await sheet.TrackInfoForceCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command("artist"), Alias("a"), Summary("Returns info about an artist")]
-    public async Task Artist([Remainder, Summary("Artist to search for")] string artist)
+    public async Task Artist([Remainder, Summary("Artist to search for")]string artist)
     {
         await sheet.ArtistCommand(artist, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command("artistdebug"), Alias("ad"), Summary("Returns a list of up to 15 artists most similar to the given input")]
-    public async Task ArtistDebug([Remainder, Summary("Artist to search for")] string artist)
+    public async Task ArtistDebug([Remainder, Summary("Artist to search for")]string artist)
     {
         await sheet.ArtistDebugCommand(artist, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command("genre"), Alias("g"), Summary("Returns a list of up to 8 tracks of a given genre")]
-    public async Task Genre([Remainder, Summary("Genre to search for")] string genre)
+    public async Task Genre([Remainder, Summary("Genre to search for")]string genre)
     {
         await sheet.GenreCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command("genreinfo"), Alias("gi"), Summary("Returns information of a genre")]
-    public async Task GenreInfo([Remainder, Summary("Genre to search for")] string genre)
+    public async Task GenreInfo([Remainder, Summary("Genre to search for")]string genre)
     {
         await sheet.GenreInfoCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command("subgenre"), Alias("sg"), Summary("Returns a list of up to 8 tracks of a given subgenre")]
-    public async Task Subgenre([Remainder, Summary("Genre to search for")] string genre)
+    public async Task Subgenre([Remainder, Summary("Genre to search for")]string genre)
     {
         await sheet.SubgenreCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command("subgenreexact"), Alias("sge"), Summary("Returns a list of up to 8 tracks of a given subgenre")]
-    public async Task SubgenreExact([Remainder, Summary("Genre to search for")] string genre)
+    public async Task SubgenreExact([Remainder, Summary("Genre to search for")]string genre)
     {
         await sheet.SubgenreExactCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
@@ -94,13 +88,13 @@ public class SpreadsheetModule : ModuleBase
     }
 
     [Command("label"), Alias("l")]
-    public async Task Label([Remainder] string label)
+    public async Task Label([Remainder]string label)
     {
         await sheet.LabelCommand(label, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command("labelartists"), Alias("la")]
-    public async Task LabelArtists([Remainder] string label)
+    public async Task LabelArtists([Remainder]string label)
     {
         await sheet.LabelArtistsCommand(label, new DynamicContext(Context), false, defaultOptions);
     }
@@ -117,13 +111,11 @@ public class SpreadsheetModule : ModuleBase
         await sheet.MarkwhenCommand(new DynamicContext(Context), false, defaultOptions);
     }
 
-
     [Command("query"), Alias("q")]
     public async Task Query(SheetService.QueryArguments arguments)
     {
         await sheet.QueryCommand(arguments, new DynamicContext(Context), false, defaultOptions);
     }
-
 
     [Command("mbsubmit")]
     public async Task MusicBrainzSubmit()
@@ -164,7 +156,10 @@ public class SpreadsheetModule : ModuleBase
 
 public class MusicBrainzTrackComparer : IComparer<IRecording>, IEqualityComparer<IRecording>
 {
-    public int Compare(IRecording x, IRecording y) { return x.Id.CompareTo(y.Id); }
+    public int Compare(IRecording x, IRecording y)
+    {
+        return x.Id.CompareTo(y.Id);
+    }
 
     public bool Equals(IRecording x, IRecording y)
     {
@@ -174,5 +169,8 @@ public class MusicBrainzTrackComparer : IComparer<IRecording>, IEqualityComparer
         return x.Id == y.Id;
     }
 
-    public int GetHashCode(IRecording obj) { return obj.Id.GetHashCode(); }
+    public int GetHashCode(IRecording obj)
+    {
+        return obj.Id.GetHashCode();
+    }
 }

@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net.Mime;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
-using BeatportApi.Beatsource;
+using Common.SubgenreSheet;
 using Discord;
 using FuzzySharp;
 using FuzzySharp.PreProcess;
@@ -22,10 +19,10 @@ using Google.Apis.Util.Store;
 using MetaBrainz.MusicBrainz;
 using MetaBrainz.MusicBrainz.Interfaces.Entities;
 using MusicTools.Parsing.Track;
-using MusicTools.Utils;
+using Newtonsoft.Json;
 using Serilog;
-using SpotifyAPI.Web;
 using SubgenreSheetBot.Commands;
+using Color = Discord.Color;
 
 namespace SubgenreSheetBot.Services;
 
@@ -36,20 +33,23 @@ public class SheetService
 
     private static readonly Func<string, string, PreprocessMode, int> fuzzyFunc = Fuzz.TokenSetRatio;
 
-    public SheetService()
+    private readonly GraphService graphService;
+    private readonly MusicBrainzService mbService;
+
+    public SheetService(GraphService graphService, MusicBrainzService mbService)
     {
-        if (api != null) throw new Exception();
+        if (api != null)
+            throw new Exception();
 
         UserCredential credential;
 
         using (var stream = new FileStream(new FileInfo("credentials.json").FullName, FileMode.Open, FileAccess.Read))
         {
-            credential = GoogleWebAuthorizationBroker.AuthorizeAsync(GoogleClientSecrets.Load(stream)
-                    .Secrets, new[]
-                {
-                    SheetsService.Scope.SpreadsheetsReadonly
-                }, "user", CancellationToken.None, new FileDataStore("token", true))
-                .Result;
+            credential = GoogleWebAuthorizationBroker.AuthorizeAsync(GoogleClientSecrets.Load(stream).Secrets, new[]
+                                                     {
+                                                         SheetsService.Scope.SpreadsheetsReadonly
+                                                     }, "user", CancellationToken.None, new FileDataStore("token", true))
+                                                     .Result;
         }
 
         api = new SheetsService(new BaseClientService.Initializer
@@ -57,28 +57,55 @@ public class SheetService
             HttpClientInitializer = credential,
             ApplicationName = "Subgenre Sheet Bot"
         });
+
+        this.graphService = graphService;
+        this.mbService = mbService;
     }
 
     private static List<Entry> _entries = new();
     private static DateTime? _lastTime = null;
 
-    private async Task RevalidateCache(DynamicContext context)
+    private async Task CheckIfCacheExpired(DynamicContext context)
     {
-        if (_lastTime is null || DateTime.UtcNow.Subtract(_lastTime.Value)
-                .TotalSeconds > TimeSpan.FromMinutes(5).TotalSeconds)
+        if (_lastTime is null || DateTime.UtcNow.Subtract(_lastTime.Value).TotalSeconds > TimeSpan.FromMinutes(5).TotalSeconds)
         {
             var now = DateTime.UtcNow;
 
-            _entries = new List<Entry>();
-            var values = await BatchRequest(context, "'2020-2024'!A2:O", "'2015-2019'!A2:O", "'2010-2014'!A2:O", "'Pre-2010s'!A2:O", "'Genreless'!A2:O");
-            if (values != null)
-                _entries.AddRange(values);
+            await GetValuesFromSheet(context);
+            await GetGenreTreeFromSheet(context);
 
+            mostCommonSubgenres = null;
+            
             _lastTime = DateTime.UtcNow;
-            Log.Information($"Cache revalidation took {DateTime.UtcNow.Subtract(now).TotalMilliseconds}ms");
+            Log.Information("Cache revalidation took {Milliseconds}ms", DateTime.UtcNow.Subtract(now).TotalMilliseconds);
         }
     }
 
+    private async Task GetValuesFromSheet(DynamicContext context)
+    {
+        _entries = new List<Entry>();
+        var values = await GetEntriesFromSheets(context, "'2020-2024'!A2:O", "'2015-2019'!A2:O", "'2010-2014'!A2:O", "'Pre-2010s'!A2:O", "'Genreless'!A2:O");
+        if (values != null)
+            _entries.AddRange(values);
+    }
+
+    private static GenreNode? rootNode;
+
+    private async Task GetGenreTreeFromSheet(DynamicContext context)
+    {
+        var request = api.Spreadsheets.Values.BatchGet(SPREADSHEET_ID);
+        request.Ranges = "'Genre Tree'!A2:E";
+        var response = await request.ExecuteAsync();
+
+        var valueRanges = response.ValueRanges;
+        if (valueRanges is null)
+            throw new InvalidDataException("There are no values");
+        if (valueRanges.Count < 1)
+            throw new InvalidDataException("There are zero values");
+
+        rootNode = graphService.ParseTree(valueRanges);
+        File.WriteAllText("tree.json", JsonConvert.SerializeObject(rootNode, Formatting.Indented));
+    }
 
     private static readonly Dictionary<string, Color> _genreColors = new()
     {
@@ -198,9 +225,7 @@ public class SheetService
 
     private static List<Entry> GetAllTracksByArtistExact(string artist)
     {
-        return _entries.Where(e => string.Equals(e.OriginalArtists, artist, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(e => e.Date)
-            .ToList();
+        return _entries.Where(e => string.Equals(e.OriginalArtists, artist, StringComparison.OrdinalIgnoreCase)).OrderByDescending(e => e.Date).ToList();
     }
 
     /// <summary>
@@ -262,115 +287,102 @@ public class SheetService
             }
         }
 
-        return tracks.OrderByDescending(e => e.Date)
-            .ToList();
+        return tracks.OrderByDescending(e => e.Date).ToList();
     }
 
     private static List<Entry> GetTracksByTitleExact(List<Entry> tracksByArtist, string title)
     {
-        return tracksByArtist.Where(e => string.Equals(e.Title, title, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(e => e.Date)
-            .ToList();
+        return tracksByArtist.Where(e => string.Equals(e.Title, title, StringComparison.OrdinalIgnoreCase)).OrderByDescending(e => e.Date).ToList();
     }
 
     private static List<Entry> GetTracksByTitleFuzzy(List<Entry> tracksByArtist, string title, int threshold = 80)
     {
-        return tracksByArtist.Where(e => Fuzz.Ratio(e.Title, title, PreprocessMode.Full) >= threshold)
-            .OrderByDescending(e => e.Date)
-            .ToList();
+        return tracksByArtist.Where(e => Fuzz.Ratio(e.Title, title, PreprocessMode.Full) >= threshold).OrderByDescending(e => e.Date).ToList();
     }
 
-    private static List<Entry> GetTracksByTitleFuzzy(string title) { return GetTracksByTitleFuzzy(_entries, title); }
+    private static List<Entry> GetTracksByTitleFuzzy(string title)
+    {
+        return GetTracksByTitleFuzzy(_entries, title);
+    }
 
     private static Entry[] GetAllTracksByLabelFuzzy(string label, int threshold = 80)
     {
         var test = GetLabelNameFuzzy(label, threshold);
-        return _entries.Where(e => e.LabelList.Any(s => string.Equals(s, test, StringComparison.OrdinalIgnoreCase)))
-            .OrderByDescending(e => e.Date)
-            .ToArray();
+        return _entries.Where(e => e.LabelList.Any(s => string.Equals(s, test, StringComparison.OrdinalIgnoreCase))).OrderByDescending(e => e.Date).ToArray();
     }
 
     private static string[] GetAllLabelNames()
     {
-        return _entries.SelectMany(e => e.LabelList)
-            .Distinct()
-            .ToArray();
+        return _entries.SelectMany(e => e.LabelList).Distinct().ToArray();
     }
 
     private static string GetLabelNameFuzzy(string label, int threshold = 80)
     {
         return GetAllLabelNames()
-            .Select(l => new
-            {
-                Name = l,
-                Like = fuzzyFunc(l, label, PreprocessMode.Full)
-            })
-            .Where(l => l.Like >= threshold)
-            .OrderByDescending(e => e.Like)
-            .FirstOrDefault()
-            ?.Name;
+               .Select(l => new
+               {
+                   Name = l,
+                   Like = fuzzyFunc(l, label, PreprocessMode.Full)
+               })
+               .Where(l => l.Like >= threshold)
+               .OrderByDescending(e => e.Like)
+               .FirstOrDefault()
+               ?.Name;
     }
 
-    private static string[] GetAllSubgenres()
+    public string[] GetAllSubgenres()
     {
-        return _entries.SelectMany(e => e.SubgenresList)
-            .Distinct()
-            .ToArray();
+        return _entries.SelectMany(e => e.SubgenresList).Distinct().ToArray();
+    }
+
+    private static Dictionary<string, int>? mostCommonSubgenres;
+        
+    public string[] GetMostCommonSubgenres()
+    {
+        if (mostCommonSubgenres != null)
+            return mostCommonSubgenres.OrderByDescending(c => c.Value).Select(c => c.Key).ToArray();
+        
+        var count = new Dictionary<string, int>();
+        foreach (var subgenre in _entries.SelectMany(entry => entry.SubgenresList))
+        {
+            if (!count.ContainsKey(subgenre)) 
+                count.Add(subgenre, 0);
+            count[subgenre]++;
+        }
+
+        mostCommonSubgenres = count;
+        return mostCommonSubgenres.OrderByDescending(c => c.Value).Select(c => c.Key).ToArray();
     }
 
     private async Task SendTrackEmbed(DynamicContext context, Entry track)
     {
         var fields = new List<EmbedFieldBuilder>
         {
-            new EmbedFieldBuilder().WithName("Artists")
-                .WithValue(track.FormattedArtists)
-                .WithIsInline(true),
-            new EmbedFieldBuilder().WithName("Song Title")
-                .WithValue(track.Title)
-                .WithIsInline(true)
+            new EmbedFieldBuilder().WithName("Artists").WithValue(track.FormattedArtists).WithIsInline(true),
+            new EmbedFieldBuilder().WithName("Song Title").WithValue(track.Title).WithIsInline(true)
         };
         if (track.Length != null)
-            fields.Add(new EmbedFieldBuilder().WithName("Length")
-                .WithValue(track.Length.Value.ToString(TimeFormat[0]))
-                .WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("Length").WithValue(track.Length.Value.ToString(TimeFormat[0])).WithIsInline(true));
 
-        fields.Add(new EmbedFieldBuilder().WithName("Primary Label")
-            .WithValue(string.Join(", ", track.LabelList))
-            .WithIsInline(true));
-        fields.Add(new EmbedFieldBuilder().WithName("Date")
-            .WithValue(track.Date.ToString(DateFormat[0]))
-            .WithIsInline(true));
-        fields.Add(new EmbedFieldBuilder().WithName("Genre")
-            .WithValue(track.Subgenres)
-            .WithIsInline(true));
+        fields.Add(new EmbedFieldBuilder().WithName("Primary Label").WithValue(string.Join(", ", track.LabelList)).WithIsInline(true));
+        fields.Add(new EmbedFieldBuilder().WithName("Date").WithValue(track.Date.ToString(DateFormat[0])).WithIsInline(true));
+        fields.Add(new EmbedFieldBuilder().WithName("Genre").WithValue(track.Subgenres).WithIsInline(true));
 
         if (!string.IsNullOrWhiteSpace(track.Bpm))
         {
-            fields.Add(new EmbedFieldBuilder().WithName("BPM")
-                .WithValue($"{track.Bpm} {BoolToEmoji(track.CorrectBpm)}")
-                .WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("BPM").WithValue($"{track.Bpm} {BoolToEmoji(track.CorrectBpm)}").WithIsInline(true));
         }
 
         if (!string.IsNullOrWhiteSpace(track.Key))
         {
-            fields.Add(new EmbedFieldBuilder().WithName("Key")
-                .WithValue($"{track.Key} {BoolToEmoji(track.CorrectKey)}")
-                .WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("Key").WithValue($"{track.Key} {BoolToEmoji(track.CorrectKey)}").WithIsInline(true));
         }
 
-        fields.Add(new EmbedFieldBuilder().WithName("Spotify")
-            .WithValue(BoolToEmoji(track.Spotify))
-            .WithIsInline(true));
-        fields.Add(new EmbedFieldBuilder().WithName("SoundCloud")
-            .WithValue(BoolToEmoji(track.SoundCloud))
-            .WithIsInline(true));
-        fields.Add(new EmbedFieldBuilder().WithName("Beatport")
-            .WithValue(BoolToEmoji(track.Beatport))
-            .WithIsInline(true));
+        fields.Add(new EmbedFieldBuilder().WithName("Spotify").WithValue(BoolToEmoji(track.Spotify)).WithIsInline(true));
+        fields.Add(new EmbedFieldBuilder().WithName("SoundCloud").WithValue(BoolToEmoji(track.SoundCloud)).WithIsInline(true));
+        fields.Add(new EmbedFieldBuilder().WithName("Beatport").WithValue(BoolToEmoji(track.Beatport)).WithIsInline(true));
 
-        var builder = new EmbedBuilder().WithColor(GetGenreColor(track.Genre))
-            .WithFields(fields)
-            .Build();
+        var builder = new EmbedBuilder().WithColor(GetGenreColor(track.Genre)).WithFields(fields).Build();
 
         await context.FollowupAsync(embed: builder);
         //await Context.Message.ReplyAsync(null, false, builder);
@@ -390,27 +402,16 @@ public class SheetService
     {
         var fields = new List<EmbedFieldBuilder>
         {
-            new EmbedFieldBuilder().WithName("Artists")
-                .WithValue(string.Join(", ", info.Artists))
-                .WithIsInline(true),
-            new EmbedFieldBuilder().WithName("Song Title")
-                .WithValue(info.ProcessedTitle)
-                .WithIsInline(true),
+            new EmbedFieldBuilder().WithName("Artists").WithValue(string.Join(", ", info.Artists)).WithIsInline(true),
+            new EmbedFieldBuilder().WithName("Song Title").WithValue(info.ProcessedTitle).WithIsInline(true),
         };
         if (info.Features.Count > 0)
-            fields.Add(new EmbedFieldBuilder().WithName("Features")
-                .WithValue(string.Join(", ", info.Features))
-                .WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("Features").WithValue(string.Join(", ", info.Features)).WithIsInline(true));
         if (info.Remixers.Count > 0)
-            fields.Add(new EmbedFieldBuilder().WithName("Remixers")
-                .WithValue(string.Join(", ", info.Remixers))
-                .WithIsInline(true));
-        fields.Add(new EmbedFieldBuilder().WithName("Date")
-            .WithValue(info.ScrobbledDate.ToString(DateFormat[0]))
-            .WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("Remixers").WithValue(string.Join(", ", info.Remixers)).WithIsInline(true));
+        fields.Add(new EmbedFieldBuilder().WithName("Date").WithValue(info.ScrobbledDate.ToString(DateFormat[0])).WithIsInline(true));
 
-        var builder = new EmbedBuilder().WithFields(fields)
-            .Build();
+        var builder = new EmbedBuilder().WithFields(fields).Build();
 
         await context.FollowupAsync(embed: builder);
         //await Context.Message.ReplyAsync(null, false, builder);
@@ -430,23 +431,15 @@ public class SheetService
         if (!includeGenreless)
         {
             genrelessCount = tracks.Count(e => e.Sheet == "Genreless");
-            tracks = tracks.Where(t => t.Sheet != "Genreless")
-                .ToList();
+            tracks = tracks.Where(t => t.Sheet != "Genreless").ToList();
         }
 
-        var latestTracks = tracks.Where(e => e.Date <= DateTime.UtcNow)
-            .OrderByDescending(e => e.Date)
-            .Take(numLatest)
-            .ToArray();
-        var earliestTracks = tracks.Where(e => e.Date <= DateTime.UtcNow)
-            .Reverse()
-            .Take(numEarliest)
-            .ToArray();
+        var latestTracks = tracks.Where(e => e.Date <= DateTime.UtcNow).OrderByDescending(e => e.Date).Take(numLatest).ToArray();
+        var earliestTracks = tracks.Where(e => e.Date <= DateTime.UtcNow).Reverse().Take(numEarliest).ToArray();
 
         var sb = new StringBuilder($"`{search}` has {tracks.Count} tracks");
 
-        var futureTracks = tracks.Where(e => e.Date > DateTime.UtcNow)
-            .ToArray();
+        var futureTracks = tracks.Where(e => e.Date > DateTime.UtcNow).ToArray();
 
         if (futureTracks.Length > 0)
         {
@@ -500,19 +493,19 @@ public class SheetService
     private static StringBuilder BuildBpmList(Entry[] tracks, int range = 10)
     {
         var bpms = tracks.SelectMany(t => t.BpmList)
-            .Select(d => new
-            {
-                From = (int)(d / range) * range + 1,
-                //To = (int)(d / 10) * 10 + 10,
-            })
-            .GroupBy(d => d, d => d, (d, e) => new
-            {
-                d.From,
-                //d.To,
-                Count = e.Count()
-            })
-            .OrderBy(d => d.From)
-            .ToArray();
+                         .Select(d => new
+                         {
+                             From = (int)(d / range) * range + 1,
+                             //To = (int)(d / 10) * 10 + 10,
+                         })
+                         .GroupBy(d => d, d => d, (d, e) => new
+                         {
+                             d.From,
+                             //d.To,
+                             Count = e.Count()
+                         })
+                         .OrderBy(d => d.From)
+                         .ToArray();
 
         var bpmList = new StringBuilder();
 
@@ -527,17 +520,17 @@ public class SheetService
     private static StringBuilder BuildTopGenreList(Entry[] tracks, int top = 10, bool ignoreUnknown = true)
     {
         var genres = tracks.Select(t => t.Genre)
-            .GroupBy(d => d, d => d, (d, e) => new KeyCount
-            {
-                Key = d,
-                Count = e.Count()
-            })
-            .Where(k => k.Key != "Release")
-            .Where(d => ignoreUnknown && d.Key != "?")
-            .OrderByDescending(d => d.Count)
-            .ThenBy(d => d.Key)
-            .Take(top)
-            .ToArray();
+                           .GroupBy(d => d, d => d, (d, e) => new KeyCount
+                           {
+                               Key = d,
+                               Count = e.Count()
+                           })
+                           .Where(k => k.Key != "Release")
+                           .Where(d => ignoreUnknown && d.Key != "?")
+                           .OrderByDescending(d => d.Count)
+                           .ThenBy(d => d.Key)
+                           .Take(top)
+                           .ToArray();
 
         var genreList = new StringBuilder();
 
@@ -552,17 +545,17 @@ public class SheetService
     private static StringBuilder BuildTopSubgenreList(Entry[] tracks, int top, bool ignoreUnknown, out int topSubgenre)
     {
         var genres = tracks.SelectMany(t => t.SubgenresList)
-            .GroupBy(d => d, d => d, (d, e) => new KeyCount
-            {
-                Key = d,
-                Count = e.Count()
-            })
-            .Where(k => k.Key != "Release")
-            .Where(d => ignoreUnknown && d.Key != "?")
-            .OrderByDescending(d => d.Count)
-            .ThenBy(d => d.Key)
-            .Take(top)
-            .ToArray();
+                           .GroupBy(d => d, d => d, (d, e) => new KeyCount
+                           {
+                               Key = d,
+                               Count = e.Count()
+                           })
+                           .Where(k => k.Key != "Release")
+                           .Where(d => ignoreUnknown && d.Key != "?")
+                           .OrderByDescending(d => d.Count)
+                           .ThenBy(d => d.Key)
+                           .Take(top)
+                           .ToArray();
         topSubgenre = genres.Length;
         var genreList = new StringBuilder();
 
@@ -577,18 +570,17 @@ public class SheetService
     private static StringBuilder BuildTopNumberOfTracksList(Entry[] tracks, int top, out int actualTop, out int numArtists)
     {
         var artistCount = tracks.SelectMany(t => t.ActualArtistsNoFeatures)
-            .GroupBy(a => a, s => s, (s, e) => new KeyCount
-            {
-                Key = s,
-                Count = e.Count()
-            })
-            .OrderByDescending(a => a.Count)
-            .ThenBy(a => a.Key)
-            .ToArray();
+                                .GroupBy(a => a, s => s, (s, e) => new KeyCount
+                                {
+                                    Key = s,
+                                    Count = e.Count()
+                                })
+                                .OrderByDescending(a => a.Count)
+                                .ThenBy(a => a.Key)
+                                .ToArray();
 
         numArtists = artistCount.Length;
-        var topList = artistCount.Take(top)
-            .ToArray();
+        var topList = artistCount.Take(top).ToArray();
         actualTop = topList.Length;
 
         var description = new StringBuilder();
@@ -622,8 +614,7 @@ public class SheetService
         {
             if (track.ArtistsList.Length > 1)
             {
-                var notFound = track.ArtistsList.Where(artist => !artists.Contains(artist))
-                    .ToArray();
+                var notFound = track.ArtistsList.Where(artist => !artists.Contains(artist)).ToArray();
 
                 if (notFound.Length > 0)
                     sb.Append($"{track.Title} (w/ {string.Join(" & ", notFound)}) ");
@@ -642,11 +633,13 @@ public class SheetService
             sb.Append($"{track.Date.ToString(DateFormat[0])}");
         }
 
-        return sb.ToString()
-            .Trim();
+        return sb.ToString().Trim();
     }
 
-    private static string IsWas(DateTime date, DateTime compare) { return date.CompareTo(compare) > 0 ? "is" : "was"; }
+    private static string IsWas(DateTime date, DateTime compare)
+    {
+        return date.CompareTo(compare) > 0 ? "is" : "was";
+    }
 
     private async Task SendArtistInfo(DynamicContext context, string search, string[] artists, List<Entry> tracks)
     {
@@ -654,18 +647,13 @@ public class SheetService
         var earliest = tracks.Last();
         var now = DateTime.UtcNow;
 
-        var embed = new EmbedBuilder().WithTitle(string.Join(", ", artists))
-            .WithDescription($"`{search}` matches the artists {string.Join(", ", artists)}. The latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and the first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**")
-            .AddField("Tracks", BuildTrackList(search, artists, tracks, includeArtist: false)
-                .ToString())
-            .AddField("Genres", BuildTopGenreList(tracks.ToArray(), 5)
-                .ToString(), true);
+        var embed = new EmbedBuilder().WithTitle(string.Join(", ", artists)).WithDescription($"`{search}` matches the artists {string.Join(", ", artists)}. The latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and the first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**").AddField("Tracks", BuildTrackList(search, artists, tracks, includeArtist: false).ToString()).AddField("Genres", BuildTopGenreList(tracks.ToArray(), 5).ToString(), true);
 
         await context.FollowupAsync(embed: embed.Build());
         //await Context.Message.ReplyAsync(embed: embed.Build());
     }
 
-    private async Task<List<Entry>?> BatchRequest(DynamicContext context, params string[] ranges)
+    private async Task<List<Entry>?> GetEntriesFromSheets(DynamicContext context, params string[] ranges)
     {
         var request = api.Spreadsheets.Values.BatchGet(SPREADSHEET_ID);
         request.Ranges = ranges;
@@ -704,15 +692,12 @@ public class SheetService
                 catch (Exception ex)
                 {
                     await context.FollowupAsync($"at ({row.Count}) {string.Join(", ", row)}: {ex}");
-                    //await Context.Message.ReplyAsync($"({row.Count}) {string.Join(", ", row)}");
-                    //await Context.Message.ReplyAsync(ex.ToString());
                     return null;
                 }
             }
         }
 
-        return entries.Where(e => e.Genre != "Release")
-            .ToList();
+        return entries.Where(e => e.Genre != "Release").ToList();
     }
 
 
@@ -723,19 +708,13 @@ public class SheetService
 
         foreach (var subgenre in subgenres)
         {
-            var entries = _entries.Where(e => e.SubgenresList.Contains(subgenre))
-                .ToArray();
+            var entries = _entries.Where(e => e.SubgenresList.Contains(subgenre)).ToArray();
 
             if (!toEntries.ContainsKey(subgenre))
                 toEntries.Add(subgenre, entries);
 
-            var genres = entries.Where(e => e.SubgenresList.First() == subgenre)
-                .Select(e => e.Genre)
-                .ToArray();
-            var mostCommon = genres.GroupBy(g => g)
-                .OrderByDescending(g => g.Count())
-                .Select(g => g.Key)
-                .FirstOrDefault();
+            var genres = entries.Where(e => e.SubgenresList.First() == subgenre).Select(e => e.Genre).ToArray();
+            var mostCommon = genres.GroupBy(g => g).OrderByDescending(g => g.Count()).Select(g => g.Key).FirstOrDefault();
             if (mostCommon == "?" || string.IsNullOrWhiteSpace(mostCommon))
                 mostCommon = "Unknown";
             mostCommon = mostCommon.Replace(' ', '\0');
@@ -745,18 +724,20 @@ public class SheetService
 
             if (!toMostCommon.ContainsKey(mostCommon))
                 toMostCommon.Add(mostCommon, new List<string>());
-            toMostCommon[mostCommon]
-                .Add(subgenre);
+            toMostCommon[mostCommon].Add(subgenre);
         }
 
         return (toMostCommon, toEntries);
     }
 
+    public const string CMD_TRACK_NAME = "track";
+    public const string CMD_TRACK_DESC = "Search for a track on the sheet";
+    public const string CMD_TRACK_SEARCH_DESC = "Search for a track on the sheet";
 
     public async Task TrackCommand(string search, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
         var split = search.Split(new[]
         {
@@ -814,7 +795,7 @@ public class SheetService
     public async Task TrackExactCommand(string search, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
         var split = search.Split(new[]
         {
@@ -857,7 +838,7 @@ public class SheetService
     public async Task TrackInfoExactCommand(string search, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
         var split = search.Split(new[]
         {
@@ -923,14 +904,9 @@ public class SheetService
     public async Task ArtistCommand(string artist, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
-        var artists = Process.ExtractTop(artist, _entries.SelectMany(e => e.ActualArtists)
-                .Distinct(), scorer: _scorer, cutoff: 80)
-            .OrderByDescending(a => a.Score)
-            .ThenBy(a => a.Value)
-            .Select(a => a.Value)
-            .ToArray();
+        var artists = Process.ExtractTop(artist, _entries.SelectMany(e => e.ActualArtists).Distinct(), scorer: _scorer, cutoff: 80).OrderByDescending(a => a.Score).ThenBy(a => a.Value).Select(a => a.Value).ToArray();
 
         var tracksByArtist = GetAllTracksByArtistFuzzy(artist);
 
@@ -947,11 +923,9 @@ public class SheetService
     public async Task ArtistDebugCommand(string artist, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
-        var artists = Process.ExtractTop(artist, _entries.SelectMany(e => e.ActualArtists)
-                .Distinct(), scorer: _scorer, cutoff: 80)
-            .ToArray();
+        var artists = Process.ExtractTop(artist, _entries.SelectMany(e => e.ActualArtists).Distinct(), scorer: _scorer, cutoff: 80).ToArray();
 
         var sb = new StringBuilder($"{artists.Length} most similar artists (using {_scorer.GetType().Name})\r\n");
 
@@ -968,11 +942,9 @@ public class SheetService
     public async Task GenreCommand(string genre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
-        var genres = _entries.Select(e => e.Genre)
-            .Distinct()
-            .ToArray();
+        var genres = _entries.Select(e => e.Genre).Distinct().ToArray();
         var test = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
 
         if (test is null)
@@ -982,9 +954,7 @@ public class SheetService
             return;
         }
 
-        var tracks = _entries.Where(e => e.Sheet != "Genreless" && string.Equals(e.Genre, test, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(e => e.Date)
-            .ToList();
+        var tracks = _entries.Where(e => e.Sheet != "Genreless" && string.Equals(e.Genre, test, StringComparison.OrdinalIgnoreCase)).OrderByDescending(e => e.Date).ToList();
 
         if (tracks.Count == 0)
         {
@@ -1002,11 +972,9 @@ public class SheetService
     public async Task GenreInfoCommand(string genre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
-        var genres = _entries.Select(e => e.Genre)
-            .Distinct()
-            .ToArray();
+        var genres = _entries.Select(e => e.Genre).Distinct().ToArray();
         var search = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
 
         if (search is null)
@@ -1016,9 +984,7 @@ public class SheetService
             return;
         }
 
-        var tracks = _entries.Where(e => string.Equals(e.Genre, search, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(e => e.Date)
-            .ToArray();
+        var tracks = _entries.Where(e => string.Equals(e.Genre, search, StringComparison.OrdinalIgnoreCase)).OrderByDescending(e => e.Date).ToArray();
 
         if (tracks.Length == 0)
         {
@@ -1037,12 +1003,7 @@ public class SheetService
         var now = DateTime.Now;
 
         var color = GetGenreColor(search);
-        var embed = new EmbedBuilder().WithTitle(search)
-            .WithDescription($"We have {tracks.Length} {search} tracks, from {numArtists} artists.\r\n" + $"The first track {IsWas(earliest.Date, now)} on {earliest.Date:Y} by {earliest.FormattedArtists} and the latest {IsWas(latest.Date, now)} on {latest.Date:Y} by {latest.FormattedArtists}")
-            .WithColor(color)
-            .AddField($"Top {top} Artists", description.ToString(), true)
-            .AddField($"Top {topSubgenre} Subgenres", subgenres.ToString(), true)
-            .AddField("BPM", bpmList.ToString(), true);
+        var embed = new EmbedBuilder().WithTitle(search).WithDescription($"We have {tracks.Length} {search} tracks, from {numArtists} artists.\r\n" + $"The first track {IsWas(earliest.Date, now)} on {earliest.Date:Y} by {earliest.FormattedArtists} and the latest {IsWas(latest.Date, now)} on {latest.Date:Y} by {latest.FormattedArtists}").WithColor(color).AddField($"Top {top} Artists", description.ToString(), true).AddField($"Top {topSubgenre} Subgenres", subgenres.ToString(), true).AddField("BPM", bpmList.ToString(), true);
 
         await context.FollowupAsync(embed: embed.Build());
         //await Context.Message.ReplyAsync(embed: embed.Build());
@@ -1051,7 +1012,7 @@ public class SheetService
     public async Task SubgenreCommand(string genre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
         var genres = GetAllSubgenres();
         var test = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
@@ -1063,9 +1024,7 @@ public class SheetService
             return;
         }
 
-        var tracks = _entries.Where(e => e.SubgenresList.Contains(test, StringComparer.OrdinalIgnoreCase))
-            .OrderByDescending(e => e.Date)
-            .ToList();
+        var tracks = _entries.Where(e => e.SubgenresList.Contains(test, StringComparer.OrdinalIgnoreCase)).OrderByDescending(e => e.Date).ToList();
 
         if (tracks.Count == 0)
         {
@@ -1083,11 +1042,9 @@ public class SheetService
     public async Task SubgenreExactCommand(string genre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
-        var genres = _entries.Select(e => e.Subgenres)
-            .Distinct()
-            .ToArray();
+        var genres = _entries.Select(e => e.Subgenres).Distinct().ToArray();
         var test = genres.FirstOrDefault(g => string.Equals(g, genre, StringComparison.OrdinalIgnoreCase));
 
         if (test is null)
@@ -1097,9 +1054,7 @@ public class SheetService
             return;
         }
 
-        var tracks = _entries.Where(e => string.Equals(e.Subgenres, test, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(e => e.Date)
-            .ToList();
+        var tracks = _entries.Where(e => string.Equals(e.Subgenres, test, StringComparison.OrdinalIgnoreCase)).OrderByDescending(e => e.Date).ToList();
 
         if (tracks.Count == 0)
         {
@@ -1117,26 +1072,23 @@ public class SheetService
     public async Task LabelsCommand(DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
         var labels = _entries.SelectMany(e => e.LabelList)
-            .GroupBy(l => l, e => e, (label, ls) =>
-            {
-                var tracks = _entries.Where(e => e.LabelList.Contains(label))
-                    .ToArray();
-                return new
-                {
-                    Key = label,
-                    ArtistCount = tracks.SelectMany(e => e.ActualArtists)
-                        .Distinct()
-                        .Count(),
-                    TrackCount = tracks.Length
-                };
-            })
-            .OrderByDescending(a => a.TrackCount)
-            .ThenByDescending(a => a.ArtistCount)
-            .ThenBy(a => a.Key)
-            .ToList();
+                             .GroupBy(l => l, e => e, (label, ls) =>
+                             {
+                                 var tracks = _entries.Where(e => e.LabelList.Contains(label)).ToArray();
+                                 return new
+                                 {
+                                     Key = label,
+                                     ArtistCount = tracks.SelectMany(e => e.ActualArtists).Distinct().Count(),
+                                     TrackCount = tracks.Length
+                                 };
+                             })
+                             .OrderByDescending(a => a.TrackCount)
+                             .ThenByDescending(a => a.ArtistCount)
+                             .ThenBy(a => a.Key)
+                             .ToList();
 
         await context.SendOrAttachment(string.Join("\r\n", labels.Select(l => $"{l.Key} ({l.TrackCount} tracks, {l.ArtistCount} artists)")));
     }
@@ -1144,7 +1096,7 @@ public class SheetService
     public async Task LabelCommand(string label, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
         var test = GetLabelNameFuzzy(label);
 
@@ -1167,20 +1119,11 @@ public class SheetService
         var latest = tracks.First();
         var earliest = tracks.Last();
         var now = DateTime.UtcNow;
-        var days = Math.Floor(now.Date.Subtract(earliest.Date)
-            .TotalDays);
+        var days = Math.Floor(now.Date.Subtract(earliest.Date).TotalDays);
 
-        var numArtists = tracks.SelectMany(t => t.ActualArtists)
-            .Distinct()
-            .Count();
+        var numArtists = tracks.SelectMany(t => t.ActualArtists).Distinct().Count();
 
-        var embed = new EmbedBuilder().WithTitle(test)
-            .WithDescription($"{test}'s latest release {IsWas(latest.Date, now)} on {latest.Date.ToString(DateFormat[0])} by {latest.FormattedArtists}, and their first release {IsWas(earliest.Date, now)} on {earliest.Date.ToString(DateFormat[0])} by {earliest.FormattedArtists}")
-            .AddField("Tracks", tracks.Length, true)
-            .AddField("Artists", numArtists, true)
-            .AddField("Years active", days <= 0 ? "Not yet active" : $"{Math.Floor(days / 365)} years and {days % 365} days", true)
-            .AddField("Genres", BuildTopGenreList(tracks, 5)
-                .ToString(), true);
+        var embed = new EmbedBuilder().WithTitle(test).WithDescription($"{test}'s latest release {IsWas(latest.Date, now)} on {latest.Date.ToString(DateFormat[0])} by {latest.FormattedArtists}, and their first release {IsWas(earliest.Date, now)} on {earliest.Date.ToString(DateFormat[0])} by {earliest.FormattedArtists}").AddField("Tracks", tracks.Length, true).AddField("Artists", numArtists, true).AddField("Years active", days <= 0 ? "Not yet active" : $"{Math.Floor(days / 365)} years and {days % 365} days", true).AddField("Genres", BuildTopGenreList(tracks, 5).ToString(), true);
 
         if (File.Exists($"logo_{test}.jpg"))
             embed = embed.WithThumbnailUrl($"https://raw.githubusercontent.com/Xythium/SubgenreSheetBot/master/SubgenreSheetBot/logo_{HttpUtility.UrlPathEncode(test)}.jpg");
@@ -1192,7 +1135,7 @@ public class SheetService
     public async Task LabelArtistsCommand(string label, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
         var test = GetLabelNameFuzzy(label);
 
@@ -1212,17 +1155,17 @@ public class SheetService
         }
 
         var artists = tracks.SelectMany(e => e.ActualArtists)
-            .GroupBy(l => l, e => e, (s, list) =>
-            {
-                return new
-                {
-                    Key = s,
-                    Count = list.Count()
-                };
-            })
-            .OrderByDescending(a => a.Count)
-            .ThenBy(a => a.Key)
-            .ToList();
+                            .GroupBy(l => l, e => e, (s, list) =>
+                            {
+                                return new
+                                {
+                                    Key = s,
+                                    Count = list.Count()
+                                };
+                            })
+                            .OrderByDescending(a => a.Count)
+                            .ThenBy(a => a.Key)
+                            .ToList();
 
         var sb = new StringBuilder();
 
@@ -1238,22 +1181,22 @@ public class SheetService
     public async Task DebugCommand(DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
         var subgenres = _entries.Where(e => e.SubgenresList.Length > 1)
-            .GroupBy(e => e.Subgenres, e => e, (s, e) =>
-            {
-                var enumerable = e.ToList();
-                return new KeyCount<Entry>
-                {
-                    Key = s,
-                    Elements = enumerable,
-                    Count = enumerable.Count
-                };
-            })
-            .OrderByDescending(arg => arg.Count)
-            .ThenBy(a => a.Key)
-            .ToArray();
+                                .GroupBy(e => e.Subgenres, e => e, (s, e) =>
+                                {
+                                    var enumerable = e.ToList();
+                                    return new KeyCount<Entry>
+                                    {
+                                        Key = s,
+                                        Elements = enumerable,
+                                        Count = enumerable.Count
+                                    };
+                                })
+                                .OrderByDescending(arg => arg.Count)
+                                .ThenBy(a => a.Key)
+                                .ToArray();
 
         var sb = new StringBuilder($"Most common combinations of subgenres ({subgenres.Length}):\r\n");
 
@@ -1269,13 +1212,11 @@ public class SheetService
     public async Task MarkwhenCommand(DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
         var sb = new StringBuilder($"title: Timeline\r\n\r\n");
 
-        var subgenres = _entries.SelectMany(e => e.SubgenresList)
-            .Distinct()
-            .ToArray();
+        var subgenres = _entries.SelectMany(e => e.SubgenresList).Distinct().ToArray();
 
         var (mostCommonToSubgenre, subgenreToEntry) = ByGenre(subgenres);
 
@@ -1287,9 +1228,7 @@ public class SheetService
             {
                 var entries = subgenreToEntry[subgenre];
 
-                var dates = entries.Select(e => e.Date)
-                    .OrderBy(d => d)
-                    .ToArray();
+                var dates = entries.Select(e => e.Date).OrderBy(d => d).ToArray();
                 var first = dates.First();
                 var last = dates.Last();
 
@@ -1337,12 +1276,11 @@ public class SheetService
     public async Task QueryCommand(QueryArguments arguments, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
         var query = _entries.AsQueryable();
 
-        if (string.IsNullOrWhiteSpace(arguments.Artist) && string.IsNullOrWhiteSpace(arguments.ArtistCount) && string.IsNullOrWhiteSpace(arguments.Subgenre) && string.IsNullOrWhiteSpace(arguments.SubgenreCount) && string.IsNullOrWhiteSpace(arguments.Label) && string.IsNullOrWhiteSpace(arguments.LabelCount) && string.IsNullOrWhiteSpace(arguments.Before) &&
-            string.IsNullOrWhiteSpace(arguments.After) && string.IsNullOrWhiteSpace(arguments.Date))
+        if (string.IsNullOrWhiteSpace(arguments.Artist) && string.IsNullOrWhiteSpace(arguments.ArtistCount) && string.IsNullOrWhiteSpace(arguments.Subgenre) && string.IsNullOrWhiteSpace(arguments.SubgenreCount) && string.IsNullOrWhiteSpace(arguments.Label) && string.IsNullOrWhiteSpace(arguments.LabelCount) && string.IsNullOrWhiteSpace(arguments.Before) && string.IsNullOrWhiteSpace(arguments.After) && string.IsNullOrWhiteSpace(arguments.Date))
         {
             await context.SendOrAttachment("No arguments specified");
             return;
@@ -1493,19 +1431,16 @@ public class SheetService
         {
             switch (arguments.Select)
             {
-                case "track":
-                    break;
+                case "track": break;
 
                 case "artist":
                 case "artists":
-                    strs = query.SelectMany(e => e.ActualArtists)
-                        .Distinct();
+                    strs = query.SelectMany(e => e.ActualArtists).Distinct();
                     break;
 
                 case "label":
                 case "labels":
-                    strs = query.SelectMany(e => e.LabelList)
-                        .Distinct();
+                    strs = query.SelectMany(e => e.LabelList).Distinct();
                     break;
             }
         }
@@ -1550,17 +1485,77 @@ public class SheetService
         }
     }
 
+    public const string CMD_SUBGENRE_GRAPH_NAME = "subgenre-graph";
+    public const string CMD_SUBGENRE_GRAPH_DESCRIPTION = "todo";
+    public const string CMD_SUBGENRE_GRAPH_SEARCH_DESCRIPTION = "todo";
+    public const string CMD_SUBGENRE_GRAPH_ENGINE_DESCRIPTION = "todo";
+    public const string CMD_SUBGENRE_GRAPH_MAXDEPTH_DESCRIPTION = "todo";
+
+    public class GraphCommandOptions
+    {
+        public string Subgenre { get; set; }
+
+        public string Engine { get; set; }
+
+        public int MaxSubgenreDepth { get; set; }
+    }
+
+    public async Task SubgenreGraphCommand(GraphCommandOptions graphOptions, DynamicContext context, bool ephemeral, RequestOptions options)
+    {
+        await context.DeferAsync(ephemeral, options);
+        await CheckIfCacheExpired(context);
+
+        var genres = GetAllSubgenres();
+        var test = genres.FirstOrDefault(g => string.Equals(g, graphOptions.Subgenre, StringComparison.OrdinalIgnoreCase));
+
+        if (test is null)
+        {
+            await context.FollowupAsync($"Subgenre `{graphOptions.Subgenre}` not found");
+            return;
+        }
+
+        graphOptions.Subgenre = test;
+
+        if (rootNode is null)
+            throw new InvalidDataException("rootNode cant be null");
+
+        var imageBytes = graphService.Render(rootNode, graphOptions);
+        var image = new MemoryStream(imageBytes);
+        await context.FollowupWithFileAsync(image, $"{test}.png");
+    }
+
+    public async Task SubgenreDebugCommand(string subgenre, DynamicContext context, bool ephemeral, RequestOptions options)
+    {
+        await context.DeferAsync(ephemeral, options);
+        await CheckIfCacheExpired(context);
+        
+        if (rootNode is null)
+            throw new InvalidDataException("rootNode cant be null");
+        
+        var node = graphService.FindNode(rootNode, subgenre);
+        if (node is null)
+            throw new InvalidDataException("node not found");
+
+        var res = $"""
+Name = {node.Name}
+Meta = {node.IsMeta}
+Root = {node.IsRoot}
+Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
+""";
+        await context.FollowupAsync(res);
+    }
+
 
     static SortedSet<IRecording> _recordings = new(new MusicBrainzTrackComparer());
     static SortedSet<string> _addedLabels = new();
 
     public async Task MusicBrainzSubmitCommand(DynamicContext context, bool ephemeral, RequestOptions options)
-    {
+    {    
         await context.DeferAsync(ephemeral, options);
-        await RevalidateCache(context);
+        await CheckIfCacheExpired(context);
 
         var sb = new StringBuilder("This would be submitted if Mark enabled it:\r\n");
-        sb.AppendLine($"User Agent: {GetQuery().UserAgent}");
+        sb.AppendLine($"User Agent: {mbService.GetQuery().UserAgent}");
 
         var message = await context.FollowupAsync("recordings found: 0");
         //var message = await Context.Message.ReplyAsync("recordings found: 0");
@@ -1574,9 +1569,7 @@ public class SheetService
             if (_addedLabels.Contains(l))
                 continue;
 
-            var label = (await GetQuery()
-                    .FindLabelsAsync($"label:\"{l}\"", 1)).Results.FirstOrDefault()
-                ?.Item;
+            var label = (await mbService.GetQuery().FindLabelsAsync($"label:\"{l}\"", 1)).Results.FirstOrDefault()?.Item;
 
             if (label is null)
             {
@@ -1585,8 +1578,7 @@ public class SheetService
                 continue;
             }
 
-            var releases = await GetQuery()
-                .BrowseLabelReleasesAsync(label.Id, 100, inc: Include.Recordings | Include.ArtistCredits);
+            var releases = await mbService.GetQuery().BrowseLabelReleasesAsync(label.Id, 100, inc: Include.Recordings | Include.ArtistCredits);
 
             foreach (var release in releases.Results)
             {
@@ -1622,13 +1614,9 @@ public class SheetService
             }))
                 continue;
 
-            var tags = GetQuery()
-                .SubmitTags(CLIENT_ID);
+            var tags = mbService.GetQuery().SubmitTags(MusicBrainzService.CLIENT_ID);
 
-            var recordings = _recordings.Where(t => string.Equals(t.Title, entry.Title, StringComparison.OrdinalIgnoreCase) && string.Equals(t.ArtistCredit?.First()
-                    ?.Name, entry.ArtistsList.First(), StringComparison.OrdinalIgnoreCase))
-                .Distinct(new MusicBrainzTrackComparer())
-                .ToArray();
+            var recordings = _recordings.Where(t => string.Equals(t.Title, entry.Title, StringComparison.OrdinalIgnoreCase) && string.Equals(t.ArtistCredit?.First()?.Name, entry.ArtistsList.First(), StringComparison.OrdinalIgnoreCase)).Distinct(new MusicBrainzTrackComparer()).ToArray();
 
             if (recordings.Length > 0)
             {
@@ -1640,8 +1628,7 @@ public class SheetService
 
                     found++;
 
-                    if (DateTime.UtcNow.Subtract(lastSend)
-                            .TotalSeconds > 10)
+                    if (DateTime.UtcNow.Subtract(lastSend).TotalSeconds > 10)
                     {
                         message = await context.UpdateOrSend(message, $"recordings found: {++found}");
                         lastSend = DateTime.UtcNow;
@@ -1667,362 +1654,47 @@ public class SheetService
         }
     }
 
-    private const string MUSICBRAINZ_LIFETIME_FILE = "musicbrainz_lifetime";
-    private const string MUSICBRAINZ_REFRESH_FILE = "musicbrainz_refresh";
-    private const string MUSICBRAINZ_ACCESS_FILE = "musicbrainz_access";
-    private const string MUSICBRAINZ_SECRET_FILE = "musicbrainz_clientsecret";
-    private const string MUSICBRAINZ_AUTH_FILE = "musicbrainz_auth";
+  
+}
 
-    private static string CLIENT_ID = File.ReadAllText("musicbrainz_clientid");
+public class GenreNode
+{
+    public string Name { get; init; }
 
-    private static Query GetQuery()
+    public bool IsRoot { get; init; }
+
+    public bool IsMeta { get; set; }
+
+    [JsonIgnore]
+    public GenreNode? Parent { get; set; }
+
+    public List<GenreNode> Subgenres { get; set; } = new List<GenreNode>();
+
+    public void AddSubgenre(GenreNode node)
     {
-        return GetQuery(Assembly.GetExecutingAssembly()
-            .GetName());
+        /*if (node.Parent is not null)
+        {
+            if (node.Parent == this)
+                throw new Exception("Subgenre already added to this parent");
+            throw new Exception("Parent already set");
+        }*/
+
+        node.Parent = this;
+        Subgenres.Add(node);
     }
 
-    private static Query GetQuery(AssemblyName assembly)
+    public bool ShouldSerializeSubgenres()
     {
-        var query = new Query(assembly.FullName, assembly.Version, new Uri("mailto:xythium@gmail.com"));
-        var oauth = new OAuth2
-        {
-            ClientId = CLIENT_ID
-        };
-
-        var lifetimeFile = new FileInfo(MUSICBRAINZ_LIFETIME_FILE);
-
-        if (lifetimeFile.Exists)
-        {
-            var lifetimeStr = File.ReadAllText(lifetimeFile.FullName);
-            var lifetime = DateTimeOffset.Parse(lifetimeStr);
-            //Console.WriteLine($"{DateTimeOffset.UtcNow} >= {lifetime}: {DateTimeOffset.UtcNow >= lifetime}");
-
-            if (DateTime.UtcNow >= lifetime)
-            {
-                Console.WriteLine($"Token lifetime has expired");
-
-                var at = oauth.RefreshBearerToken(File.ReadAllText(MUSICBRAINZ_REFRESH_FILE), File.ReadAllText(MUSICBRAINZ_SECRET_FILE));
-                File.WriteAllText(MUSICBRAINZ_REFRESH_FILE, at.RefreshToken);
-                File.WriteAllText(MUSICBRAINZ_ACCESS_FILE, at.AccessToken);
-                File.WriteAllText(MUSICBRAINZ_LIFETIME_FILE, DateTimeOffset.UtcNow.AddSeconds(at.Lifetime)
-                    .ToString("R"));
-                File.WriteAllText(MUSICBRAINZ_LIFETIME_FILE + "2", at.Lifetime.ToString());
-                query.BearerToken = at.AccessToken;
-
-                Console.WriteLine($"Refreshed token");
-                return query;
-            }
-
-            var accessTokenFile = new FileInfo(MUSICBRAINZ_ACCESS_FILE);
-
-            if (accessTokenFile.Exists)
-            {
-                var accessToken = File.ReadAllText(accessTokenFile.FullName);
-
-                if (!string.IsNullOrWhiteSpace(accessToken))
-                {
-                    query.BearerToken = accessToken;
-                    return query;
-                }
-            }
-        }
-
-        return NewToken(query, oauth);
+        return Subgenres.Count > 0;
     }
 
-    private static Query NewToken(Query query, OAuth2 oauth)
+    public bool ShouldSerializeIsRoot()
     {
-        var url = oauth.CreateAuthorizationRequest(OAuth2.OutOfBandUri, AuthorizationScope.Everything);
-        System.Diagnostics.Process.Start($"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe \"{url}\"");
-
-        var authToken = Console.ReadLine();
-        File.WriteAllText(MUSICBRAINZ_AUTH_FILE, authToken);
-
-        var at = oauth.GetBearerToken(authToken, File.ReadAllText(MUSICBRAINZ_SECRET_FILE), OAuth2.OutOfBandUri);
-        File.WriteAllText(MUSICBRAINZ_REFRESH_FILE, at.RefreshToken);
-        File.WriteAllText(MUSICBRAINZ_ACCESS_FILE, at.AccessToken);
-        File.WriteAllText(MUSICBRAINZ_LIFETIME_FILE, DateTimeOffset.UtcNow.AddSeconds(at.Lifetime)
-            .ToString("R"));
-        query.BearerToken = at.AccessToken;
-        return query;
+        return IsRoot;
     }
 
-
-    public class Entry
+    public bool ShouldSerializeIsMeta()
     {
-        public string Sheet { get; private set; }
-
-        public DateTime Date { get; private set; }
-
-        public bool Spotify { get; private set; }
-
-        public bool SoundCloud { get; private set; }
-
-        public bool Beatport { get; private set; }
-
-        public string Genre { get; private set; }
-
-        public string Subgenres { get; private set; }
-
-        public string[] SubgenresList { get; private set; }
-
-        public string OriginalArtists { get; private set; }
-
-        public string[] ArtistsList { get; private set; }
-
-        public string FormattedArtists => string.Join(" x ", ArtistsList);
-
-        /// <summary>
-        /// All artists of a track (remixers instead of original artists if remix, includes featured artists)
-        /// </summary>
-        public string[] ActualArtists
-        {
-            get
-            {
-                var artists = new SortedSet<string>();
-
-                foreach (var feature in Info.Features)
-                {
-                    artists.Add(feature);
-                }
-
-                if (Info.Remixers.Count > 0)
-                {
-                    foreach (var remixer in Info.Remixers)
-                    {
-                        artists.Add(remixer);
-                    }
-                }
-                else
-                {
-                    foreach (var artist in Info.Artists)
-                    {
-                        artists.Add(artist);
-                    }
-                }
-
-                return artists.ToArray();
-            }
-        }
-
-        /// <summary>
-        /// All artists of a track (remixers instead of original artists if remix)
-        /// </summary>
-        public string[] ActualArtistsNoFeatures
-        {
-            get
-            {
-                var artists = new SortedSet<string>();
-
-                if (Info.Remixers.Count > 0)
-                {
-                    foreach (var remixer in Info.Remixers)
-                    {
-                        artists.Add(remixer);
-                    }
-                }
-                else
-                {
-                    foreach (var artist in Info.Artists)
-                    {
-                        artists.Add(artist);
-                    }
-                }
-
-                return artists.ToArray();
-            }
-        }
-
-        public string Title { get; private set; }
-
-        private string Label { get; set; } // todo: unused
-
-        public List<string> LabelList { get; private set; }
-
-        public TimeSpan? Length { get; private set; }
-
-        public bool CorrectBpm { get; private set; }
-
-        public string Bpm { get; private set; } // todo: cant be decimal at the moment because '98.5 > 95'
-
-        public List<decimal> BpmList
-        {
-            get
-            {
-                var list = new List<decimal>();
-                if (string.IsNullOrWhiteSpace(Bpm))
-                    return list;
-
-                var split = Bpm.Split(new[]
-                {
-                    '/', '>'
-                }, StringSplitOptions.RemoveEmptyEntries);
-                if (split.Length < 1)
-                    return list;
-
-                foreach (var s in split)
-                {
-                    if (decimal.TryParse(s, out var dec))
-                        list.Add(dec);
-                }
-
-                return list;
-            }
-        }
-
-        public bool CorrectKey { get; private set; }
-
-        public string Key { get; private set; }
-
-        public TrackInfo Info { get; set; }
-
-        private const int A = 0;
-        private const int B = A + 1;
-        private const int C = B + 1;
-        private const int D = C + 1;
-        private const int E = D + 1;
-        private const int F = E + 1;
-        private const int G = F + 1;
-        private const int H = G + 1;
-        private const int I = H + 1;
-        private const int J = I + 1;
-        private const int K = J + 1;
-        private const int L = K + 1;
-        private const int M = L + 1;
-        private const int N = M + 1;
-        private const int O = N + 1;
-
-        public static bool TryParse(IList<object> row, string sheet, out Entry? entry)
-        {
-            var date = GetDateArgument(row, A, null);
-
-            if (date is null)
-            {
-                entry = null;
-                return false;
-            }
-
-            var spotify = GetBoolArgument(row, B, false);
-            var soundcloud = GetBoolArgument(row, C, false);
-            var beatport = GetBoolArgument(row, D, false);
-            var bandcamp = GetBoolArgument(row, E, false);
-            var genre = GetStringArgument(row, F, null);
-            var subgenre = GetStringArgument(row, G, null);
-            var artists = GetStringArgument(row, H, null);
-            var title = GetStringArgument(row, I, null);
-            var label = GetStringArgument(row, J, null);
-            var length = GetTimeArgument(row, K, null);
-            var bpmStr = GetStringArgument(row, L, null);
-            var key = GetStringArgument(row, M, null);
-
-            entry = new Entry
-            {
-                Sheet = sheet,
-                Date = date.Value,
-                Spotify = spotify,
-                SoundCloud = soundcloud,
-                Beatport = beatport,
-                Genre = genre,
-                Subgenres = subgenre,
-                SubgenresList = SubgenresUtils.SplitSubgenres(subgenre)
-                    .ToArray(),
-                OriginalArtists = artists,
-                ArtistsList = ArtistUtils.SplitArtists(artists)
-                    .ToArray(),
-                Title = title,
-                Label = label,
-                LabelList = SubgenresUtils.SplitSubgenres(label),
-                Length = length,
-                Bpm = bpmStr,
-                Key = key
-            };
-            entry.Info = TrackParser.GetTrackInfo(entry.FormattedArtists, entry.Title, "", "", entry.Date);
-
-            return true;
-        }
-
-        private Entry()
-        {
-
-        }
-
-        private static string? GetStringArgument(IList<object> row, int index, string? def)
-        {
-            if (index >= row.Count)
-                return def;
-
-            var str = (string)row[index];
-            if (string.IsNullOrWhiteSpace(str))
-                return def;
-
-            return str;
-        }
-
-        private static DateTime? GetDateArgument(IList<object> row, int index, DateTime? def)
-        {
-            if (index >= row.Count)
-                return def;
-
-            var str = (string)row[index];
-            if (string.IsNullOrWhiteSpace(str))
-                return def;
-
-            if (!DateTime.TryParseExact(str, DateFormat, CultureInfo.CurrentCulture, DateTimeStyles.None, out var date))
-            {
-                Log.Error($"cannot parse {str} as Date");
-                return def;
-            }
-
-            return date;
-        }
-
-        private static TimeSpan? GetTimeArgument(IList<object> row, int index, TimeSpan? def)
-        {
-            if (index >= row.Count)
-                return def;
-
-            var str = (string)row[index];
-            if (string.IsNullOrWhiteSpace(str) || str == "--:--")
-                return def;
-
-            if (!TimeSpan.TryParseExact(str, TimeFormat, CultureInfo.CurrentCulture, TimeSpanStyles.None, out var time))
-            {
-                Log.Error($"cannot parse {str} as Time");
-                return def;
-            }
-
-            return time;
-        }
-
-        private static bool GetBoolArgument(IList<object> row, int index, bool def)
-        {
-            if (index >= row.Count)
-                return def;
-
-            var str = (string)row[index];
-            if (string.IsNullOrWhiteSpace(str))
-                return def;
-
-            if (string.Equals(str, "TRUE", StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            if (string.Equals(str, "FALSE", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            return def;
-        }
-    }
-
-    public struct KeyCount<T>
-    {
-        public string Key;
-        public int Count;
-        public List<T> Elements;
-    }
-
-    public struct KeyCount
-    {
-        public string Key;
-        public int Count;
+        return IsMeta;
     }
 }

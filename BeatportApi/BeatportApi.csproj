@@ -3,7 +3,7 @@
   
     <PropertyGroup>
         <LangVersion>preview</LangVersion>
-        <TargetFrameworks>net48;net7.0</TargetFrameworks>
+        <TargetFrameworks>net481;net7.0</TargetFrameworks>
         <Nullable>enable</Nullable>
     </PropertyGroup>
   
