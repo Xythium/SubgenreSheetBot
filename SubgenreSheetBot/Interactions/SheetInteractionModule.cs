@@ -119,21 +119,33 @@ public class SheetInteractionModule : InteractionModuleBase
     [Summary(nameof(engine), SheetService.CMD_SUBGENRE_GRAPH_ENGINE_DESCRIPTION), Choice("dot", "dot"), Choice("neato", "neato"), Choice("force-directed placement", "fdp"), Choice("scalable force-directed placement", "sfdp"), Choice("circo", "circo"), Choice("twopi", "twopi"), Choice("nop", "nop"), Choice("osage", "osage"), Choice("patchwork", "patchwork")]string engine = "dot",
     [Summary(nameof(maxSubgenreDepth), SheetService.CMD_SUBGENRE_GRAPH_MAXDEPTH_DESCRIPTION)]int maxSubgenreDepth = 1)
     {
-        var graphOptions = new SheetService.GraphCommandOptions
+        var graphOptions = new SheetService.SheetGraphCommandOptions
         {
             Subgenre = subgenre,
             Engine = engine,
             MaxSubgenreDepth = maxSubgenreDepth
         };
         await sheet.SubgenreGraphCommand(graphOptions, new DynamicContext(Context), false, defaultOptions);
-    } 
-    
+    }
+
     [SlashCommand("subgenre-debug", SheetService.CMD_SUBGENRE_GRAPH_DESCRIPTION)]
     public async Task SubgenreDebug(
     [Summary(nameof(subgenre), SheetService.CMD_SUBGENRE_GRAPH_SEARCH_DESCRIPTION), Autocomplete(typeof(SubgenreAutocomplete))]string subgenre)
     {
-      
         await sheet.SubgenreDebugCommand(subgenre, new DynamicContext(Context), false, defaultOptions);
+    }
+
+    [SlashCommand(SheetService.CMD_COLLAB_GRAPH_NAME, SheetService.CMD_COLLAB_GRAPH_DESCRIPTION)]
+    public async Task CollabGraph([Summary(nameof(artist), SheetService.CMD_COLLAB_GRAPH_SEARCH_DESCRIPTION)]string artist,
+                                  [Summary(nameof(engine), SheetService.CMD_COLLAB_GRAPH_ENGINE_DESCRIPTION), Choice("dot", "dot"), Choice("neato", "neato"), Choice("force-directed placement", "fdp"), Choice("scalable force-directed placement", "sfdp"), Choice("circo", "circo"), Choice("twopi", "twopi"), Choice("nop", "nop"), Choice("osage", "osage"), Choice("patchwork", "patchwork")]string engine = "dot")
+    {
+        var graphOptions = new SheetService.CollabGraphCommandOptions
+        {
+            StartArtist = artist,
+            Engine = engine,
+            MaxSubgenreDepth = 1
+        };
+        await sheet.CollabGraphCommand(graphOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
     /*[SlashCommand("query", "todo")]
