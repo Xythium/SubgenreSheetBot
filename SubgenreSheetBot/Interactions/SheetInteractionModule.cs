@@ -22,17 +22,25 @@ public class SheetInteractionModule : InteractionModuleBase
         this.sheet = sheet;
     }
 
-    [SlashCommand(SheetService.CMD_TRACK_NAME, SheetService.CMD_TRACK_DESC)]
-    public async Task Track([Summary(nameof(search), SheetService.CMD_TRACK_SEARCH_DESC)]string search)
+    [SlashCommand(SheetService.CMD_TRACK_NAME, SheetService.CMD_TRACK_DESCRIPTION)]
+    public async Task Track([Summary(nameof(title), SheetService.CMD_TRACK_TITLE_DESCRIPTION)]string title,
+                            [Summary(nameof(artist), SheetService.CMD_TRACK_ARTIST_DESCRIPTION), Autocomplete(typeof(ArtistAutocomplete))]string artist = "",
+                            [Summary(nameof(matchMode), SheetService.CMD_TRACK_MATCH_DESCRIPTION)]MatchMode matchMode = MatchMode.Exact,
+                            [Summary(nameof(threshold), SheetService.CMD_TRACK_THRESHOLD_DESCRIPTION)]int threshold = 80)
     {
-        await sheet.TrackCommand(search, new DynamicContext(Context), false, defaultOptions);
+        var matchOptions = new SheetService.MatchOptions
+        {
+            MatchMode = matchMode,
+            Threshold = threshold
+        };
+        await sheet.TrackCommand(artist, title, matchOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("trackexact", "Search for a track on the sheet")]
+    /*[SlashCommand("trackexact", "Search for a track on the sheet")]
     public async Task TrackExact([Summary(nameof(search), "Track to search for")]string search)
     {
         await sheet.TrackExactCommand(search, new DynamicContext(Context), false, defaultOptions);
-    }
+    }*/
 
     [SlashCommand("trackinfoexact", "Search for a track on the sheet")]
     public async Task TrackInfoExact([Summary(nameof(search), "Track to search for")]string search)

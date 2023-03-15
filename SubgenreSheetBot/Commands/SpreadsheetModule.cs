@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Common;
+using Common.SubgenreSheet;
 using Discord;
 using Discord.Commands;
 using MetaBrainz.MusicBrainz.Interfaces.Entities;
@@ -33,16 +35,46 @@ public class SpreadsheetModule : ModuleBase
         this.sheet = sheet;
     }
 
-    [Command("track"), Alias("t"), Summary("Search for a track on the sheet")]
+    [Command(SheetService.CMD_TRACK_NAME), Alias("t"), Summary(SheetService.CMD_TRACK_DESCRIPTION)]
     public async Task Track([Remainder, Summary("Track to search for")]string search)
     {
-        await sheet.TrackCommand(search, new DynamicContext(Context), false, defaultOptions);
+        var context = new DynamicContext(Context);
+        var split = search.Split(new[]
+        {
+            " - "
+        }, StringSplitOptions.RemoveEmptyEntries);
+
+        if (split.Length != 2)
+        {
+            await context.ErrorAsync($"cannot parse `{search}` into `Artist - Title` or `Title`");
+            return;
+        }
+
+        var artist = split[0];
+        var title = split[1];
+        
+        await sheet.TrackCommand(artist, title, defaultFuzzyMatchOptions, context, false, defaultOptions);
     }
 
     [Command("trackexact"), Alias("te"), Summary("Search for a track on the sheet")]
     public async Task TrackExact([Remainder, Summary("Track to search for")]string search)
     {
-        await sheet.TrackExactCommand(search, new DynamicContext(Context), false, defaultOptions);
+        var context = new DynamicContext(Context);
+        var split = search.Split(new[]
+        {
+            " - "
+        }, StringSplitOptions.RemoveEmptyEntries);
+
+        if (split.Length != 2)
+        {
+            await context.ErrorAsync($"cannot parse `{search}` into `Artist - Title` or `Title`");
+            return;
+        }
+
+        var artist = split[0];
+        var title = split[1];
+        
+        await sheet.TrackCommand(artist, title, defaultExactMatchOptions, context, false, defaultOptions);
     }
 
     [Command("trackinfoexact"), Alias("tie"), Summary("Search for a track on the sheet")]
