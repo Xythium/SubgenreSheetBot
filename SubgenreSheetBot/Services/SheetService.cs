@@ -342,19 +342,19 @@ public class SheetService
         return _entries.Where(e => string.Equals(e.OriginalArtists, artist, StringComparison.OrdinalIgnoreCase)).OrderByDescending(e => e.Date).ToList();
     }
 
-    private static List<Entry> GetTracksByTitleExact(List<Entry> tracksByArtist, string title)
+    private static List<Entry> GetTracksByTitle(List<Entry> tracks, string title, MatchOptions matchOptions)
     {
-        return tracksByArtist.Where(e => string.Equals(e.Title, title, StringComparison.OrdinalIgnoreCase)).OrderByDescending(e => e.Date).ToList();
+        return matchOptions.MatchMode switch
+        {
+            MatchMode.Exact => tracks.Where(e => string.Equals(e.Title, title, StringComparison.OrdinalIgnoreCase)).OrderByDescending(e => e.Date).ToList(),
+            MatchMode.Fuzzy => tracks.Where(e => Fuzz.Ratio(e.Title, title, PreprocessMode.Full) >= matchOptions.Threshold).OrderByDescending(e => e.Date).ToList(),
+            _               => throw new ArgumentOutOfRangeException(nameof(matchOptions), matchOptions, null)
+        };
     }
 
-    private static List<Entry> GetTracksByTitleFuzzy(List<Entry> tracksByArtist, string title, int threshold = 80)
+    private static List<Entry> GetTracksByTitle(string title, MatchOptions matchOptions)
     {
-        return tracksByArtist.Where(e => Fuzz.Ratio(e.Title, title, PreprocessMode.Full) >= threshold).OrderByDescending(e => e.Date).ToList();
-    }
-
-    private static List<Entry> GetTracksByTitleFuzzy(string title)
-    {
-        return GetTracksByTitleFuzzy(_entries, title);
+        return GetTracksByTitle(_entries, title, matchOptions);
     }
 
     private static Entry[] GetAllTracksByLabelFuzzy(string label, int threshold = 80)
@@ -425,38 +425,41 @@ public class SheetService
         return mostCommonArtists.OrderByDescending(c => c.Value).Select(c => c.Key).ToArray();
     }
 
-    private static async Task SendTrackEmbed(DynamicContext context, Entry track)
+    private static async Task SendTrackEmbed(DynamicContext context, Entry[] tracks)
     {
-        var fields = new List<EmbedFieldBuilder>
+        var embeds = new List<Embed>();
+        foreach (var track in tracks)
         {
-            new EmbedFieldBuilder().WithName("Artists").WithValue(track.FormattedArtists).WithIsInline(true),
-            new EmbedFieldBuilder().WithName("Song Title").WithValue(track.Title).WithIsInline(true)
-        };
-        if (track.Length != null)
-            fields.Add(new EmbedFieldBuilder().WithName("Length").WithValue(track.Length.Value.ToString(TimeFormat[0])).WithIsInline(true));
+            var fields = new List<EmbedFieldBuilder>
+            {
+                new EmbedFieldBuilder().WithName("Artists").WithValue(track.FormattedArtists).WithIsInline(true),
+                new EmbedFieldBuilder().WithName("Song Title").WithValue(track.Title).WithIsInline(true)
+            };
+            if (track.Length != null)
+                fields.Add(new EmbedFieldBuilder().WithName("Length").WithValue(track.Length.Value.ToString(TimeFormat[0])).WithIsInline(true));
 
-        fields.Add(new EmbedFieldBuilder().WithName("Primary Label").WithValue(string.Join(", ", track.LabelList)).WithIsInline(true));
-        fields.Add(new EmbedFieldBuilder().WithName("Date").WithValue(track.Date.ToString(DateFormat[0])).WithIsInline(true));
-        fields.Add(new EmbedFieldBuilder().WithName("Genre").WithValue(track.Subgenres).WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("Primary Label").WithValue(string.Join(", ", track.LabelList)).WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("Date").WithValue(track.Date.ToString(DateFormat[0])).WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("Genre").WithValue(track.Subgenres).WithIsInline(true));
 
-        if (!string.IsNullOrWhiteSpace(track.Bpm))
-        {
-            fields.Add(new EmbedFieldBuilder().WithName("BPM").WithValue($"{track.Bpm} {BoolToEmoji(track.CorrectBpm)}").WithIsInline(true));
+            if (!string.IsNullOrWhiteSpace(track.Bpm))
+            {
+                fields.Add(new EmbedFieldBuilder().WithName("BPM").WithValue($"{track.Bpm} {BoolToEmoji(track.CorrectBpm)}").WithIsInline(true));
+            }
+
+            if (!string.IsNullOrWhiteSpace(track.Key))
+            {
+                fields.Add(new EmbedFieldBuilder().WithName("Key").WithValue($"{track.Key} {BoolToEmoji(track.CorrectKey)}").WithIsInline(true));
+            }
+
+            fields.Add(new EmbedFieldBuilder().WithName("Spotify").WithValue(BoolToEmoji(track.Spotify)).WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("SoundCloud").WithValue(BoolToEmoji(track.SoundCloud)).WithIsInline(true));
+            fields.Add(new EmbedFieldBuilder().WithName("Beatport").WithValue(BoolToEmoji(track.Beatport)).WithIsInline(true));
+
+            embeds.Add(new EmbedBuilder().WithColor(GetGenreColor(track.Genre)).WithFields(fields).Build());
         }
 
-        if (!string.IsNullOrWhiteSpace(track.Key))
-        {
-            fields.Add(new EmbedFieldBuilder().WithName("Key").WithValue($"{track.Key} {BoolToEmoji(track.CorrectKey)}").WithIsInline(true));
-        }
-
-        fields.Add(new EmbedFieldBuilder().WithName("Spotify").WithValue(BoolToEmoji(track.Spotify)).WithIsInline(true));
-        fields.Add(new EmbedFieldBuilder().WithName("SoundCloud").WithValue(BoolToEmoji(track.SoundCloud)).WithIsInline(true));
-        fields.Add(new EmbedFieldBuilder().WithName("Beatport").WithValue(BoolToEmoji(track.Beatport)).WithIsInline(true));
-
-        var builder = new EmbedBuilder().WithColor(GetGenreColor(track.Genre)).WithFields(fields).Build();
-
-        await context.FollowupAsync(embed: builder);
-        //await Context.Message.ReplyAsync(null, false, builder);
+        await context.FollowupAsync(embeds: embeds.ToArray());
     }
 
     private static string BoolToEmoji(bool value)
@@ -810,57 +813,39 @@ public class SheetService
 #region Track
 
     public const string CMD_TRACK_NAME = "track";
-    public const string CMD_TRACK_DESC = "Search for a track on the sheet";
-    public const string CMD_TRACK_SEARCH_DESC = "Search for a track on the sheet";
+    public const string CMD_TRACK_DESCRIPTION = "Search for tracks on the sheet";
+    public const string CMD_TRACK_TITLE_DESCRIPTION = "Filter all tracks by title";
+    public const string CMD_TRACK_ARTIST_DESCRIPTION = "Filter tracks by artist";
+    public const string CMD_TRACK_MATCH_DESCRIPTION = "todo";
+    public const string CMD_TRACK_THRESHOLD_DESCRIPTION = "todo";
 
-    public async Task TrackCommand(string search, DynamicContext context, bool ephemeral, RequestOptions options)
+    public async Task TrackCommand(string? artist, string title, MatchOptions matchOptions, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
         await CheckIfCacheExpired(context);
 
-        var split = search.Split(new[]
-        {
-            " - "
-        }, StringSplitOptions.RemoveEmptyEntries);
-
         List<Entry> tracks;
 
-        if (split.Length == 1)
+        if (string.IsNullOrWhiteSpace(artist))
         {
-            tracks = GetTracksByTitleFuzzy(split[0]);
-        }
-        else if (split.Length != 2)
-        {
-            await context.ErrorAsync($"cannot parse `{search}` into `Artist - Title` or `Title`");
-            //await Context.Message.ReplyAsync($"cannot parse `{search}` into `Artist - Title` or `Title`");
-            return;
+            tracks = GetTracksByTitle(title, matchOptions);
         }
         else
         {
-            var artist = split[0];
-            var tracksByArtist = GetAllTracksByArtist(new[]
-            {
-                artist
-            }, new MatchOptions
-            {
-                MatchMode = MatchMode.Fuzzy,
-                Threshold = 80
-            });
+            var artists = GetArtists(artist, matchOptions);
+            var tracksByArtist = GetAllTracksByArtist(artists, matchOptions);
 
             if (tracksByArtist.Count == 0)
             {
                 await context.ErrorAsync($"no tracks found by artist `{artist}`");
-                //await Context.Message.ReplyAsync($"no tracks found by artist `{artist}`");
                 return;
             }
 
-            var title = split[1];
-            tracks = GetTracksByTitleFuzzy(tracksByArtist, title);
+            tracks = GetTracksByTitle(tracksByArtist, title, matchOptions);
 
             if (tracks.Count == 0)
             {
                 await context.FollowupAsync($"i found the artist `{artist}` but i cannot find the track `{title}`");
-                //await Context.Message.ReplyAsync($"i found the artist `{artist}` but i cannot find the track `{title}`");
                 return;
             }
         }
@@ -868,60 +853,12 @@ public class SheetService
         if (tracks.Count == 0)
         {
             await context.FollowupAsync($"pissed left pant");
-            //await Context.Message.ReplyAsync($"pissed left pant");
             return;
         }
 
-        foreach (var track in tracks)
+        foreach (var chunk in tracks.Chunk(10))
         {
-            await SendTrackEmbed(context, track);
-        }
-    }
-
-#endregion
-
-#region Track Exact
-
-    public async Task TrackExactCommand(string search, DynamicContext context, bool ephemeral, RequestOptions options)
-    {
-        await context.DeferAsync(ephemeral, options);
-        await CheckIfCacheExpired(context);
-
-        var split = search.Split(new[]
-        {
-            " - "
-        }, StringSplitOptions.RemoveEmptyEntries);
-
-        if (split.Length != 2)
-        {
-            await context.ErrorAsync($"cannot parse `{search}` into `Artist - Title`");
-            //await Context.Message.ReplyAsync($"cannot parse `{search}` into `Artist - Title`");
-            return;
-        }
-
-        var artist = split[0];
-        var tracksByArtist = GetAllTracksByArtistExact(artist);
-
-        if (tracksByArtist.Count == 0)
-        {
-            await context.ErrorAsync($"no tracks found by artist `{artist}`");
-            //await Context.Message.ReplyAsync($"no tracks found by artist `{artist}`");
-            return;
-        }
-
-        var title = split[1];
-        var tracks = GetTracksByTitleExact(tracksByArtist, title);
-
-        if (tracks.Count == 0)
-        {
-            await context.FollowupAsync($"i found the artist `{artist}` but i cannot find the track `{title}`");
-            //await Context.Message.ReplyAsync($"i found the artist `{artist}` but i cannot find the track `{title}`");
-            return;
-        }
-
-        foreach (var track in tracks)
-        {
-            await SendTrackEmbed(context, track);
+            await SendTrackEmbed(context, chunk);
         }
     }
 
@@ -957,7 +894,7 @@ public class SheetService
         }
 
         var title = split[1];
-        var tracks = GetTracksByTitleExact(tracksByArtist, title);
+        var tracks = GetTracksByTitle(tracksByArtist, title, null);
 
         if (tracks.Count == 0)
         {
