@@ -1003,7 +1003,7 @@ public class SheetService
 
 #region Artist
 
-    public const string CMD_ARTIST_NAME = "query";
+    public const string CMD_ARTIST_NAME = "artist";
     public const string CMD_ARTIST_DESCRIPTION = "Returns info about an artist";
     public const string CMD_ARTIST_SEARCH_DESCRIPTION = "todo";
     public const string CMD_ARTIST_MATCH_DESCRIPTION = "todo";
