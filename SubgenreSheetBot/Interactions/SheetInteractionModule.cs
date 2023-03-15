@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Common;
 using Discord;
 using Discord.Interactions;
+using SubgenreSheetBot.Autocomplete;
 using SubgenreSheetBot.Services;
 
 namespace SubgenreSheetBot.Interactions;
@@ -47,14 +46,21 @@ public class SheetInteractionModule : InteractionModuleBase
         await sheet.TrackInfoForceCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("artist", "Returns info about an artist")]
-    public async Task Artist([Summary(nameof(artist), "Artist to search for")]string artist)
+    [SlashCommand(SheetService.CMD_ARTIST_NAME, SheetService.CMD_ARTIST_DESCRIPTION)]
+    public async Task Artist([Summary(nameof(search), SheetService.CMD_ARTIST_SEARCH_DESCRIPTION), Autocomplete(typeof(ArtistAutocomplete))]string search,
+                             [Summary(nameof(matchMode), SheetService.CMD_ARTIST_MATCH_DESCRIPTION)]MatchMode matchMode = MatchMode.Exact,
+                             [Summary(nameof(threshold), SheetService.CMD_ARTIST_THRESHOLD_DESCRIPTION)]int threshold = 80)
     {
-        await sheet.ArtistCommand(artist, new DynamicContext(Context), false, defaultOptions);
+        var matchOptions = new SheetService.MatchOptions
+        {
+            MatchMode = matchMode,
+            Threshold = threshold
+        };
+        await sheet.ArtistCommand(search, matchOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand("artistdebug", "Returns a list of up to 15 artists most similar to the given input")]
-    public async Task ArtistDebug([Summary(nameof(artist), "Artist to search for")]string artist)
+    public async Task ArtistDebug([Summary(nameof(artist), "Artist to search for"), Autocomplete(typeof(ArtistAutocomplete))]string artist)
     {
         await sheet.ArtistDebugCommand(artist, new DynamicContext(Context), false, defaultOptions);
     }
@@ -317,28 +323,4 @@ public class SheetInteractionModule : InteractionModuleBase
 
         await chl.SendMessageAsync(message);
     }*/
-}
-
-public class SubgenreAutocomplete : AutocompleteHandler
-{
-    private readonly SheetService sheetService;
-
-    public SubgenreAutocomplete(SheetService sheetService)
-    {
-        this.sheetService = sheetService;
-    }
-
-    public override Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
-    {
-        var subgenres = sheetService.GetMostCommonSubgenres();
-        var value = autocompleteInteraction.Data.Current.Value.ToString();
-
-        IEnumerable<string> results;
-        if (string.IsNullOrWhiteSpace(value))
-            results = subgenres.Take(25);
-        else
-            results = subgenres.Where(sg => sg.Contains(value, StringComparison.OrdinalIgnoreCase)).Take(25);
-
-        return Task.FromResult(AutocompletionResult.FromSuccess(results.Select(sg => new AutocompleteResult(sg, sg))));
-    }
 }

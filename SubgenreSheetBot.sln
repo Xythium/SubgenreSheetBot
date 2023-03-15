@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationBot", "Notifica
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{DB451BD8-900A-4956-90FE-7F601BA26CE2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwitterBot", "TwitterBot\TwitterBot.csproj", "{FE02209F-3078-42F8-B28B-8F77E8159F85}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{DB451BD8-900A-4956-90FE-7F601BA26CE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DB451BD8-900A-4956-90FE-7F601BA26CE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DB451BD8-900A-4956-90FE-7F601BA26CE2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE02209F-3078-42F8-B28B-8F77E8159F85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE02209F-3078-42F8-B28B-8F77E8159F85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE02209F-3078-42F8-B28B-8F77E8159F85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE02209F-3078-42F8-B28B-8F77E8159F85}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

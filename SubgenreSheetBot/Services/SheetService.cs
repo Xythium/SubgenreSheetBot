@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using Common;
 using Common.SubgenreSheet;
 using Discord;
 using FuzzySharp;
@@ -75,6 +77,7 @@ public class SheetService
             await GetGenreTreeFromSheet(context);
 
             mostCommonSubgenres = null;
+            mostCommonArtists = null;
 
             _lastTime = DateTime.UtcNow;
             Log.Information("Cache revalidation took {Milliseconds}ms", DateTime.UtcNow.Subtract(now).TotalMilliseconds);
@@ -204,6 +207,13 @@ public class SheetService
         },
     };
 
+    private static Color GetGenreColor(string genre)
+    {
+        if (!_genreColors.TryGetValue(genre, out var color))
+            color = Color.Default;
+        return color;
+    }
+
     public static readonly string[] DateFormat =
     {
         "yyyy'-'MM'-'dd"
@@ -216,140 +226,120 @@ public class SheetService
 
     private static readonly IRatioScorer _scorer = new TokenSetScorer();
 
-    private static Color GetGenreColor(string genre)
+    private static string[] GetArtists(string artist, MatchOptions matchOptions)
     {
-        if (!_genreColors.TryGetValue(genre, out var color))
-            color = Color.Default;
-        return color;
+        return matchOptions.MatchMode switch
+        {
+            MatchMode.Exact => _entries.SelectMany(e => e.ActualArtists).Distinct().Where(a => string.Equals(artist, a, StringComparison.OrdinalIgnoreCase)).ToArray(),
+            MatchMode.Fuzzy => Process.ExtractTop(artist, _entries.SelectMany(e => e.ActualArtists).Distinct(), scorer: _scorer, cutoff: matchOptions.Threshold).OrderByDescending(a => a.Score).ThenBy(a => a.Value).Select(a => a.Value).ToArray(),
+            _               => throw new ArgumentOutOfRangeException(nameof(matchOptions), matchOptions, null)
+        };
+    }
+
+    private static bool EntryMatchFeatures(Entry entry, string[] toMatch, MatchOptions matchOptions)
+    {
+        return matchOptions.MatchMode switch
+        {
+            MatchMode.Exact => entry.Info.Features.Any(feature => toMatch.Any(artist => string.Equals(artist, feature, StringComparison.OrdinalIgnoreCase))),
+            MatchMode.Fuzzy => entry.Info.Features.Any(feature => toMatch.Any(artist => fuzzyFunc(artist, feature, PreprocessMode.Full) >= matchOptions.Threshold)),
+            _               => false
+        };
+    }
+
+    private static bool EntryMatchRemixers(Entry entry, string[] toMatch, MatchOptions matchOptions)
+    {
+        return matchOptions.MatchMode switch
+        {
+            MatchMode.Exact => entry.Info.Remixers.Any(feature => toMatch.Any(artist => string.Equals(artist, feature, StringComparison.OrdinalIgnoreCase))),
+            MatchMode.Fuzzy => entry.Info.Remixers.Any(feature => toMatch.Any(artist => fuzzyFunc(artist, feature, PreprocessMode.Full) >= matchOptions.Threshold)),
+            _               => false
+        };
+    }
+
+    private static bool EntryMatchArtist(Entry entry, string[] toMatch, MatchOptions matchOptions)
+    {
+        return matchOptions.MatchMode switch
+        {
+            MatchMode.Exact => entry.Info.Artists.Any(feature => toMatch.Any(artist => string.Equals(artist, feature, StringComparison.OrdinalIgnoreCase))),
+            MatchMode.Fuzzy => entry.Info.Artists.Any(feature => toMatch.Any(artist => fuzzyFunc(artist, feature, PreprocessMode.Full) >= matchOptions.Threshold)),
+            _               => false
+        };
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="artists"></param>
+    /// <param name="matchOptions"></param>
+    /// <param name="includeRemixes">Include XXX (artist Remix)</param>
+    /// <param name="includeRemixed">Include artist (XXX Remix)</param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    private static List<Entry> GetAllTracksByArtist(string[] artists, MatchOptions matchOptions, bool includeRemixes = true, bool includeRemixed = false)
+    {
+        var tracks = new List<Entry>();
+
+        foreach (var entry in _entries)
+        {
+            // include featured artists
+            if (EntryMatchFeatures(entry, artists, matchOptions))
+            {
+                tracks.Add(entry);
+            }
+
+            // remix by searching artist should be including
+            if (includeRemixes)
+            {
+                // track is a remix
+                if (entry.Info.Remixers.Count > 0)
+                {
+                    // remixers include searching artist
+                    if (EntryMatchRemixers(entry, artists, matchOptions))
+                    {
+                        tracks.Add(entry);
+                    }
+                }
+            }
+
+            // remixes of searching artist should be included
+            if (includeRemixed)
+            {
+                // track is a remix
+                if (entry.Info.Remixers.Count > 0)
+                {
+                    // track is by searching artist
+                    if (EntryMatchArtist(entry, artists, matchOptions))
+                    {
+                        tracks.Add(entry);
+                    }
+                }
+            }
+
+            // track is not a remix
+            if (entry.Info.Remixers.Count < 1)
+            {
+                // track is by searching artist
+                if (EntryMatchArtist(entry, artists, matchOptions))
+                {
+                    tracks.Add(entry);
+                }
+            }
+        }
+
+        return tracks.OrderByDescending(e => e.Date).ToList();
+    }
+
+    private static List<Entry> GetAllTracksByArtist(string artist, MatchOptions matchOptions, bool includeRemixes = true, bool includeRemixed = false)
+    {
+        return GetAllTracksByArtist(new[]
+        {
+            artist
+        }, matchOptions, includeRemixes, includeRemixed);
     }
 
     private static List<Entry> GetAllTracksByArtistExact(string artist)
     {
         return _entries.Where(e => string.Equals(e.OriginalArtists, artist, StringComparison.OrdinalIgnoreCase)).OrderByDescending(e => e.Date).ToList();
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="artist"></param>
-    /// <param name="includeRemixes">Include XXX (artist Remix)</param>
-    /// <param name="includeRemixed">Include artist (XXX Remix)</param>
-    /// <param name="threshold"></param>
-    /// <returns></returns>
-    private static List<Entry> GetAllTracksByArtistFuzzy(string artist, bool includeRemixes = true, bool includeRemixed = false, int threshold = 80)
-    {
-        var tracks = new List<Entry>();
-
-        foreach (var entry in _entries)
-        {
-            // include featured artists
-            if (entry.Info.Features.Any(s => fuzzyFunc(s, artist, PreprocessMode.Full) >= threshold))
-            {
-                tracks.Add(entry);
-            }
-
-            // remix by searching artist should be including
-            if (includeRemixes)
-            {
-                // track is a remix
-                if (entry.Info.Remixers.Count > 0)
-                {
-                    // remixers include searching artist
-                    if (entry.Info.Remixers.Any(s => fuzzyFunc(s, artist, PreprocessMode.Full) >= threshold))
-                    {
-                        tracks.Add(entry);
-                    }
-                }
-            }
-
-            // remixes of searching artist should be included
-            if (includeRemixed)
-            {
-                // track is a remix
-                if (entry.Info.Remixers.Count > 0)
-                {
-                    // track is by searching artist
-                    if (entry.Info.Artists.Any(s => fuzzyFunc(s, artist, PreprocessMode.Full) >= threshold))
-                    {
-                        tracks.Add(entry);
-                    }
-                }
-            }
-
-            // track is not a remix
-            if (entry.Info.Remixers.Count < 1)
-            {
-                // track is by searching artist
-                if (entry.Info.Artists.Any(s => fuzzyFunc(s, artist, PreprocessMode.Full) >= threshold))
-                {
-                    tracks.Add(entry);
-                }
-            }
-        }
-
-        return tracks.OrderByDescending(e => e.Date).ToList();
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="artist"></param>
-    /// <param name="includeRemixes">Include XXX (artist Remix)</param>
-    /// <param name="includeRemixed">Include artist (XXX Remix)</param>
-    /// <param name="threshold"></param>
-    /// <returns></returns>
-    private static List<Entry> GetAllTracksByArtist(string artist, bool includeRemixes = true, bool includeRemixed = false, int threshold = 80)
-    {
-        var tracks = new List<Entry>();
-
-        foreach (var entry in _entries)
-        {
-            // include featured artists
-            if (entry.Info.Features.Any(s => string.Equals(s, artist, StringComparison.OrdinalIgnoreCase)))
-            {
-                tracks.Add(entry);
-            }
-
-            // remix by searching artist should be including
-            if (includeRemixes)
-            {
-                // track is a remix
-                if (entry.Info.Remixers.Count > 0)
-                {
-                    // remixers include searching artist
-                    if (entry.Info.Remixers.Any(s => string.Equals(s, artist, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        tracks.Add(entry);
-                    }
-                }
-            }
-
-            // remixes of searching artist should be included
-            if (includeRemixed)
-            {
-                // track is a remix
-                if (entry.Info.Remixers.Count > 0)
-                {
-                    // track is by searching artist
-                    if (entry.Info.Artists.Any(s => string.Equals(s, artist, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        tracks.Add(entry);
-                    }
-                }
-            }
-
-            // track is not a remix
-            if (entry.Info.Remixers.Count < 1)
-            {
-                // track is by searching artist
-                if (entry.Info.Artists.Any(s => string.Equals(s, artist, StringComparison.OrdinalIgnoreCase)))
-                {
-                    tracks.Add(entry);
-                }
-            }
-        }
-
-        return tracks.OrderByDescending(e => e.Date).ToList();
     }
 
     private static List<Entry> GetTracksByTitleExact(List<Entry> tracksByArtist, string title)
@@ -392,14 +382,14 @@ public class SheetService
                ?.Name;
     }
 
-    public string[] GetAllSubgenres()
+    public static string[] GetAllSubgenres()
     {
         return _entries.SelectMany(e => e.SubgenresList).Distinct().ToArray();
     }
 
     private static Dictionary<string, int>? mostCommonSubgenres;
 
-    public string[] GetMostCommonSubgenres()
+    public static string[] GetMostCommonSubgenres()
     {
         if (mostCommonSubgenres != null)
             return mostCommonSubgenres.OrderByDescending(c => c.Value).Select(c => c.Key).ToArray();
@@ -416,7 +406,26 @@ public class SheetService
         return mostCommonSubgenres.OrderByDescending(c => c.Value).Select(c => c.Key).ToArray();
     }
 
-    private async Task SendTrackEmbed(DynamicContext context, Entry track)
+    private static Dictionary<string, int>? mostCommonArtists;
+
+    public static string[] GetMostCommonArtists()
+    {
+        if (mostCommonArtists != null)
+            return mostCommonArtists.OrderByDescending(c => c.Value).Select(c => c.Key).ToArray();
+
+        var count = new Dictionary<string, int>();
+        foreach (var artist in _entries.SelectMany(entry => entry.ActualArtists))
+        {
+            if (!count.ContainsKey(artist))
+                count.Add(artist, 0);
+            count[artist]++;
+        }
+
+        mostCommonArtists = count;
+        return mostCommonArtists.OrderByDescending(c => c.Value).Select(c => c.Key).ToArray();
+    }
+
+    private static async Task SendTrackEmbed(DynamicContext context, Entry track)
     {
         var fields = new List<EmbedFieldBuilder>
         {
@@ -450,7 +459,7 @@ public class SheetService
         //await Context.Message.ReplyAsync(null, false, builder);
     }
 
-    private string BoolToEmoji(bool value)
+    private static string BoolToEmoji(bool value)
     {
         if (value)
         {
@@ -460,7 +469,7 @@ public class SheetService
         return "❌";
     }
 
-    private async Task SendTrackInfoEmbed(DynamicContext context, TrackInfo info)
+    private static async Task SendTrackInfoEmbed(DynamicContext context, TrackInfo info)
     {
         var fields = new List<EmbedFieldBuilder>
         {
@@ -479,7 +488,7 @@ public class SheetService
         //await Context.Message.ReplyAsync(null, false, builder);
     }
 
-    private async Task SendTrackList(DynamicContext context, string search, string[] artists, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
+    private static async Task SendTrackList(DynamicContext context, string search, string[] artists, List<Entry> tracks, bool includeGenreless = true, int numLatest = 5, int numEarliest = 3, bool includeIndex = true, bool includeArtist = true, bool includeTitle = true, bool includeLabel = true, bool includeDate = true)
     {
         var sb = BuildTrackList(search, artists, tracks, includeGenreless, numLatest, numEarliest, includeIndex, includeArtist, includeTitle, includeLabel, includeDate);
         await context.FollowupAsync(sb.ToString());
@@ -703,7 +712,7 @@ public class SheetService
         return date.CompareTo(compare) > 0 ? "is" : "was";
     }
 
-    private async Task SendArtistInfo(DynamicContext context, string search, string[] artists, List<Entry> tracks)
+    private static async Task SendArtistInfo(DynamicContext context, string search, string[] artists, List<Entry> tracks)
     {
         var latest = tracks.First();
         var earliest = tracks.Last();
@@ -712,7 +721,6 @@ public class SheetService
         var embed = new EmbedBuilder().WithTitle(string.Join(", ", artists)).WithDescription($"`{search}` matches the artists {string.Join(", ", artists)}. The latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and the first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**").AddField("Tracks", BuildTrackList(search, artists, tracks, includeArtist: false).ToString()).AddField("Genres", BuildTopGenreList(tracks.ToArray(), 5).ToString(), true);
 
         await context.FollowupAsync(embed: embed.Build());
-        //await Context.Message.ReplyAsync(embed: embed.Build());
     }
 
     private async Task<List<Entry>?> GetEntriesFromSheets(DynamicContext context, params string[] ranges)
@@ -763,7 +771,7 @@ public class SheetService
     }
 
 
-    private (Dictionary<string, List<string>>, Dictionary<string, Entry[]>) ByGenre(string[] subgenres)
+    private static (Dictionary<string, List<string>>, Dictionary<string, Entry[]>) ByGenre(string[] subgenres)
     {
         var toMostCommon = new Dictionary<string, List<string>>();
         var toEntries = new Dictionary<string, Entry[]>();
@@ -790,6 +798,13 @@ public class SheetService
         }
 
         return (toMostCommon, toEntries);
+    }
+
+    public class MatchOptions
+    {
+        public MatchMode MatchMode { get; set; }
+
+        public int Threshold { get; set; }
     }
 
 #region Track
@@ -823,7 +838,14 @@ public class SheetService
         else
         {
             var artist = split[0];
-            var tracksByArtist = GetAllTracksByArtistFuzzy(artist);
+            var tracksByArtist = GetAllTracksByArtist(new[]
+            {
+                artist
+            }, new MatchOptions
+            {
+                MatchMode = MatchMode.Fuzzy,
+                Threshold = 80
+            });
 
             if (tracksByArtist.Count == 0)
             {
@@ -981,19 +1003,23 @@ public class SheetService
 
 #region Artist
 
-    public async Task ArtistCommand(string artist, DynamicContext context, bool ephemeral, RequestOptions options)
+    public const string CMD_ARTIST_NAME = "query";
+    public const string CMD_ARTIST_DESCRIPTION = "Returns info about an artist";
+    public const string CMD_ARTIST_SEARCH_DESCRIPTION = "todo";
+    public const string CMD_ARTIST_MATCH_DESCRIPTION = "todo";
+    public const string CMD_ARTIST_THRESHOLD_DESCRIPTION = "todo";
+
+    public async Task ArtistCommand(string artist, MatchOptions matchOptions, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
         await CheckIfCacheExpired(context);
 
-        var artists = Process.ExtractTop(artist, _entries.SelectMany(e => e.ActualArtists).Distinct(), scorer: _scorer, cutoff: 80).OrderByDescending(a => a.Score).ThenBy(a => a.Value).Select(a => a.Value).ToArray();
-
-        var tracksByArtist = GetAllTracksByArtistFuzzy(artist);
+        var artists = GetArtists(artist, matchOptions);
+        var tracksByArtist = GetAllTracksByArtist(artists, matchOptions, true, false);
 
         if (tracksByArtist.Count == 0)
         {
             await context.ErrorAsync($"no tracks found by artist `{artist}`");
-            //await Context.Message.ReplyAsync($"no tracks found by artist `{artist}`");
             return;
         }
 
@@ -1715,7 +1741,10 @@ Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
         await context.DeferAsync(ephemeral, options);
         await CheckIfCacheExpired(context);
 
-        var tracks = GetAllTracksByArtist(graphOptions.StartArtist);
+        var tracks = GetAllTracksByArtist(graphOptions.StartArtist, new MatchOptions
+        {
+            MatchMode = MatchMode.Exact
+        });
         if (tracks.Count == 0)
         {
             await context.FollowupAsync("No tracks by artist");

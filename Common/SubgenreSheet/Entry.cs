@@ -22,12 +22,24 @@ public class Entry
 
     public string Genre { get; private set; }
 
+    /// <summary>
+    /// 'Subgenres' field as its written on the sheet
+    /// </summary>
     public string Subgenres { get; private set; }
 
+    /// <summary>
+    /// 'Subgenres' field as its written on the sheet, but split up
+    /// </summary>
     public string[] SubgenresList { get; private set; }
 
+    /// <summary>
+    /// 'Artists' field as its written on the sheet
+    /// </summary>
     public string OriginalArtists { get; private set; }
 
+    /// <summary>
+    /// 'Artists' field as its written on the sheet, but split up
+    /// </summary>
     public string[] ArtistsList { get; private set; }
 
     public string FormattedArtists => string.Join(" x ", ArtistsList);
@@ -215,7 +227,7 @@ public class Entry
 
         return str;
     }
-    
+
     public static readonly string[] DateFormat =
     {
         "yyyy'-'MM'-'dd"
