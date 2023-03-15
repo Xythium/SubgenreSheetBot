@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Common;
 using Discord;
 using Discord.Commands;
 using MetaBrainz.MusicBrainz.Interfaces.Entities;
@@ -14,6 +15,17 @@ public class SpreadsheetModule : ModuleBase
     private readonly RequestOptions defaultOptions = new()
     {
         Timeout = 15
+    };
+
+    private readonly SheetService.MatchOptions defaultFuzzyMatchOptions = new()
+    {
+        MatchMode = MatchMode.Fuzzy,
+        Threshold = 80
+    };
+
+    private readonly SheetService.MatchOptions defaultExactMatchOptions = new()
+    {
+        MatchMode = MatchMode.Exact
     };
 
     public SpreadsheetModule(SheetService sheet)
@@ -48,7 +60,13 @@ public class SpreadsheetModule : ModuleBase
     [Command("artist"), Alias("a"), Summary("Returns info about an artist")]
     public async Task Artist([Remainder, Summary("Artist to search for")]string artist)
     {
-        await sheet.ArtistCommand(artist, new DynamicContext(Context), false, defaultOptions);
+        await sheet.ArtistCommand(artist, defaultFuzzyMatchOptions, new DynamicContext(Context), false, defaultOptions);
+    }
+
+    [Command("artistexact"), Alias("ae"), Summary("Returns info about an artist")]
+    public async Task ArtistExact([Remainder, Summary("Artist to search for")]string artist)
+    {
+        await sheet.ArtistCommand(artist, defaultExactMatchOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command("artistdebug"), Alias("ad"), Summary("Returns a list of up to 15 artists most similar to the given input")]
