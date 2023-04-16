@@ -721,7 +721,11 @@ public class SheetService
         var earliest = tracks.Last();
         var now = DateTime.UtcNow;
 
-        var embed = new EmbedBuilder().WithTitle(string.Join(", ", artists)).WithDescription($"`{search}` matches the artists {string.Join(", ", artists)}. The latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and the first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**").AddField("Tracks", BuildTrackList(search, artists, tracks, includeArtist: false).ToString()).AddField("Genres", BuildTopGenreList(tracks.ToArray(), 5).ToString(), true);
+        var embed = new EmbedBuilder()
+                    .WithTitle(string.Join(", ", artists))
+                    .WithDescription($"`{search}` matches the artists {string.Join(", ", artists)}. The latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and the first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**")
+                    .AddField("Tracks", BuildTrackList(search, artists, tracks, includeArtist: false).ToString())
+                    .AddField("Genres", BuildTopGenreList(tracks.ToArray(), 5).ToString(), true);
 
         await context.FollowupAsync(embed: embed.Build());
     }

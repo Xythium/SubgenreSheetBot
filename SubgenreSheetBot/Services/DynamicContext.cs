@@ -32,37 +32,37 @@ public class DynamicContext
         }
     }
 
-    public async Task<IUserMessage> FollowupAsync(string text = null, Embed[] embeds = null, bool isTTS = false, bool ephemeral = false, AllowedMentions allowedMentions = null, MessageComponent components = null, Embed embed = null, ISticker[] stickers = null, RequestOptions options = null)
+    public async Task<IUserMessage> FollowupAsync(string? text = null, Embed[]? embeds = null, bool isTts = false, bool ephemeral = false, AllowedMentions? allowedMentions = null, MessageComponent? components = null, Embed? embed = null, ISticker[]? stickers = null, RequestOptions? options = null)
     {
         if (InteractionContext != null)
         {
-           return await InteractionContext.Interaction.FollowupAsync(text: text, embeds: embeds, isTTS: isTTS, ephemeral: ephemeral, allowedMentions: allowedMentions, components: components, embed: embed, options: options);
+           return await InteractionContext.Interaction.FollowupAsync(text: text, embeds: embeds, isTTS: isTts, ephemeral: ephemeral, allowedMentions: allowedMentions, components: components, embed: embed, options: options);
         }
 
         if (CommandContext != null)
         {
-           return await CommandContext.Message.ReplyAsync(text, isTTS, embed, allowedMentions, options, components, stickers, embeds);
+           return await CommandContext.Message.ReplyAsync(text, isTts, embed, allowedMentions, options, components, stickers, embeds);
         }
 
         throw new UnreachableException();
     }
 
-    public async Task ErrorAsync(string text, Embed[] embeds = null, bool isTTS = false, bool ephemeral = false, AllowedMentions allowedMentions = null, MessageComponent components = null, Embed embed = null, ISticker[] stickers = null, RequestOptions options = null)
+    public async Task ErrorAsync(string text, Embed[]? embeds = null, bool isTts = false, bool ephemeral = false, AllowedMentions? allowedMentions = null, MessageComponent? components = null, Embed? embed = null, ISticker[]? stickers = null, RequestOptions? options = null)
     {
         var emoji = Emoji.Parse(":warning:");
-        await FollowupAsync($"Error {emoji}: {text}", embeds, isTTS, ephemeral, allowedMentions, components, embed, stickers, options);
+        await FollowupAsync($"Error {emoji}: {text}", embeds, isTts, ephemeral, allowedMentions, components, embed, stickers, options);
     }
 
-    public async Task FollowupWithFileAsync(Stream fileStream, string fileName, string text = null, Embed[] embeds = null, bool isTTS = false, bool ephemeral = false, AllowedMentions allowedMentions = null, MessageComponent components = null, Embed embed = null, ISticker[] stickers = null, RequestOptions options = null)
+    public async Task FollowupWithFileAsync(Stream fileStream, string fileName, string? text = null, Embed[]? embeds = null, bool isTts = false, bool ephemeral = false, AllowedMentions? allowedMentions = null, MessageComponent? components = null, Embed? embed = null, ISticker[]? stickers = null, RequestOptions? options = null)
     {
         if (InteractionContext != null)
         {
-            await InteractionContext.Interaction.FollowupWithFileAsync(fileStream, fileName, text, embeds, isTTS, ephemeral, allowedMentions, components, embed, options);
+            await InteractionContext.Interaction.FollowupWithFileAsync(fileStream, fileName, text, embeds, isTts, ephemeral, allowedMentions, components, embed, options);
         }
 
         if (CommandContext != null)
         {
-            await CommandContext.Channel.SendFileAsync(fileStream, fileName, text, isTTS, embed, options, false, allowedMentions, new MessageReference(CommandContext.Message.Id), components, stickers, embeds);
+            await CommandContext.Channel.SendFileAsync(fileStream, fileName, text, isTts, embed, options, false, allowedMentions, new MessageReference(CommandContext.Message.Id), components, stickers, embeds);
         }
     }
 
