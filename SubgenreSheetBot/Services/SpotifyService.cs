@@ -18,7 +18,7 @@ public class SpotifyService
     public SpotifyService()
     {
         if (api != null)
-            throw new Exception();
+            throw new Exception("API already initialized");
 
         var config = SpotifyClientConfig.CreateDefault()
                                         .WithAuthenticator(new ClientCredentialsAuthenticator(File.ReadAllText("spotify_id"), File.ReadAllText("spotify_secret")))

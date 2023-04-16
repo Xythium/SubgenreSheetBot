@@ -37,9 +37,9 @@ public class GraphService
         foreach (var valueRange in valueRanges)
         {
             if (valueRange.Values is null)
-                throw new InvalidDataException("No values gotten");
+                throw new InvalidDataException("Values not loaded");
             if (valueRange.Values.Count < 1)
-                throw new InvalidDataException("Zero values gotten");
+                throw new InvalidDataException("No values gotten");
 
             var map = new string[5];
 
@@ -48,7 +48,7 @@ public class GraphService
                 //var depth = row.Count(v => string.IsNullOrWhiteSpace(v as string));
                 var name = row.LastOrDefault() as string;
                 if (string.IsNullOrWhiteSpace(name))
-                    throw new InvalidDataException("aishdasd");
+                    throw new InvalidDataException("No genre name");
 
                 var depth = row.IndexOf(name);
 

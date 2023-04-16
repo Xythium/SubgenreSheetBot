@@ -41,7 +41,7 @@ public class SheetService
     public SheetService(GraphService graphService, MusicBrainzService mbService)
     {
         if (api != null)
-            throw new Exception();
+            throw new Exception("API already initialized");
 
         UserCredential credential;
 
@@ -102,9 +102,9 @@ public class SheetService
 
         var valueRanges = response.ValueRanges;
         if (valueRanges is null)
-            throw new InvalidDataException("There are no values");
+            throw new InvalidDataException("Values not loaded");
         if (valueRanges.Count < 1)
-            throw new InvalidDataException("There are zero values");
+            throw new InvalidDataException("No values gotten");
 
         rootNode = graphService.ParseTree(valueRanges);
         File.WriteAllText("tree.json", JsonConvert.SerializeObject(rootNode, Formatting.Indented));
@@ -1449,9 +1449,7 @@ public class SheetService
         if (!string.IsNullOrWhiteSpace(arguments.Before))
         {
             if (!DateOnly.TryParse(arguments.Before, out var before))
-            {
                 throw new ArgumentException("Invalid date");
-            }
 
             query = query.Where(e => e.Date != null && new DateOnly(e.Date.Year, e.Date.Month, e.Date.Day) < before);
         }
@@ -1459,9 +1457,7 @@ public class SheetService
         if (!string.IsNullOrWhiteSpace(arguments.After))
         {
             if (!DateOnly.TryParse(arguments.After, out var after))
-            {
                 throw new ArgumentException("Invalid date");
-            }
 
             query = query.Where(e => e.Date != null && new DateOnly(e.Date.Year, e.Date.Month, e.Date.Day) > after);
         }
@@ -1469,9 +1465,7 @@ public class SheetService
         if (!string.IsNullOrWhiteSpace(arguments.Date))
         {
             if (!DateOnly.TryParse(arguments.Date, out var date))
-            {
                 throw new ArgumentException("Invalid date");
-            }
 
             query = query.Where(e => e.Date != null && new DateOnly(e.Date.Year, e.Date.Month, e.Date.Day) == date);
         }

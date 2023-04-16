@@ -127,7 +127,7 @@ public static class BeatportDbUtils
 
                 if (t is null)
                 {
-                    throw new Exception("oh nwwoo :( why");
+                    //throw new Exception("oh nwwoo :( why");
                     // todo: silent ignore for now
                     /* return null;
                      */

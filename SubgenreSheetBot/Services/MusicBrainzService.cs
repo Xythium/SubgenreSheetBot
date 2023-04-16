@@ -81,7 +81,7 @@ public class MusicBrainzService
         File.WriteAllText(MUSICBRAINZ_AUTH_FILE, authToken, Encoding.UTF8);
 
         if (string.IsNullOrWhiteSpace(authToken))
-            throw new InvalidOperationException();
+            throw new InvalidOperationException("No auth token");
 
         var at = oauth.GetBearerToken(authToken, File.ReadAllText(MUSICBRAINZ_SECRET_FILE), OAuth2.OutOfBandUri);
         File.WriteAllText(MUSICBRAINZ_REFRESH_FILE, at.RefreshToken, Encoding.UTF8);

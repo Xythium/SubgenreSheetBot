@@ -42,7 +42,7 @@ public class AppleMusic
             }
             else
             {
-                throw new Exception($"{property.Name}");
+                throw new Exception($"Unknown property name '{property.Name}'");
             }
         }
 

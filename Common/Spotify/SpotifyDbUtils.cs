@@ -63,7 +63,7 @@ public static class SpotifyDbUtils
         }
 
         if (tracksItems.Count != test.Length)
-            throw new Exception("Not all tracks loaded smetihng went wrong");
+            throw new Exception("Not all tracks loaded. Something went wrong");
 
         return tracks.OrderBy(t => t.DiscNumber)
             .ThenBy(t => t.TrackNumber)
@@ -115,7 +115,7 @@ public static class SpotifyDbUtils
         }
 
         if (tracksItems.Count != test.Length)
-            throw new Exception("Not all tracks loaded smetihng went wrong");
+            throw new Exception("Not all tracks loaded. Something went wrong");
 
         return tracks;
     }
