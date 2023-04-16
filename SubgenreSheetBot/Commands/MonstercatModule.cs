@@ -16,9 +16,7 @@ public class MonstercatModule : ModuleBase
         var api = new MonstercatPlayer();
         using var session = SubgenreSheetBot.MonstercatStore.OpenSession();
         var tracks = await api.Browse(100, 0);
-        var albums = tracks.Data.GroupBy(t => t.Release, new MonstercatComparer())
-            .OrderByDescending(g => g.Key.ReleaseDate)
-            .First();
+        var albums = tracks.Data.GroupBy(t => t.Release, new MonstercatComparer()).OrderByDescending(g => g.Key.ReleaseDate).First();
 
         var album = await MonstercatDbUtils.GetAlbumOrCache(api, session, albums.Key);
 
@@ -34,7 +32,7 @@ public class MonstercatModule : ModuleBase
     }
 
     [Command("album")]
-    public async Task Album([Remainder, Summary("Album ID to search for")] string text)
+    public async Task Album([Remainder, Summary("Album ID to search for")]string text)
     {
         var api = new MonstercatPlayer();
         using var session = SubgenreSheetBot.MonstercatStore.OpenSession();

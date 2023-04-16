@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Common;
-using Common.SubgenreSheet;
 using Discord;
 using Discord.Commands;
 using MetaBrainz.MusicBrainz.Interfaces.Entities;
@@ -36,7 +35,7 @@ public class SpreadsheetModule : ModuleBase
     }
 
     [Command(SheetService.CMD_TRACK_NAME), Alias("t"), Summary(SheetService.CMD_TRACK_DESCRIPTION)]
-    public async Task Track([Remainder, Summary("Track to search for")]string search)
+    public async Task Track([Remainder, Summary(SheetService.CMD_TRACK_SEARCH_DESCRIPTION)]string search)
     {
         var context = new DynamicContext(Context);
         var split = search.Split(new[]
@@ -56,8 +55,8 @@ public class SpreadsheetModule : ModuleBase
         await sheet.TrackCommand(artist, title, defaultFuzzyMatchOptions, context, false, defaultOptions);
     }
 
-    [Command("trackexact"), Alias("te"), Summary("Search for a track on the sheet")]
-    public async Task TrackExact([Remainder, Summary("Track to search for")]string search)
+    [Command(SheetService.CMD_TRACK_EXACT_NAME), Alias("te"), Summary(SheetService.CMD_TRACK_DESCRIPTION)]
+    public async Task TrackExact([Remainder, Summary(SheetService.CMD_TRACK_SEARCH_DESCRIPTION)]string search)
     {
         var context = new DynamicContext(Context);
         var split = search.Split(new[]
@@ -77,91 +76,91 @@ public class SpreadsheetModule : ModuleBase
         await sheet.TrackCommand(artist, title, defaultExactMatchOptions, context, false, defaultOptions);
     }
 
-    [Command("trackinfoexact"), Alias("tie"), Summary("Search for a track on the sheet")]
-    public async Task TrackInfoExact([Remainder, Summary("Track to search for")]string search)
+    [Command(SheetService.CMD_TRACK_INFO_EXACT_NAME), Alias("tie"), Summary(SheetService.CMD_TRACK_INFO_EXACT_DESCRIPTION)]
+    public async Task TrackInfoExact([Remainder, Summary(SheetService.CMD_TRACK_INFO_EXACT_SEARCH_DESCRIPTION)]string search)
     {
         await sheet.TrackInfoExactCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("trackinfoforce"), Alias("tif"), Summary("Get information about a track")]
-    public async Task TrackInfoForce([Remainder, Summary("Track to search for")]string search)
+    [Command(SheetService.CMD_TRACK_INFO_FORCE_NAME), Alias("tif"), Summary(SheetService.CMD_TRACK_INFO_FORCE_DESCRIPTION)]
+    public async Task TrackInfoForce([Remainder, Summary(SheetService.CMD_TRACK_INFO_FORCE_SEARCH_DESCRIPTION)]string search)
     {
         await sheet.TrackInfoForceCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("artist"), Alias("a"), Summary("Returns info about an artist")]
-    public async Task Artist([Remainder, Summary("Artist to search for")]string artist)
+    [Command(SheetService.CMD_ARTIST_NAME), Alias("a"), Summary(SheetService.CMD_ARTIST_DESCRIPTION)]
+    public async Task Artist([Remainder, Summary(SheetService.CMD_ARTIST_SEARCH_DESCRIPTION)]string artist)
     {
         await sheet.ArtistCommand(artist, defaultFuzzyMatchOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("artistexact"), Alias("ae"), Summary("Returns info about an artist")]
-    public async Task ArtistExact([Remainder, Summary("Artist to search for")]string artist)
+    [Command(SheetService.CMD_ARTIST_EXACT_NAME), Alias("ae"), Summary(SheetService.CMD_ARTIST_DESCRIPTION)]
+    public async Task ArtistExact([Remainder, Summary(SheetService.CMD_ARTIST_SEARCH_DESCRIPTION)]string artist)
     {
         await sheet.ArtistCommand(artist, defaultExactMatchOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("artistdebug"), Alias("ad"), Summary("Returns a list of up to 15 artists most similar to the given input")]
-    public async Task ArtistDebug([Remainder, Summary("Artist to search for")]string artist)
+    [Command(SheetService.CMD_ARTIST_DEBUG_NAME), Alias("ad"), Summary(SheetService.CMD_ARTIST_DEBUG_DESCRIPTION)]
+    public async Task ArtistDebug([Remainder, Summary(SheetService.CMD_ARTIST_DEBUG_SEARCH_DESCRIPTION)]string artist)
     {
         await sheet.ArtistDebugCommand(artist, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("genre"), Alias("g"), Summary("Returns a list of up to 8 tracks of a given genre")]
-    public async Task Genre([Remainder, Summary("Genre to search for")]string genre)
+    [Command(SheetService.CMD_GENRE_NAME), Alias("g"), Summary(SheetService.CMD_GENRE_DESCRIPTION)]
+    public async Task Genre([Remainder, Summary(SheetService.CMD_GENRE_SEARCH_DESCRIPTION)]string genre)
     {
         await sheet.GenreCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("genreinfo"), Alias("gi"), Summary("Returns information of a genre")]
-    public async Task GenreInfo([Remainder, Summary("Genre to search for")]string genre)
+    [Command(SheetService.CMD_GENRE_INFO_NAME), Alias("gi"), Summary(SheetService.CMD_GENRE_INFO_DESCRIPTION)]
+    public async Task GenreInfo([Remainder, Summary(SheetService.CMD_GENRE_INFO_SEARCH_DESCRIPTION)]string genre)
     {
         await sheet.GenreInfoCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("subgenre"), Alias("sg"), Summary("Returns a list of up to 8 tracks of a given subgenre")]
-    public async Task Subgenre([Remainder, Summary("Genre to search for")]string genre)
+    [Command(SheetService.CMD_SUBGENRE_NAME), Alias("sg"), Summary(SheetService.CMD_SUBGENRE_DESCRIPTION)]
+    public async Task Subgenre([Remainder, Summary(SheetService.CMD_SUBGENRE_SEARCH_DESCRIPTION)]string genre)
     {
         await sheet.SubgenreCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("subgenreexact"), Alias("sge"), Summary("Returns a list of up to 8 tracks of a given subgenre")]
-    public async Task SubgenreExact([Remainder, Summary("Genre to search for")]string genre)
+    [Command(SheetService.CMD_SUBGENRE_EXACT_NAME), Alias("sge"), Summary(SheetService.CMD_SUBGENRE_EXACT_DESCRIPTION)]
+    public async Task SubgenreExact([Remainder, Summary(SheetService.CMD_SUBGENRE_EXACT_SEARCH_DESCRIPTION)]string genre)
     {
         await sheet.SubgenreExactCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("labels"), Alias("ls")]
+    [Command(SheetService.CMD_LABELS_NAME), Alias("ls"), Summary(SheetService.CMD_LABELS_DESCRIPTION)]
     public async Task Labels()
     {
         await sheet.LabelsCommand(new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("label"), Alias("l")]
-    public async Task Label([Remainder]string label)
+    [Command(SheetService.CMD_LABEL_NAME), Alias("l"), Summary(SheetService.CMD_LABEL_DESCRIPTION)]
+    public async Task Label([Remainder, Summary(SheetService.CMD_LABEL_SEARCH_DESCRIPTION)]string label)
     {
         await sheet.LabelCommand(label, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("labelartists"), Alias("la")]
-    public async Task LabelArtists([Remainder]string label)
+    [Command(SheetService.CMD_LABEL_ARTISTS_NAME), Alias("la"), Summary(SheetService.CMD_LABEL_ARTISTS_DESCRIPTION)]
+    public async Task LabelArtists([Remainder, Summary(SheetService.CMD_LABEL_ARTISTS_SEARCH_DESCRIPTION)]string label)
     {
         await sheet.LabelArtistsCommand(label, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("debug")]
+    [Command(SheetService.CMD_DEBUG_NAME)]
     public async Task Debug()
     {
         await sheet.DebugCommand(new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("markwhen")]
+    [Command(SheetService.CMD_MARKWHEN_NAME)]
     public async Task Markwhen()
     {
         await sheet.MarkwhenCommand(new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("query"), Alias("q")]
+    [Command(SheetService.CMD_QUERY_NAME), Alias("q")]
     public async Task Query(SheetService.QueryArguments arguments)
     {
         await sheet.QueryCommand(arguments, new DynamicContext(Context), false, defaultOptions);

@@ -36,14 +36,14 @@ public class SheetInteractionModule : InteractionModuleBase
         await sheet.TrackCommand(artist, title, matchOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("trackinfoexact", "Search for a track on the sheet")]
-    public async Task TrackInfoExact([Summary(nameof(search), "Track to search for")]string search)
+    [SlashCommand(SheetService.CMD_TRACK_INFO_EXACT_NAME, SheetService.CMD_TRACK_INFO_EXACT_DESCRIPTION)]
+    public async Task TrackInfoExact([Summary(nameof(search), SheetService.CMD_TRACK_INFO_EXACT_SEARCH_DESCRIPTION)]string search)
     {
         await sheet.TrackInfoExactCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("trackinfoforce", "Get information about a track")]
-    public async Task TrackInfoForce([Summary(nameof(search), "Track to search for")]string search)
+    [SlashCommand(SheetService.CMD_TRACK_INFO_FORCE_NAME, SheetService.CMD_TRACK_INFO_FORCE_DESCRIPTION)]
+    public async Task TrackInfoForce([Summary(nameof(search), SheetService.CMD_TRACK_INFO_FORCE_SEARCH_DESCRIPTION)]string search)
     {
         await sheet.TrackInfoForceCommand(search, new DynamicContext(Context), false, defaultOptions);
     }
@@ -61,61 +61,61 @@ public class SheetInteractionModule : InteractionModuleBase
         await sheet.ArtistCommand(search, matchOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("artistdebug", "Returns a list of up to 15 artists most similar to the given input")]
-    public async Task ArtistDebug([Summary(nameof(artist), "Artist to search for"), Autocomplete(typeof(ArtistAutocomplete))]string artist)
+    [SlashCommand(SheetService.CMD_ARTIST_DEBUG_NAME, SheetService.CMD_ARTIST_DEBUG_DESCRIPTION)]
+    public async Task ArtistDebug([Summary(nameof(artist), SheetService.CMD_ARTIST_DEBUG_SEARCH_DESCRIPTION), Autocomplete(typeof(ArtistAutocomplete))]string artist)
     {
         await sheet.ArtistDebugCommand(artist, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("genre", "Returns a list of up to 8 tracks of a given genre")]
-    public async Task Genre([Summary(nameof(genre), "Genre to search for")]string genre)
+    [SlashCommand(SheetService.CMD_GENRE_NAME, SheetService.CMD_GENRE_DESCRIPTION)]
+    public async Task Genre([Summary(nameof(genre), SheetService.CMD_GENRE_SEARCH_DESCRIPTION)]string genre)
     {
         await sheet.GenreCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("genreinfo", "Returns information of a genre")]
-    public async Task GenreInfo([Summary(nameof(genre), "Genre to search for")]string genre)
+    [SlashCommand(SheetService.CMD_GENRE_INFO_NAME, SheetService.CMD_GENRE_INFO_DESCRIPTION)]
+    public async Task GenreInfo([Summary(nameof(genre), SheetService.CMD_GENRE_INFO_SEARCH_DESCRIPTION)]string genre)
     {
         await sheet.GenreInfoCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("subgenre", "Returns a list of up to 8 tracks of a given subgenre")]
-    public async Task Subgenre([Summary(nameof(genre), "Genre to search for")]string genre)
+    [SlashCommand(SheetService.CMD_SUBGENRE_NAME, SheetService.CMD_SUBGENRE_DESCRIPTION)]
+    public async Task Subgenre([Summary(nameof(genre), SheetService.CMD_SUBGENRE_SEARCH_DESCRIPTION)]string genre)
     {
         await sheet.SubgenreCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("subgenreexact", "Returns a list of up to 8 tracks of a given subgenre")]
-    public async Task SubgenreExact([Summary(nameof(genre), "Genre to search for")]string genre)
+    [SlashCommand(SheetService.CMD_SUBGENRE_EXACT_NAME, SheetService.CMD_SUBGENRE_EXACT_DESCRIPTION)]
+    public async Task SubgenreExact([Summary(nameof(genre), SheetService.CMD_SUBGENRE_EXACT_SEARCH_DESCRIPTION)]string genre)
     {
         await sheet.SubgenreExactCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("labels", "todo")]
+    [SlashCommand(SheetService.CMD_LABELS_NAME, SheetService.CMD_LABELS_DESCRIPTION)]
     public async Task Labels()
     {
         await sheet.LabelsCommand(new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("label", "todo")]
-    public async Task Label([Summary(nameof(label))]string label)
+    [SlashCommand(SheetService.CMD_LABEL_NAME, SheetService.CMD_LABEL_DESCRIPTION)]
+    public async Task Label([Summary(nameof(label), SheetService.CMD_LABEL_SEARCH_DESCRIPTION)]string label)
     {
         await sheet.LabelCommand(label, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("labelartists", "todo")]
-    public async Task LabelArtists([Summary(nameof(label))]string label)
+    [SlashCommand(SheetService.CMD_LABEL_ARTISTS_NAME, SheetService.CMD_LABEL_ARTISTS_DESCRIPTION)]
+    public async Task LabelArtists([Summary(nameof(label), SheetService.CMD_LABEL_ARTISTS_SEARCH_DESCRIPTION)]string label)
     {
         await sheet.LabelArtistsCommand(label, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("debug", "todo")]
+    [SlashCommand(SheetService.CMD_DEBUG_NAME, SheetService.CMD_DEBUG_DESCRIPTION)]
     public async Task Debug()
     {
         await sheet.DebugCommand(new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("markwhen", "todo")]
+    [SlashCommand(SheetService.CMD_MARKWHEN_NAME, SheetService.CMD_MARKWHEN_DESCRIPTION)]
     public async Task Markwhen()
     {
         await sheet.MarkwhenCommand(new DynamicContext(Context), false, defaultOptions);
@@ -135,8 +135,8 @@ public class SheetInteractionModule : InteractionModuleBase
         await sheet.SubgenreGraphCommand(graphOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("subgenre-debug", SheetService.CMD_SUBGENRE_GRAPH_DESCRIPTION)]
-    public async Task SubgenreDebug([Summary(nameof(subgenre), SheetService.CMD_SUBGENRE_GRAPH_SEARCH_DESCRIPTION), Autocomplete(typeof(SubgenreAutocomplete))]string subgenre)
+    [SlashCommand(SheetService.CMD_SUBGENRE_DEBUG_NAME, SheetService.CMD_SUBGENRE_DEBUG_DESCRIPTION)]
+    public async Task SubgenreDebug([Summary(nameof(subgenre), SheetService.CMD_SUBGENRE_DEBUG_SEARCH_DESCRIPTION), Autocomplete(typeof(SubgenreAutocomplete))]string subgenre)
     {
         await sheet.SubgenreDebugCommand(subgenre, new DynamicContext(Context), false, defaultOptions);
     }

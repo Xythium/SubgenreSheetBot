@@ -6,7 +6,7 @@ using SubgenreSheetBot.Services;
 namespace SubgenreSheetBot.Commands;
 
 [Group("Apple"), Alias("a", "am")]
-public  class AppleModule : ModuleBase
+public class AppleModule : ModuleBase
 {
     private readonly AppleMusicService apple;
 
@@ -15,10 +15,13 @@ public  class AppleModule : ModuleBase
         Timeout = 15
     };
 
-    public AppleModule(AppleMusicService apple) { this.apple = apple; }
-    
-    [Command("album"), Summary("Get all ISRCs from an album")]
-    public async Task Album([Remainder, Summary("Album ID to search for")] string text)
+    public AppleModule(AppleMusicService apple)
+    {
+        this.apple = apple;
+    }
+
+    [Command(AppleMusicService.CMD_ALBUM_NAME), Summary(AppleMusicService.CMD_ALBUM_DESCRIPTION)]
+    public async Task Album([Remainder, Summary(AppleMusicService.CMD_ALBUM_SEARCH_DESCRIPTION)]string text)
     {
         await apple.AlbumCommand(text, new DynamicContext(Context), false, defaultOptions);
     }

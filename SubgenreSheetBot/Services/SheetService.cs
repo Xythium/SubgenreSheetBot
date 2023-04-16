@@ -817,7 +817,9 @@ public class SheetService
 #region Track
 
     public const string CMD_TRACK_NAME = "track";
+    public const string CMD_TRACK_EXACT_NAME = "trackexact";
     public const string CMD_TRACK_DESCRIPTION = "Search for tracks on the sheet";
+    public const string CMD_TRACK_SEARCH_DESCRIPTION = "Track to search for";
     public const string CMD_TRACK_TITLE_DESCRIPTION = "Filter all tracks by title";
     public const string CMD_TRACK_ARTIST_DESCRIPTION = "Filter tracks by artist";
     public const string CMD_TRACK_MATCH_DESCRIPTION = "todo";
@@ -868,7 +870,12 @@ public class SheetService
 
 #endregion
 
-#region Track Info Exact
+#region Track Info Exact (merge)
+
+    public const string CMD_TRACK_INFO_EXACT_NAME = "trackinfoexact";
+    public const string CMD_TRACK_INFO_EXACT_DESCRIPTION = "Search for tracks on the sheet";
+    public const string CMD_TRACK_INFO_EXACT_SEARCH_DESCRIPTION = "Track to search for";
+
 
     public async Task TrackInfoExactCommand(string search, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -916,7 +923,11 @@ public class SheetService
 
 #endregion
 
-#region Track Info Force
+#region Track Info Force (merge)
+
+    public const string CMD_TRACK_INFO_FORCE_NAME = "trackinfoforce";
+    public const string CMD_TRACK_INFO_FORCE_DESCRIPTION = "Get information about a track";
+    public const string CMD_TRACK_INFO_FORCE_SEARCH_DESCRIPTION = "Track to search for";
 
     public async Task TrackInfoForceCommand(string search, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -945,8 +956,9 @@ public class SheetService
 #region Artist
 
     public const string CMD_ARTIST_NAME = "artist";
+    public const string CMD_ARTIST_EXACT_NAME = "artistexact";
     public const string CMD_ARTIST_DESCRIPTION = "Returns info about an artist";
-    public const string CMD_ARTIST_SEARCH_DESCRIPTION = "todo";
+    public const string CMD_ARTIST_SEARCH_DESCRIPTION = "Artist to search for";
     public const string CMD_ARTIST_MATCH_DESCRIPTION = "todo";
     public const string CMD_ARTIST_THRESHOLD_DESCRIPTION = "todo";
 
@@ -971,6 +983,10 @@ public class SheetService
 
 #region Artist Debug
 
+    public const string CMD_ARTIST_DEBUG_NAME = "artistdebug";
+    public const string CMD_ARTIST_DEBUG_DESCRIPTION = "Returns a list of up to 15 artists most similar to the given input";
+    public const string CMD_ARTIST_DEBUG_SEARCH_DESCRIPTION = "Artist to search for";
+
     public async Task ArtistDebugCommand(string artist, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -993,6 +1009,10 @@ public class SheetService
 #endregion
 
 #region Genre
+
+    public const string CMD_GENRE_NAME = "genre";
+    public const string CMD_GENRE_DESCRIPTION = "Returns a list of up to 8 tracks of a given genre";
+    public const string CMD_GENRE_SEARCH_DESCRIPTION = "Genre to search for";
 
     public async Task GenreCommand(string genre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1027,6 +1047,10 @@ public class SheetService
 #endregion
 
 #region Genre Info
+
+    public const string CMD_GENRE_INFO_NAME = "genreinfo";
+    public const string CMD_GENRE_INFO_DESCRIPTION = "Returns information of a genre";
+    public const string CMD_GENRE_INFO_SEARCH_DESCRIPTION = "Genre to search for";
 
     public async Task GenreInfoCommand(string genre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1070,7 +1094,11 @@ public class SheetService
 
 #endregion
 
-#region Subgenre
+#region Subgenre (merge)
+
+    public const string CMD_SUBGENRE_NAME = "subgenre";
+    public const string CMD_SUBGENRE_DESCRIPTION = "Returns a list of up to 8 tracks of a given subgenre";
+    public const string CMD_SUBGENRE_SEARCH_DESCRIPTION = "Subgenre to search for";
 
     public async Task SubgenreCommand(string genre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1104,7 +1132,11 @@ public class SheetService
 
 #endregion
 
-#region Subgenre Exact
+#region Subgenre Exact (merge)
+
+    public const string CMD_SUBGENRE_EXACT_NAME = "subgenreexact";
+    public const string CMD_SUBGENRE_EXACT_DESCRIPTION = "Returns a list of up to 8 tracks of a given subgenre";
+    public const string CMD_SUBGENRE_EXACT_SEARCH_DESCRIPTION = "Subgenre to search for";
 
     public async Task SubgenreExactCommand(string genre, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1140,6 +1172,9 @@ public class SheetService
 
 #region Labels
 
+    public const string CMD_LABELS_NAME = "labels";
+    public const string CMD_LABELS_DESCRIPTION = "List of every label";
+
     public async Task LabelsCommand(DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -1167,6 +1202,10 @@ public class SheetService
 #endregion
 
 #region Label
+
+    public const string CMD_LABEL_NAME = "label";
+    public const string CMD_LABEL_DESCRIPTION = "Embed with information";
+    public const string CMD_LABEL_SEARCH_DESCRIPTION = "Label to search for";
 
     public async Task LabelCommand(string label, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1210,6 +1249,10 @@ public class SheetService
 #endregion
 
 #region Label Artists
+
+    public const string CMD_LABEL_ARTISTS_NAME = "labelartists";
+    public const string CMD_LABEL_ARTISTS_DESCRIPTION = "List of artists on a label";
+    public const string CMD_LABEL_ARTISTS_SEARCH_DESCRIPTION = "Label to search for";
 
     public async Task LabelArtistsCommand(string label, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1261,6 +1304,9 @@ public class SheetService
 
 #region Debug
 
+    public const string CMD_DEBUG_NAME = "debug";
+    public const string CMD_DEBUG_DESCRIPTION = "debug";
+
     public async Task DebugCommand(DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -1295,6 +1341,9 @@ public class SheetService
 #endregion
 
 #region Markwhen
+
+    public const string CMD_MARKWHEN_NAME = "markwhen";
+    public const string CMD_MARKWHEN_DESCRIPTION = "markwhen";
 
     public async Task MarkwhenCommand(DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -1630,6 +1679,10 @@ public class SheetService
 #endregion
 
 #region Subgenre Debug
+
+    public const string CMD_SUBGENRE_DEBUG_NAME = "subgenre-debug";
+    public const string CMD_SUBGENRE_DEBUG_DESCRIPTION = "Search for tracks on the sheet";
+    public const string CMD_SUBGENRE_DEBUG_SEARCH_DESCRIPTION = "todo";
 
     public async Task SubgenreDebugCommand(string subgenre, DynamicContext context, bool ephemeral, RequestOptions options)
     {

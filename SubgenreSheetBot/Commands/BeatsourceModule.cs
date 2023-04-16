@@ -9,34 +9,43 @@ namespace SubgenreSheetBot.Commands;
 public class BeatsourceModule : ModuleBase
 {
     private readonly BeatsourceService beatsource;
-    
+
     private readonly RequestOptions defaultOptions = new()
     {
         Timeout = 15
     };
 
-    public BeatsourceModule(BeatsourceService beatsource) { this.beatsource = beatsource; }
-
-    [Command("tracks"), Alias("t"), Summary("Get all tracks from an album")]
-    public async Task Tracks([Remainder, Summary("Album ID to search for")] string text)
+    public BeatsourceModule(BeatsourceService beatsource)
     {
-        await beatsource.TracksCommand(text, new DynamicContext(Context), false, defaultOptions);
+        this.beatsource = beatsource;
     }
 
-    [Command("album"), Alias("a", "release"), Summary("Get all tracks from an album")]
-    public async Task Album([Remainder, Summary("Album ID to search for")] string text)
+    [Command(BeatsourceService.CMD_TRACKS_NAME), Alias("t"), Summary(BeatsourceService.CMD_TRACKS_DESCRIPTION)]
+    public async Task Tracks([Remainder, Summary(BeatsourceService.CMD_TRACKS_SEARCH_DESCRIPTION)]string albumUrl)
     {
-        await beatsource.AlbumCommand(text, new DynamicContext(Context), false, defaultOptions);
+        await beatsource.TracksCommand(albumUrl, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("isrc"), Alias("i"), Summary("Search by ISRC")]
-    public async Task Isrc([Remainder, Summary("ISRC to search for")] string isrc)
+    [Command(BeatsourceService.CMD_ALBUM_NAME), Alias("a", "release"), Summary(BeatsourceService.CMD_ALBUM_DESCRIPTION)]
+    public async Task Album([Remainder, Summary(BeatsourceService.CMD_ALBUM_SEARCH_DESCRIPTION)]string albumUrl)
+    {
+        await beatsource.AlbumCommand(albumUrl, new DynamicContext(Context), false, defaultOptions);
+    }
+
+    [Command(BeatsourceService.CMD_ISRC_NAME), Alias("i"), Summary(BeatsourceService.CMD_ISRC_DESCRIPTION)]
+    public async Task Isrc([Remainder, Summary(BeatsourceService.CMD_ISRC_SEARCH_DESCRIPTION)]string isrc)
     {
         await beatsource.IsrcCommand(isrc, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [Command("labelcached"), Alias("labelc", "lc"), Summary("Get all releases from a label")]
-    public async Task LabelCached([Remainder, Summary("Label name to search for")] string labelName)
+    [Command(BeatsourceService.CMD_LABEL_NAME), Summary(BeatsourceService.CMD_LABEL_DESCRIPTION)]
+    public async Task Label([Remainder, Summary(BeatsourceService.CMD_LABEL_SEARCH_DESCRIPTION)]string labelName)
+    {
+        await beatsource.LabelCommand(labelName, new DynamicContext(Context), false, defaultOptions);
+    }
+
+    [Command(BeatsourceService.CMD_LABEL_CACHED_NAME), Alias("labelc", "lc"), Summary(BeatsourceService.CMD_LABEL_CACHED_DESCRIPTION)]
+    public async Task LabelCached([Remainder, Summary(BeatsourceService.CMD_LABEL_CACHED_SEARCH_DESCRIPTION)]string labelName)
     {
         await beatsource.LabelCachedCommand(labelName, new DynamicContext(Context), false, defaultOptions);
     }

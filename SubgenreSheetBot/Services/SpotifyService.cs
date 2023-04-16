@@ -46,6 +46,12 @@ public class SpotifyService
         return await SpotifyDbUtils.GetFeaturesOrCache(api, session, album.Tracks.Items);
     }
 
+#region Tracks
+
+    public const string CMD_TRACKS_NAME = "tracks";
+    public const string CMD_TRACKS_DESCRIPTION = "Get all tracks from an album";
+    public const string CMD_TRACKS_SEARCH_DESCRIPTION = "Album ID to search for";
+
     public async Task TracksCommand(string url, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -82,6 +88,14 @@ public class SpotifyService
         await context.SendOrAttachment(sb.ToString(), true);
     }
 
+#endregion
+
+#region Album
+
+    public const string CMD_ALBUM_NAME = "album";
+    public const string CMD_ALBUM_DESCRIPTION = "Get all tracks from an album";
+    public const string CMD_ALBUM_SEARCH_DESCRIPTION = "Album ID to search for";
+
     public async Task AlbumCommand(string url, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -117,6 +131,18 @@ public class SpotifyService
             await context.FollowupAsync(embed: embed.Build());
         }
     }
+
+#endregion
+
+
+#region Label
+
+    public const string CMD_LABEL_NAME = "label";
+    public const string CMD_LABEL_WITH_YEAR_NAME = "label-year";
+    public const string CMD_LABEL_DESCRIPTION = "Get all releases from an album";
+    public const string CMD_LABEL_WITH_YEAR_DESCRIPTION = "Get all releases from an album from a certain year";
+    public const string CMD_LABEL_SEARCH_DESCRIPTION = "Label name to search for";
+    public const string CMD_LABEL_YEAR_DESCRIPTION = "Year to find releases for";
 
     public async Task LabelCommand(string labelName, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -202,6 +228,15 @@ public class SpotifyService
         //await Context.Channel.SendFileAsync(writer, $"{labelName}-{year}.txt", $"I found {albums.Count} albums");
     }
 
+#endregion
+
+
+#region Artist
+
+    public const string CMD_ARTIST_NAME = "artist";
+    public const string CMD_ARTIST_DESCRIPTION = "Get all releases from an artist";
+    public const string CMD_ARTIST_SEARCH_DESCRIPTION = "Artist to search for";
+
     public async Task ArtistCommand(string artistName, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -241,6 +276,17 @@ public class SpotifyService
             await context.FollowupAsync(sb.ToString());
         }
     }
+
+#endregion
+
+
+#region Peep
+
+    public const string CMD_PEEP_NAME = "peep";
+    public const string CMD_PEEPN_NAME = "peepn";
+    public const string CMD_PEEP_DESCRIPTION = "todo";
+    public const string CMD_PEEPN_DESCRIPTION = "todo";
+    public const string CMD_PEEP_SEARCH_DESCRIPTION = "todo";
 
     public async Task PeepCommand(string labelName, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -334,4 +380,6 @@ public class SpotifyService
             await context.FollowupAsync($"couldnt find anything for {labelName}");
         }
     }
+
+#endregion
 }

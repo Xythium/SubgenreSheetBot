@@ -15,34 +15,37 @@ public class BeatsourceInteractionModule : InteractionModuleBase
         Timeout = 15
     };
 
-    public BeatsourceInteractionModule(BeatsourceService beatsource) { this.beatsource = beatsource; }
+    public BeatsourceInteractionModule(BeatsourceService beatsource)
+    {
+        this.beatsource = beatsource;
+    }
 
-    [SlashCommand("tracks", "Get all tracks from an album")]
-    public async Task Tracks([Summary(nameof(albumUrl), "Album ID to search for")] string albumUrl)
+    [SlashCommand(BeatsourceService.CMD_TRACKS_NAME, BeatsourceService.CMD_TRACKS_DESCRIPTION)]
+    public async Task Tracks([Summary(nameof(albumUrl), BeatsourceService.CMD_TRACKS_SEARCH_DESCRIPTION)]string albumUrl)
     {
         await beatsource.TracksCommand(albumUrl, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("album", "Get all tracks from an album")]
-    public async Task Album([Summary(nameof(albumUrl), "Album ID to search for")] string albumUrl)
+    [SlashCommand(BeatsourceService.CMD_ALBUM_NAME, BeatsourceService.CMD_ALBUM_DESCRIPTION)]
+    public async Task Album([Summary(nameof(albumUrl), BeatsourceService.CMD_ALBUM_SEARCH_DESCRIPTION)]string albumUrl)
     {
         await beatsource.AlbumCommand(albumUrl, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("isrc", "Search by ISRC")]
-    public async Task Isrc([Summary(nameof(isrc), "ISRC to search for")] string isrc)
+    [SlashCommand(BeatsourceService.CMD_ISRC_NAME, BeatsourceService.CMD_ISRC_DESCRIPTION)]
+    public async Task Isrc([Summary(nameof(isrc), BeatsourceService.CMD_ISRC_SEARCH_DESCRIPTION)]string isrc)
     {
         await beatsource.IsrcCommand(isrc, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("label", "Get all releases from a label")]
-    public async Task Label([Summary(nameof(labelName), "Label name to search for")] string labelName)
+    [SlashCommand(BeatsourceService.CMD_LABEL_NAME, BeatsourceService.CMD_LABEL_DESCRIPTION)]
+    public async Task Label([Summary(nameof(labelName), BeatsourceService.CMD_LABEL_SEARCH_DESCRIPTION)]string labelName)
     {
         await beatsource.LabelCommand(labelName, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("labelcached", "Get all releases from a label")]
-    public async Task LabelCached([Summary(nameof(labelName), "Label name to search for")] string labelName)
+    [SlashCommand(BeatsourceService.CMD_LABEL_CACHED_NAME, BeatsourceService.CMD_LABEL_CACHED_DESCRIPTION)]
+    public async Task LabelCached([Summary(nameof(labelName), BeatsourceService.CMD_LABEL_CACHED_SEARCH_DESCRIPTION)]string labelName)
     {
         await beatsource.LabelCachedCommand(labelName, new DynamicContext(Context), false, defaultOptions);
     }
