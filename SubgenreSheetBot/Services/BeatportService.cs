@@ -19,7 +19,7 @@ public class BeatportService
 
     public BeatportService()
     {
-        if (api != null) throw new Exception();
+        if (api != null) throw new Exception("API already initialized");
 
         api = new Beatport(File.ReadAllText("beatport_token"));
     }
@@ -298,7 +298,7 @@ public class BeatportService
         while (query.MoveNext())
         {
             if (query.Current is null)
-                throw new Exception();
+                throw new Exception("Item not loaded");
 
             var album = query.Current.Document;
             if (!album.Label.Name.StartsWith(labelName, StringComparison.OrdinalIgnoreCase))

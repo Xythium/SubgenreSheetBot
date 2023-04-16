@@ -39,10 +39,10 @@ public class Beatsource
 
         var result = Deserialize<BeatsourceLogin>(response.Content, $"login{username}");
         if (result is null)
-            throw new Exception("Login failed");
+            throw new Exception("Beatsource login failed");
 
         if (result.TokenType != "Bearer")
-            throw new InvalidDataException("unknown token type");
+            throw new InvalidDataException("Unknown token type");
 
         bearerToken = result.AccessToken;
         client.AddDefaultHeader("authorization", $"Bearer {bearerToken}");

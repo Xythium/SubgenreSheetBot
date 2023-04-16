@@ -82,14 +82,10 @@ public static class SpotifyUtils
                     });
 
                     if (response.Tracks.Items is null)
-                    {
-                        throw new Exception($"null items {artist.Name}");
-                    }
+                        throw new Exception($"No items where loaded for artist '{artist.Name}'");
 
                     if (!response.Tracks.Items.Any(track => track.Artists.Any(trackArtist => trackArtist.Id == artist.Id)))
-                    {
                         result.Add(artist);
-                    }
                 }
             }
             catch (Exception ex)

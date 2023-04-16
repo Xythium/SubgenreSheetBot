@@ -19,7 +19,7 @@ public class BeatsourceService
 
     public BeatsourceService()
     {
-        if (api != null) throw new Exception();
+        if (api != null) throw new Exception("API already initialized");
 
         api = new Beatsource();
         api.Login(File.ReadAllText("beatsource_user"), File.ReadAllText("beatsource_pass"))
@@ -301,7 +301,7 @@ public class BeatsourceService
         while (query.MoveNext())
         {
             if (query.Current is null)
-                throw new Exception();
+                throw new Exception("Item not loaded");
 
             var album = query.Current.Document;
             if (!album.Label.Name.StartsWith(labelName, StringComparison.OrdinalIgnoreCase))
