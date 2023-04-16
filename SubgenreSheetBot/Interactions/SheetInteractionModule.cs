@@ -36,12 +36,6 @@ public class SheetInteractionModule : InteractionModuleBase
         await sheet.TrackCommand(artist, title, matchOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
-    /*[SlashCommand("trackexact", "Search for a track on the sheet")]
-    public async Task TrackExact([Summary(nameof(search), "Track to search for")]string search)
-    {
-        await sheet.TrackExactCommand(search, new DynamicContext(Context), false, defaultOptions);
-    }*/
-
     [SlashCommand("trackinfoexact", "Search for a track on the sheet")]
     public async Task TrackInfoExact([Summary(nameof(search), "Track to search for")]string search)
     {

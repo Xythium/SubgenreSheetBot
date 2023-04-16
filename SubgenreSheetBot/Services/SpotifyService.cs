@@ -17,12 +17,13 @@ public class SpotifyService
 
     public SpotifyService()
     {
-        if (api != null) throw new Exception();
+        if (api != null)
+            throw new Exception();
 
         var config = SpotifyClientConfig.CreateDefault()
-            .WithAuthenticator(new ClientCredentialsAuthenticator(File.ReadAllText("spotify_id"), File.ReadAllText("spotify_secret")))
-            //.WithDefaultPaginator(new CachingPaginator())
-            .WithRetryHandler(new SimpleRetryHandler());
+                                        .WithAuthenticator(new ClientCredentialsAuthenticator(File.ReadAllText("spotify_id"), File.ReadAllText("spotify_secret")))
+                                        //.WithDefaultPaginator(new CachingPaginator())
+                                        .WithRetryHandler(new SimpleRetryHandler());
 
         api = new SpotifyClient(config);
     }
@@ -75,8 +76,7 @@ public class SpotifyService
         {
             var feature = features.FirstOrDefault(f => f.Uri == track.Uri);
 
-            sb.AppendLine(
-                $"`{album.ReleaseDate},TRUE,FALSE,FALSE,FALSE,?,?,{string.Join(" & ", track.Artists.Select(a => a.Name))},{track.Name},{album.Label},{TimeSpan.FromMilliseconds(track.DurationMs):m':'ss},{(feature is null ? "" : Math.Round(feature.Tempo).ToString())},{(feature is null ? "" : $"{SpotifyUtils.IntToKey(feature.Key)} {SpotifyUtils.IntToMode(feature.Mode)}")},,{track.ExternalIds["isrc"]}`");
+            sb.AppendLine($"`{album.ReleaseDate},TRUE,FALSE,FALSE,FALSE,?,?,{string.Join(" & ", track.Artists.Select(a => a.Name))},{track.Name},{album.Label},{TimeSpan.FromMilliseconds(track.DurationMs):m':'ss},{(feature is null ? "" : Math.Round(feature.Tempo).ToString())},{(feature is null ? "" : $"{SpotifyUtils.IntToKey(feature.Key)} {SpotifyUtils.IntToMode(feature.Mode)}")},,{track.ExternalIds["isrc"]}`");
         }
 
         await context.SendOrAttachment(sb.ToString(), true);
@@ -169,6 +169,12 @@ public class SpotifyService
 
         await foreach (var album in api.Paginate(response.Albums, s => s.Albums))
         {
+            if (string.IsNullOrWhiteSpace(album?.Id))
+            {
+                await context.ErrorAsync("Cannot obtain an album");
+                continue;
+            }
+
             var cacheResult = await GetAlbum(album.Id);
 
             if (labelName.Contains("mau5trap", StringComparison.OrdinalIgnoreCase) && !labelName.Contains("mmj mau5trap", StringComparison.OrdinalIgnoreCase) && cacheResult.Label.Contains("mmj mau5trap", StringComparison.OrdinalIgnoreCase))
@@ -211,9 +217,7 @@ public class SpotifyService
         /*var playlist =await CreateOrUpdatePlaylist(labelName, albums.OrderByDescending(a => a.ReleaseDate)
             .ToArray());*/
 
-        foreach (var album in albums.OrderBy(a => a.Name)
-                     .ThenByDescending(a => a.ReleaseDate)
-                     .ThenBy(a => string.Join(" & ", a.Artists.Select(_ => _.Name))))
+        foreach (var album in albums.OrderBy(a => a.Name).ThenByDescending(a => a.ReleaseDate).ThenBy(a => string.Join(" & ", a.Artists.Select(_ => _.Name))))
         {
             var line = $"{string.Join(" & ", album.Artists.Select(a => $"{a.Name}{(a.Type != "artist" ? $" ({a.Type})" : "")}"))} - {album.Name} ({album.ReleaseDate}) https://open.spotify.com/album/{album.Id}";
             sb.AppendLine(line);
@@ -284,8 +288,7 @@ public class SpotifyService
 
         await foreach (var track in api.Paginate(response.Tracks, s => s.Tracks))
         {
-            var artists = track.Artists.Select(a => a)
-                .ToArray();
+            var artists = track.Artists.Select(a => a).ToArray();
 
             foreach (var artist in artists)
             {
@@ -313,8 +316,7 @@ public class SpotifyService
             await message.ModifyAsync(m => m.Content = $"Checking {searchedArtists.Count} artists & {trackArtists.Count} artists from every track");
         }
 
-        var notFound = searchedArtists.Where(searchedArtist => trackArtists.FirstOrDefault(trackArtist => string.Equals(trackArtist.Name, searchedArtist.Name, StringComparison.OrdinalIgnoreCase)) is null)
-            .ToArray();
+        var notFound = searchedArtists.Where(searchedArtist => trackArtists.FirstOrDefault(trackArtist => string.Equals(trackArtist.Name, searchedArtist.Name, StringComparison.OrdinalIgnoreCase)) is null).ToArray();
 
         var sb = new StringBuilder();
 
