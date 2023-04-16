@@ -15,46 +15,49 @@ public class SpotifyInteractionModule : InteractionModuleBase
         Timeout = 15
     };
 
-    public SpotifyInteractionModule(SpotifyService spotify) { this.spotify = spotify; }
+    public SpotifyInteractionModule(SpotifyService spotify)
+    {
+        this.spotify = spotify;
+    }
 
-    [SlashCommand("tracks", "Get all tracks from an album")]
-    public async Task Tracks([Summary(nameof(url), "Album ID to search for")] string url)
+    [SlashCommand(SpotifyService.CMD_TRACKS_NAME, SpotifyService.CMD_TRACKS_DESCRIPTION)]
+    public async Task Tracks([Summary(nameof(url), SpotifyService.CMD_TRACKS_SEARCH_DESCRIPTION)]string url)
     {
         await spotify.TracksCommand(url, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("album", "Get all tracks from an album")]
-    public async Task Info([Summary(nameof(url), "Album ID to search for")] string url)
+    [SlashCommand(SpotifyService.CMD_ALBUM_NAME, SpotifyService.CMD_ALBUM_DESCRIPTION)]
+    public async Task Info([Summary(nameof(url), SpotifyService.CMD_ALBUM_SEARCH_DESCRIPTION)]string url)
     {
         await spotify.AlbumCommand(url, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("label", "Get all releases from a label")]
-    public async Task Label([Summary(nameof(labelName), "Label name to search for")] string labelName)
+    [SlashCommand(SpotifyService.CMD_LABEL_NAME, SpotifyService.CMD_LABEL_DESCRIPTION)]
+    public async Task Label([Summary(nameof(labelName), SpotifyService.CMD_LABEL_SEARCH_DESCRIPTION)]string labelName)
     {
         await spotify.LabelCommand(labelName, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("label-year", "Get all releases from a label from a certain year")]
-    public async Task Label([Summary(nameof(year), "Year to find releases for")] int year, [Summary(nameof(labelName), "Label name to search for")] string labelName)
+    [SlashCommand(SpotifyService.CMD_LABEL_WITH_YEAR_NAME, SpotifyService.CMD_LABEL_WITH_YEAR_DESCRIPTION)]
+    public async Task Label([Summary(nameof(year), SpotifyService.CMD_LABEL_YEAR_DESCRIPTION)]int year, [Summary(nameof(labelName), SpotifyService.CMD_LABEL_SEARCH_DESCRIPTION)]string labelName)
     {
         await spotify.LabelCommand(labelName, year, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("artist", "Get all releases from an artist")]
-    public async Task Artist([Summary(nameof(artistName), "Artist to search for")] string artistName)
+    [SlashCommand(SpotifyService.CMD_ARTIST_NAME, SpotifyService.CMD_ARTIST_DESCRIPTION)]
+    public async Task Artist([Summary(nameof(artistName), SpotifyService.CMD_ARTIST_SEARCH_DESCRIPTION)]string artistName)
     {
         await spotify.ArtistCommand(artistName, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("peep", "Peep")]
-    public async Task Peep([Summary(nameof(labelName))] string labelName)
+    [SlashCommand(SpotifyService.CMD_PEEP_NAME, SpotifyService.CMD_PEEP_DESCRIPTION)]
+    public async Task Peep([Summary(nameof(labelName), SpotifyService.CMD_PEEP_SEARCH_DESCRIPTION)]string labelName)
     {
         await spotify.PeepCommand(labelName, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("peepn", "Peep No double check")]
-    public async Task PeepNoDoubleCheck([Summary(nameof(labelName))] string labelName)
+    [SlashCommand(SpotifyService.CMD_PEEPN_NAME, SpotifyService.CMD_PEEPN_DESCRIPTION)]
+    public async Task PeepNoDoubleCheck([Summary(nameof(labelName), SpotifyService.CMD_PEEP_SEARCH_DESCRIPTION)]string labelName)
     {
         await spotify.PeepNoDoubleCheckCommand(labelName, new DynamicContext(Context), false, defaultOptions);
     }

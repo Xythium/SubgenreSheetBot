@@ -1,16 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using BeatportApi.Beatport;
-using Common;
-using Common.Beatport;
+﻿using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
-using Google.Apis.Sheets.v4.Data;
-using Raven.Client;
 using SubgenreSheetBot.Services;
 
 namespace SubgenreSheetBot.Interactions;
@@ -25,34 +15,37 @@ public class BeatportInteractionModule : InteractionModuleBase
         Timeout = 15
     };
 
-    public BeatportInteractionModule(BeatportService beatport) { this.beatport = beatport; }
+    public BeatportInteractionModule(BeatportService beatport)
+    {
+        this.beatport = beatport;
+    }
 
-    [SlashCommand("tracks", "Get all tracks from an album")]
-    public async Task Tracks([Summary(nameof(albumUrl), "Album ID to search for")] string albumUrl)
+    [SlashCommand(BeatportService.CMD_TRACKS_NAME, BeatportService.CMD_TRACKS_DESCRIPTION)]
+    public async Task Tracks([Summary(nameof(albumUrl), BeatportService.CMD_TRACKS_SEARCH_DESCRIPTION)]string albumUrl)
     {
         await beatport.TracksCommand(albumUrl, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("album", "Get all tracks from an album")]
-    public async Task Album([Summary(nameof(albumUrl), "Album ID to search for")] string albumUrl)
+    [SlashCommand(BeatportService.CMD_ALBUM_NAME, BeatportService.CMD_ALBUM_DESCRIPTION)]
+    public async Task Album([Summary(nameof(albumUrl), BeatportService.CMD_ALBUM_SEARCH_DESCRIPTION)]string albumUrl)
     {
         await beatport.AlbumCommand(albumUrl, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("isrc", "Search by ISRC")]
-    public async Task Isrc([Summary(nameof(isrc), "ISRC to search for")] string isrc)
+    [SlashCommand(BeatportService.CMD_ISRC_NAME, BeatportService.CMD_ISRC_DESCRIPTION)]
+    public async Task Isrc([Summary(nameof(isrc), BeatportService.CMD_ISRC_SEARCH_DESCRIPTION)]string isrc)
     {
         await beatport.IsrcCommand(isrc, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("label", "Get all releases from a label")]
-    public async Task Label([Summary(nameof(labelName), "Label name to search for")] string labelName)
+    [SlashCommand(BeatportService.CMD_LABEL_NAME, BeatportService.CMD_LABEL_DESCRIPTION)]
+    public async Task Label([Summary(nameof(labelName), BeatportService.CMD_LABEL_SEARCH_DESCRIPTION)]string labelName)
     {
         await beatport.LabelCommand(labelName, new DynamicContext(Context), false, defaultOptions);
     }
 
-    [SlashCommand("labelcached", "Get all releases from a label")]
-    public async Task LabelCached([Summary(nameof(labelName), "Label name to search for")] string labelName)
+    [SlashCommand(BeatportService.CMD_LABEL_CACHED_NAME, BeatportService.CMD_LABEL_CACHED_DESCRIPTION)]
+    public async Task LabelCached([Summary(nameof(labelName), BeatportService.CMD_LABEL_CACHED_SEARCH_DESCRIPTION)]string labelName)
     {
         await beatport.LabelCachedCommand(labelName, new DynamicContext(Context), false, defaultOptions);
     }

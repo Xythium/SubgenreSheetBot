@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Common;
 using Common.AppleMusic;
 using Discord;
-using SpotifyAPI.Web;
 
 namespace SubgenreSheetBot.Services;
 
@@ -13,22 +12,29 @@ public class AppleMusicService
 
     public AppleMusicService()
     {
-        if (api != null) throw new Exception();
+        if (api != null)
+            throw new Exception("API already initialized");
 
         api = new AppleMusic();
     }
 
+#region Album
+
+    public const string CMD_ALBUM_NAME = "album";
+    public const string CMD_ALBUM_DESCRIPTION = "Get all ISRCs from an album";
+    public const string CMD_ALBUM_SEARCH_DESCRIPTION = "Album ID to search for";
+
     public async Task AlbumCommand(string text, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
-        
+
         if (!Uri.TryCreate(text, UriKind.Absolute, out var uri))
         {
             await context.FollowupAsync($"{text} is not a valid URL");
             return;
         }
 
-     
+
         using var session = SubgenreSheetBot.AppleMusicStore.OpenSession();
         var apiCache = await AppleMusicDbUtils.GetAlbumOrCache(api, session, uri);
 
@@ -43,4 +49,6 @@ public class AppleMusicService
         else
             await context.FollowupAsync(embed: embed.Build());
     }
+
+#endregion
 }

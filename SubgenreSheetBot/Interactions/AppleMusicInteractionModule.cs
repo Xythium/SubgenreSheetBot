@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Common;
-using Common.AppleMusic;
+﻿using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using SubgenreSheetBot.Services;
@@ -18,10 +15,13 @@ public class AppleMusicInteractionModule : InteractionModuleBase
         Timeout = 15
     };
 
-    public AppleMusicInteractionModule(AppleMusicService apple) { this.apple = apple; }
-    
-    [SlashCommand("album","Get all ISRCs from an album")]
-    public async Task Album([Summary(nameof(text),"Album ID to search for")] string text)
+    public AppleMusicInteractionModule(AppleMusicService apple)
+    {
+        this.apple = apple;
+    }
+
+    [SlashCommand(AppleMusicService.CMD_ALBUM_NAME, AppleMusicService.CMD_ALBUM_DESCRIPTION)]
+    public async Task Album([Summary(nameof(text), AppleMusicService.CMD_ALBUM_SEARCH_DESCRIPTION)]string text)
     {
         await apple.AlbumCommand(text, new DynamicContext(Context), false, defaultOptions);
     }

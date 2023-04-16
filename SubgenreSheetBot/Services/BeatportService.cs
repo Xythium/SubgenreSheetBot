@@ -19,7 +19,8 @@ public class BeatportService
 
     public BeatportService()
     {
-        if (api != null) throw new Exception("API already initialized");
+        if (api != null)
+            throw new Exception("API already initialized");
 
         api = new Beatport(File.ReadAllText("beatport_token"));
     }
@@ -83,6 +84,12 @@ public class BeatportService
         return releases;
     }
 
+#region Tracks
+
+    public const string CMD_TRACKS_NAME = "tracks";
+    public const string CMD_TRACKS_DESCRIPTION = "Get all tracks from an album";
+    public const string CMD_TRACKS_SEARCH_DESCRIPTION = "Album ID to search for";
+
     public async Task TracksCommand(string albumUrl, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -104,9 +111,7 @@ public class BeatportService
             return;
         }
 
-        var embed = new EmbedBuilder().WithTitle($"{album.ArtistConcat} - {album.Name}")
-            .WithThumbnailUrl(album.Image.DynamicUri.Replace("{w}", "1400")
-                .Replace("{h}", "1400"));
+        var embed = new EmbedBuilder().WithTitle($"{album.ArtistConcat} - {album.Name}").WithThumbnailUrl(album.Image.DynamicUri.Replace("{w}", "1400").Replace("{h}", "1400"));
         var sb = new StringBuilder();
 
         var tracks = await GetTracks(album);
@@ -125,6 +130,14 @@ public class BeatportService
 
         await context.FollowupAsync(sb.ToString(), embed: embed.Build());
     }
+
+#endregion
+
+#region Album
+
+    public const string CMD_ALBUM_NAME = "album";
+    public const string CMD_ALBUM_DESCRIPTION = "Get all tracks from an album";
+    public const string CMD_ALBUM_SEARCH_DESCRIPTION = "Album ID to search for";
 
     public async Task AlbumCommand(string albumUrl, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -170,6 +183,14 @@ public class BeatportService
         }
     }
 
+#endregion
+
+#region ISRC
+
+    public const string CMD_ISRC_NAME = "isrc";
+    public const string CMD_ISRC_DESCRIPTION = "Search by ISRC";
+    public const string CMD_ISRC_SEARCH_DESCRIPTION = "ISRC to search for";
+
     public async Task IsrcCommand(string isrc, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
@@ -182,9 +203,9 @@ public class BeatportService
 
         using var session = SubgenreSheetBot.BeatportStore.OpenSession();
         var results = session.Query<BeatportTrack>("TrackIsrc")
-            .Search(t => t.Isrc, isrc)
-            //.Where(t => t.Isrc == isrc)
-            .ToArray();
+                             .Search(t => t.Isrc, isrc)
+                             //.Where(t => t.Isrc == isrc)
+                             .ToArray();
 
         if (results.Length == 0)
         {
@@ -228,10 +249,7 @@ public class BeatportService
             }
         }
 
-        var embed = new EmbedBuilder().WithTitle($"{isrc}")
-                .WithThumbnailUrl(results[new Random().Next(0, results.Length)]
-                    .Release.Image.DynamicUri.Replace("{w}", "1400")
-                    .Replace("{h}", "1400"))
+        var embed = new EmbedBuilder().WithTitle($"{isrc}").WithThumbnailUrl(results[new Random().Next(0, results.Length)].Release.Image.DynamicUri.Replace("{w}", "1400").Replace("{h}", "1400"))
             /*.AddField("Release Date", album.NewReleaseDate.ToString("yyyy-MM-dd"), true)
             .AddField("Type", album.Type?.Name ?? "None", true)*/;
 
@@ -245,6 +263,14 @@ public class BeatportService
 
         await context.FollowupAsync(embed: embed.Build());
     }
+
+#endregion
+
+#region Label
+
+    public const string CMD_LABEL_NAME = "label";
+    public const string CMD_LABEL_DESCRIPTION = "Get all releases from a label";
+    public const string CMD_LABEL_SEARCH_DESCRIPTION = "Label name to search for";
 
     public async Task LabelCommand(string labelName, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -286,6 +312,14 @@ public class BeatportService
             await context.FollowupAsync(sb.ToString());
         }
     }
+
+#endregion
+
+#region Label Cached (merge)
+
+    public const string CMD_LABEL_CACHED_NAME = "labelcached";
+    public const string CMD_LABEL_CACHED_DESCRIPTION = "Get all releases from a label";
+    public const string CMD_LABEL_CACHED_SEARCH_DESCRIPTION = "Label name to search for";
 
     public async Task LabelCachedCommand(string labelName, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -333,4 +367,6 @@ public class BeatportService
             await context.FollowupAsync(sb.ToString());
         }
     }
+
+#endregion
 }

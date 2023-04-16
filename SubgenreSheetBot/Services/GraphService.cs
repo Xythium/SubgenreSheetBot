@@ -25,7 +25,6 @@ public class GraphService
      */
     public GenreNode ParseTree(IList<ValueRange> valueRanges)
     {
-
         var rootNode = new GenreNode
         {
             Name = "Root",
