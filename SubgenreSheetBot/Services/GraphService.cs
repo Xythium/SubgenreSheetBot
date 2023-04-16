@@ -46,11 +46,11 @@ public class GraphService
             foreach (var row in valueRange.Values)
             {
                 //var depth = row.Count(v => string.IsNullOrWhiteSpace(v as string));
-                var name = row.Last() as string;
-                var depth = row.IndexOf(name);
-
+                var name = row.LastOrDefault() as string;
                 if (string.IsNullOrWhiteSpace(name))
                     throw new InvalidDataException("aishdasd");
+
+                var depth = row.IndexOf(name);
 
                 map[depth] = name;
                 if (!allNodes.TryGetValue(name, out var node))
