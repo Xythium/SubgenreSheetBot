@@ -21,8 +21,8 @@ public class AppleModule : ModuleBase
     }
 
     [Command(AppleMusicService.CMD_ALBUM_NAME), Summary(AppleMusicService.CMD_ALBUM_DESCRIPTION)]
-    public async Task Album([Remainder, Summary(AppleMusicService.CMD_ALBUM_SEARCH_DESCRIPTION)]string text)
+    public async Task Album([Remainder, Summary(AppleMusicService.CMD_ALBUM_SEARCH_DESCRIPTION)]string url)
     {
-        await apple.AlbumCommand(text, new DynamicContext(Context), false, defaultOptions);
+        await apple.AlbumCommand(url, new DynamicContext(Context), false, defaultOptions);
     }
 }

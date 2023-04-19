@@ -88,8 +88,8 @@ public class BeatsourceService
 #region Tracks
 
     public const string CMD_TRACKS_NAME = "tracks";
-    public const string CMD_TRACKS_DESCRIPTION = "Get all tracks from an album";
-    public const string CMD_TRACKS_SEARCH_DESCRIPTION = "Album ID to search for";
+    public const string CMD_TRACKS_DESCRIPTION = "CSV with tracks from a Beatsource album";
+    public const string CMD_TRACKS_SEARCH_DESCRIPTION = "Beatsource album url";
 
     public async Task TracksCommand(string albumUrl, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -137,8 +137,8 @@ public class BeatsourceService
 #region Album
 
     public const string CMD_ALBUM_NAME = "album";
-    public const string CMD_ALBUM_DESCRIPTION = "Get all tracks from an album";
-    public const string CMD_ALBUM_SEARCH_DESCRIPTION = "Album ID to search for";
+    public const string CMD_ALBUM_DESCRIPTION = "Information embed for Beatsource albums";
+    public const string CMD_ALBUM_SEARCH_DESCRIPTION = "Beatsource album url";
 
     public async Task AlbumCommand(string albumUrl, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -189,7 +189,7 @@ public class BeatsourceService
 #region ISRC
 
     public const string CMD_ISRC_NAME = "isrc";
-    public const string CMD_ISRC_DESCRIPTION = "Search by ISRC";
+    public const string CMD_ISRC_DESCRIPTION = "Information embed with tracks matching cached ISRCs";
     public const string CMD_ISRC_SEARCH_DESCRIPTION = "ISRC to search for";
 
     public async Task IsrcCommand(string isrc, DynamicContext context, bool ephemeral, RequestOptions options)
@@ -270,8 +270,8 @@ public class BeatsourceService
 #region Label
 
     public const string CMD_LABEL_NAME = "label";
-    public const string CMD_LABEL_DESCRIPTION = "Get all releases from a label";
-    public const string CMD_LABEL_SEARCH_DESCRIPTION = "Label name to search for";
+    public const string CMD_LABEL_DESCRIPTION = "Text file with all Beatsource releases from a label";
+    public const string CMD_LABEL_SEARCH_DESCRIPTION = "Beatsource label url";
 
     public async Task LabelCommand(string labelName, DynamicContext context, bool ephemeral, RequestOptions options)
     {
@@ -319,7 +319,7 @@ public class BeatsourceService
 #region Label Cached (merge)
 
     public const string CMD_LABEL_CACHED_NAME = "labelcached";
-    public const string CMD_LABEL_CACHED_DESCRIPTION = "Get all releases from a label";
+    public const string CMD_LABEL_CACHED_DESCRIPTION = "Text file with all cached Beatsource releases from a label";
     public const string CMD_LABEL_CACHED_SEARCH_DESCRIPTION = "Label name to search for";
 
     public async Task LabelCachedCommand(string labelName, DynamicContext context, bool ephemeral, RequestOptions options)
