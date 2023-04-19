@@ -21,15 +21,15 @@ public class BeatsourceInteractionModule : InteractionModuleBase
     }
 
     [SlashCommand(BeatsourceService.CMD_TRACKS_NAME, BeatsourceService.CMD_TRACKS_DESCRIPTION)]
-    public async Task Tracks([Summary(nameof(albumUrl), BeatsourceService.CMD_TRACKS_SEARCH_DESCRIPTION)]string albumUrl)
+    public async Task Tracks([Summary(nameof(url), BeatsourceService.CMD_TRACKS_SEARCH_DESCRIPTION)]string url)
     {
-        await beatsource.TracksCommand(albumUrl, new DynamicContext(Context), false, defaultOptions);
+        await beatsource.TracksCommand(url, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand(BeatsourceService.CMD_ALBUM_NAME, BeatsourceService.CMD_ALBUM_DESCRIPTION)]
-    public async Task Album([Summary(nameof(albumUrl), BeatsourceService.CMD_ALBUM_SEARCH_DESCRIPTION)]string albumUrl)
+    public async Task Album([Summary(nameof(url), BeatsourceService.CMD_ALBUM_SEARCH_DESCRIPTION)]string url)
     {
-        await beatsource.AlbumCommand(albumUrl, new DynamicContext(Context), false, defaultOptions);
+        await beatsource.AlbumCommand(url, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand(BeatsourceService.CMD_ISRC_NAME, BeatsourceService.CMD_ISRC_DESCRIPTION)]

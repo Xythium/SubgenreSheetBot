@@ -21,15 +21,15 @@ public class BeatportInteractionModule : InteractionModuleBase
     }
 
     [SlashCommand(BeatportService.CMD_TRACKS_NAME, BeatportService.CMD_TRACKS_DESCRIPTION)]
-    public async Task Tracks([Summary(nameof(albumUrl), BeatportService.CMD_TRACKS_SEARCH_DESCRIPTION)]string albumUrl)
+    public async Task Tracks([Summary(nameof(url), BeatportService.CMD_TRACKS_SEARCH_DESCRIPTION)]string url)
     {
-        await beatport.TracksCommand(albumUrl, new DynamicContext(Context), false, defaultOptions);
+        await beatport.TracksCommand(url, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand(BeatportService.CMD_ALBUM_NAME, BeatportService.CMD_ALBUM_DESCRIPTION)]
-    public async Task Album([Summary(nameof(albumUrl), BeatportService.CMD_ALBUM_SEARCH_DESCRIPTION)]string albumUrl)
+    public async Task Album([Summary(nameof(url), BeatportService.CMD_ALBUM_SEARCH_DESCRIPTION)]string url)
     {
-        await beatport.AlbumCommand(albumUrl, new DynamicContext(Context), false, defaultOptions);
+        await beatport.AlbumCommand(url, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand(BeatportService.CMD_ISRC_NAME, BeatportService.CMD_ISRC_DESCRIPTION)]

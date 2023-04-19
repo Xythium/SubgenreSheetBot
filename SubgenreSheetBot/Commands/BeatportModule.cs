@@ -21,15 +21,15 @@ public class BeatportModule : ModuleBase
     }
 
     [Command(BeatportService.CMD_TRACKS_NAME), Alias("t"), Summary(BeatportService.CMD_TRACKS_DESCRIPTION)]
-    public async Task Tracks([Remainder, Summary(BeatportService.CMD_TRACKS_SEARCH_DESCRIPTION)]string albumUrl)
+    public async Task Tracks([Remainder, Summary(BeatportService.CMD_TRACKS_SEARCH_DESCRIPTION)]string url)
     {
-        await beatport.TracksCommand(albumUrl, new DynamicContext(Context), false, defaultOptions);
+        await beatport.TracksCommand(url, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command(BeatportService.CMD_ALBUM_NAME), Alias("a", "release"), Summary(BeatportService.CMD_ALBUM_DESCRIPTION)]
-    public async Task Album([Remainder, Summary(BeatportService.CMD_ALBUM_SEARCH_DESCRIPTION)]string albumUrl)
+    public async Task Album([Remainder, Summary(BeatportService.CMD_ALBUM_SEARCH_DESCRIPTION)]string url)
     {
-        await beatport.AlbumCommand(albumUrl, new DynamicContext(Context), false, defaultOptions);
+        await beatport.AlbumCommand(url, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command(BeatportService.CMD_ISRC_NAME), Alias("i"), Summary(BeatportService.CMD_ISRC_DESCRIPTION)]

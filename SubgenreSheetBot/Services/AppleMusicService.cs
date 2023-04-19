@@ -21,19 +21,18 @@ public class AppleMusicService
 #region Album
 
     public const string CMD_ALBUM_NAME = "album";
-    public const string CMD_ALBUM_DESCRIPTION = "Get all ISRCs from an album";
-    public const string CMD_ALBUM_SEARCH_DESCRIPTION = "Album ID to search for";
+    public const string CMD_ALBUM_DESCRIPTION = "Information embed for Apple Music albums";
+    public const string CMD_ALBUM_SEARCH_DESCRIPTION = "Apple Music album url";
 
-    public async Task AlbumCommand(string text, DynamicContext context, bool ephemeral, RequestOptions options)
+    public async Task AlbumCommand(string search, DynamicContext context, bool ephemeral, RequestOptions options)
     {
         await context.DeferAsync(ephemeral, options);
 
-        if (!Uri.TryCreate(text, UriKind.Absolute, out var uri))
+        if (!Uri.TryCreate(search, UriKind.Absolute, out var uri))
         {
-            await context.FollowupAsync($"{text} is not a valid URL");
+            await context.FollowupAsync($"{search} is not a valid URL");
             return;
         }
-
 
         using var session = SubgenreSheetBot.AppleMusicStore.OpenSession();
         var apiCache = await AppleMusicDbUtils.GetAlbumOrCache(api, session, uri);
