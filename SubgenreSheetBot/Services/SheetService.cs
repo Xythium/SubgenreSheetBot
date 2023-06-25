@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
@@ -73,41 +73,113 @@ public class SheetService
         {
             var now = DateTime.UtcNow;
 
-            await GetValuesFromSheet(context);
-            await GetGenreTreeFromSheet(context);
-
             mostCommonSubgenres = null;
             mostCommonArtists = null;
+            GenreNode.All = new List<GenreNode>();
+
+            await GetValuesFromSheet(context);
 
             _lastTime = DateTime.UtcNow;
             Log.Information("Cache revalidation took {Milliseconds}ms", DateTime.UtcNow.Subtract(now).TotalMilliseconds);
         }
     }
 
+    private static GenreNode? rootNode;
+
     private async Task GetValuesFromSheet(DynamicContext context)
     {
         _entries = new List<Entry>();
-        var values = await GetEntriesFromSheets(context, "'2020-2024'!A2:O", "'2015-2019'!A2:O", "'2010-2014'!A2:O", "'Pre-2010s'!A2:O", "'Genreless'!A2:O");
+        var values = await GetEntriesFromSheets(context, "'2020-2024'!A2:O", "'2015-2019'!A2:O", "'2010-2014'!A2:O", "'Pre-2010s'!A2:O", "'Genreless'!A2:O", "'Genre Colors'!A2:B", "'Genre Tree'!A2:E");
         if (values != null)
             _entries.AddRange(values);
     }
 
-    private static GenreNode? rootNode;
-
-    private async Task GetGenreTreeFromSheet(DynamicContext context)
+    private async Task<List<Entry>?> GetEntriesFromSheets(DynamicContext context, params string[] ranges)
     {
         var request = api.Spreadsheets.Values.BatchGet(SPREADSHEET_ID);
-        request.Ranges = "'Genre Tree'!A2:E";
+        request.Ranges = ranges;
         var response = await request.ExecuteAsync();
 
         var valueRanges = response.ValueRanges;
         if (valueRanges is null)
-            throw new InvalidDataException("Values not loaded");
-        if (valueRanges.Count < 1)
-            throw new InvalidDataException("No values gotten");
+            return null;
+        if (valueRanges.Count == 0)
+            return null;
 
-        rootNode = graphService.ParseTree(valueRanges);
-        File.WriteAllText("tree.json", JsonConvert.SerializeObject(rootNode, Formatting.Indented));
+        var entries = new List<Entry>();
+
+        foreach (var range in valueRanges)
+        {
+            if (range.Values is null)
+                continue;
+            if (range.Values.Count == 0)
+                continue;
+
+            var sheet = range.Range;
+            var index = sheet.IndexOf("!", StringComparison.Ordinal);
+            if (index >= 0)
+                sheet = sheet[..index];
+
+            if (sheet.StartsWith("'Genre Tree'"))
+            {
+                rootNode = graphService.ParseTree(range.Values, _genreColors);
+                File.WriteAllText("tree.json", JsonConvert.SerializeObject(rootNode, Formatting.Indented));
+            }
+            else if (sheet.StartsWith("'Genre Colors"))
+            {
+                _genreColors.Clear();
+                foreach (var row in range.Values)
+                {
+                    var genre = row[0] as string;
+                    if (string.IsNullOrWhiteSpace(genre))
+                    {
+                        Log.Error("genre is null");
+                        continue;
+                    }
+
+                    var hex = row[1] as string;
+                    if (string.IsNullOrWhiteSpace(hex))
+                    {
+                        Log.Error("hex is null");
+                        continue;
+                    }
+
+                    if (hex.StartsWith("#"))
+                        hex = hex[1..];
+
+                    if (!uint.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var hexColor))
+                    {
+                        Log.Error("number is not a color");
+                        continue;
+                    }
+
+                    var color = new Color(hexColor);
+                    _genreColors.Add(genre, color);
+                }
+            }
+            else
+            {
+                foreach (var row in range.Values)
+                {
+                    try
+                    {
+                        if (Entry.TryParse(row, sheet, out var entry))
+                        {
+                            entries.Add(entry);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        await context.FollowupAsync($"parsing error at ({row.Count}) {string.Join(", ", row)}: {ex}");
+                        return null;
+                    }
+                }
+            }
+
+
+        }
+
+        return entries.Where(e => e.Genre != "Release").ToList();
     }
 
     private static readonly Dictionary<string, Color> _genreColors = new()
@@ -728,53 +800,6 @@ public class SheetService
                     .AddField("Genres", BuildTopGenreList(tracks.ToArray(), 5).ToString(), true);
 
         await context.FollowupAsync(embed: embed.Build());
-    }
-
-    private async Task<List<Entry>?> GetEntriesFromSheets(DynamicContext context, params string[] ranges)
-    {
-        var request = api.Spreadsheets.Values.BatchGet(SPREADSHEET_ID);
-        request.Ranges = ranges;
-        var response = await request.ExecuteAsync();
-
-        var valueRanges = response.ValueRanges;
-        if (valueRanges is null)
-            return null;
-        if (valueRanges.Count == 0)
-            return null;
-
-        var entries = new List<Entry>();
-
-        foreach (var range in valueRanges)
-        {
-            //Log.Verbose($"{range.Range} | {range.ETag} | {range.MajorDimension}");
-            if (range.Values is null)
-                continue;
-            if (range.Values.Count == 0)
-                continue;
-
-            var sheet = range.Range;
-            var index = sheet.IndexOf("!", StringComparison.Ordinal);
-            if (index >= 0)
-                sheet = sheet.Substring(0, index);
-
-            foreach (var row in range.Values)
-            {
-                try
-                {
-                    if (Entry.TryParse(row, sheet, out var entry))
-                    {
-                        entries.Add(entry);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    await context.FollowupAsync($"at ({row.Count}) {string.Join(", ", row)}: {ex}");
-                    return null;
-                }
-            }
-        }
-
-        return entries.Where(e => e.Genre != "Release").ToList();
     }
 
 
@@ -1724,32 +1749,96 @@ Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
         public int MaxSubgenreDepth { get; set; }
     }
 
-    public async Task CollabGraphCommand(CollabGraphCommandOptions graphOptions, DynamicContext context, bool ephemeral, RequestOptions options)
+    public async Task CollabGraphCommand(CollabGraphCommandOptions graphOptions, MatchOptions matchOptions, DynamicContext context, bool ephemeral, RequestOptions options)
     {
+        if (graphOptions.MaxSubgenreDepth < 1)
+        {
+            await context.ErrorAsync("Depth should be at least 1");
+            return;
+        }
+
         await context.DeferAsync(ephemeral, options);
         await CheckIfCacheExpired(context);
 
-        var tracks = GetAllTracksByArtist(graphOptions.StartArtist, new MatchOptions
-        {
-            MatchMode = MatchMode.Exact
-        });
+        var tracks = GetAllTracksByArtist(graphOptions.StartArtist, matchOptions, false);
         if (tracks.Count == 0)
         {
             await context.FollowupAsync("No tracks by artist");
             return;
         }
 
-        var artists = tracks.SelectMany(t => t.ActualArtists).Distinct().ToArray();
-        Log.Verbose("artists: {A}", string.Join(", ", artists));
+        var artists = tracks.SelectMany(t => t.ActualArtists).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         if (artists.Length < 2)
         {
             await context.FollowupAsync("No collaborations");
             return;
         }
 
-        var imageBytes = graphService.RenderCollabs(artists, graphOptions);
-        var image = new MemoryStream(imageBytes);
-        await context.FollowupWithFileAsync(image, $"{graphOptions.StartArtist}.png");
+        var node = new CollabNode
+        {
+            Name = graphOptions.StartArtist,
+            IsRoot = true
+        };
+
+        AddArtistsToNode(artists, node, graphOptions.MaxSubgenreDepth, new Dictionary<string, CollabNode>(StringComparer.OrdinalIgnoreCase)
+        {
+            {
+                graphOptions.StartArtist, node
+            }
+        });
+
+        try
+        {
+            var imageBytes = graphService.RenderCollabs(node, graphOptions);
+            var image = new MemoryStream(imageBytes);
+            await context.FollowupWithFileAsync(image, $"{graphOptions.StartArtist}.png");
+        }
+        catch (Exception e)
+        {
+            await context.ErrorAsync(e.ToString());
+        }
+
+    }
+
+    private static void AddArtistsToNode(string[] artists, CollabNode node, int depth, Dictionary<string, CollabNode> map)
+    {
+        if (depth < 1)
+            return;
+
+        foreach (var artist in artists)
+        {
+            if (string.Equals(artist, node.Name, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var existed = map.TryGetValue(artist, out var collab);
+            if (!existed)
+            {
+                collab = new CollabNode
+                {
+                    Name = artist
+                };
+
+                map.Add(artist, collab);
+
+                if (depth > 1)
+                {
+                    var tracks = GetAllTracksByArtist(artist, new MatchOptions
+                    {
+                        MatchMode = MatchMode.Exact
+                    });
+                    if (tracks.Count == 0)
+                        continue;
+
+                    var collabs = tracks.SelectMany(t => t.ActualArtists).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+                    if (collabs.Length < 2)
+                        continue;
+
+                    AddArtistsToNode(collabs, collab!, depth - 1, map);
+                }
+            }
+
+            node.AddSubgenre(collab!);
+        }
     }
 
 #endregion
@@ -1867,20 +1956,18 @@ Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
 #endregion
 }
 
-public class GenreNode
+public class CollabNode
 {
     public string Name { get; init; }
 
     public bool IsRoot { get; init; }
 
-    public bool IsMeta { get; set; }
-
     [JsonIgnore]
-    public GenreNode? Parent { get; set; }
+    public CollabNode? Parent { get; set; }
 
-    public List<GenreNode> Subgenres { get; set; } = new List<GenreNode>();
+    public List<CollabNode> SubNodes { get; set; } = new List<CollabNode>();
 
-    public void AddSubgenre(GenreNode node)
+    public void AddSubgenre(CollabNode node)
     {
         /*if (node.Parent is not null)
         {
@@ -1888,23 +1975,21 @@ public class GenreNode
                 throw new Exception("Subgenre already added to this parent");
             throw new Exception("Parent already set");
         }*/
+        foreach (var subNode in SubNodes)
+            if (string.Equals(subNode.Name, node.Name, StringComparison.OrdinalIgnoreCase))
+                return;
 
         node.Parent = this;
-        Subgenres.Add(node);
+        SubNodes.Add(node);
     }
 
-    public bool ShouldSerializeSubgenres()
+    public bool ShouldSerializeSubNodes()
     {
-        return Subgenres.Count > 0;
+        return SubNodes.Count > 0;
     }
 
     public bool ShouldSerializeIsRoot()
     {
         return IsRoot;
-    }
-
-    public bool ShouldSerializeIsMeta()
-    {
-        return IsMeta;
     }
 }
