@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Discord;
 using GraphVizNet;
+using Raven.Client.Linq;
 using Serilog;
 
 namespace SubgenreSheetBot.Services;
@@ -46,12 +47,40 @@ public class GraphService
 
             var depth = row.IndexOf(name);
 
-            var index = name.IndexOf('[');
-            if (index >= 0)
+            var subtextIndex = name.IndexOf('(');
+            if (subtextIndex >= 0)
+            {
+                var endIndex = name.IndexOf(')');
+                if (endIndex < 0)
+                {
+                    Log.Error("error with {Genre}", name);
+                    endIndex = name.Length;
+                }
+                var subtext = name[(subtextIndex + 1)..endIndex];
+
+                if (subtext.StartsWith("also under"))
+                    name = name.Substring(0, subtextIndex);
+                else if (subtext.StartsWith("mostly under"))
+                    name = name.Substring(0, subtextIndex);
+                else if (subtext.StartsWith("sometimes under"))
+                    name = name.Substring(0, subtextIndex);
+                else if (subtext.StartsWith("always under"))
+                    name = name.Substring(0, subtextIndex);
+                else if (subtext.StartsWith("see category"))
+                    name = name.Substring(0, subtextIndex);
+                else
+                    Log.Information("unknown subtext: {Genre}", name);
+            }
+
+            subtextIndex = name.IndexOf('[');
+            if (subtextIndex >= 0)
             {
                 var endIndex = name.IndexOf(']');
-                if (name[(index + 1)..endIndex] == "Meta")
-                    name = name.Substring(0, index);
+                var subtext = name[(subtextIndex + 1)..endIndex];
+                if (subtext == "Meta")
+                    name = name.Substring(0, subtextIndex);
+                else
+                    Log.Information("unknown subtext: {Genre}", name);
             }
 
             name = name.Trim();

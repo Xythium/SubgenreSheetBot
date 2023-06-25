@@ -192,6 +192,12 @@ public class SheetInteractionModule : InteractionModuleBase
         };
         await sheet.QueryCommand(arguments, new DynamicContext(Context), false, defaultOptions);
     }
+    
+    [SlashCommand(SheetService.CMD_FOOBAR_NAME, SheetService.CMD_FOOBAR_DESCRIPTION)]
+    public async Task Foobar()
+    {
+        await sheet.FoobarCommand(new DynamicContext(Context), false, defaultOptions);
+    }
 
 
     /*[SlashCommand("mbsubmit", "todo")]
