@@ -143,15 +143,23 @@ public class SheetInteractionModule : InteractionModuleBase
 
     [SlashCommand(SheetService.CMD_COLLAB_GRAPH_NAME, SheetService.CMD_COLLAB_GRAPH_DESCRIPTION)]
     public async Task CollabGraph([Summary(nameof(artist), SheetService.CMD_COLLAB_GRAPH_SEARCH_DESCRIPTION)]string artist,
-                                  [Summary(nameof(engine), SheetService.CMD_COLLAB_GRAPH_ENGINE_DESCRIPTION), Choice("dot", "dot"), Choice("neato", "neato"), Choice("force-directed placement", "fdp"), Choice("scalable force-directed placement", "sfdp"), Choice("circo", "circo"), Choice("twopi", "twopi"), Choice("nop", "nop"), Choice("osage", "osage"), Choice("patchwork", "patchwork")]string engine = "dot")
+                                  [Summary(nameof(maxDepth), "todo")]int maxDepth = 1,
+                                  [Summary(nameof(engine), SheetService.CMD_COLLAB_GRAPH_ENGINE_DESCRIPTION), Choice("dot", "dot"), Choice("neato", "neato"), Choice("force-directed placement", "fdp"), Choice("scalable force-directed placement", "sfdp"), Choice("circo", "circo"), Choice("twopi", "twopi"), Choice("nop", "nop"), Choice("osage", "osage"), Choice("patchwork", "patchwork")]string engine = "dot",
+                                  [Summary(nameof(matchMode), SheetService.CMD_ARTIST_MATCH_DESCRIPTION)]MatchMode matchMode = MatchMode.Exact,
+                                  [Summary(nameof(threshold), SheetService.CMD_ARTIST_THRESHOLD_DESCRIPTION)]int threshold = 80)
     {
         var graphOptions = new SheetService.CollabGraphCommandOptions
         {
             StartArtist = artist,
             Engine = engine,
-            MaxSubgenreDepth = 1
+            MaxSubgenreDepth = maxDepth
         };
-        await sheet.CollabGraphCommand(graphOptions, new DynamicContext(Context), false, defaultOptions);
+        var matchOptions = new SheetService.MatchOptions
+        {
+            MatchMode = matchMode,
+            Threshold = threshold
+        };
+        await sheet.CollabGraphCommand(graphOptions, matchOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
 
