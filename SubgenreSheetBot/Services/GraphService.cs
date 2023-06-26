@@ -56,6 +56,7 @@ public class GraphService
                     Log.Error("error with {Genre}", name);
                     endIndex = name.Length;
                 }
+
                 var subtext = name[(subtextIndex + 1)..endIndex];
 
                 if (subtext.StartsWith("also under"))
@@ -114,7 +115,10 @@ public class GraphService
             parent.AddSubgenre(node);
             if (node.IsMeta)
                 meta = node;
-            node.Color = genreColors[meta.Name];
+            if (!genreColors.TryGetValue(meta.Name, out var color))
+                color = Color.Default;
+
+            node.Color = color;
 
             //Log.Verbose("{Depth} null -> {Node} node of {Parent} // [{Map}]", depth, name, parent.Name, string.Join(", ", map));
         }
