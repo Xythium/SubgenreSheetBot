@@ -2077,10 +2077,10 @@ $set_style(back,$rgb(0,0,0),$rgb(50,50,50))
     $if($or($stricmp($meta(genre,0),Miscellaneous?),$stricmp($meta(genre,0),Christmas Music?),$stricmp($meta(genre,0),Comedic Skit?),$stricmp($meta(genre,0),Film Soundtrack?),$stricmp($meta(genre,0),Hymn?),$stricmp($meta(genre,0),Interlude?),$stricmp($meta(genre,0),Intro?),$stricmp($meta(genre,0),Mashup?),$stricmp($meta(genre,0),Meme Music?),$stricmp($meta(genre,0),Musical Theatre?),$stricmp($meta(genre,0),Nature Recordings?),$stricmp($meta(genre,0),Novelty?),$stricmp($meta(genre,0),Outro?),$stricmp($meta(genre,0),Sea Shanties?),$stricmp($meta(genre,0),Seapunk?),$stricmp($meta(genre,0),Sound Effect?),$stricmp($meta(genre,0),Spoken Word?),$stricmp($meta(genre,0),Poetry?),$stricmp($meta(genre,0),Beat Poetry?),$stricmp($meta(genre,0),Speeches?),$stricmp($meta(genre,0),Television Music?),$stricmp($meta(genre,0),Video Game Music?),$stricmp($meta(genre,0),Vocaloid?),$stricmp($meta(genre,0),Mix?)),$set_style(text,$rgb(0,0,0),$rgb(0,0,0)))
     $if($or($stricmp($meta(genre,0),Miscellaneous?),$stricmp($meta(genre,0),Christmas Music?),$stricmp($meta(genre,0),Comedic Skit?),$stricmp($meta(genre,0),Film Soundtrack?),$stricmp($meta(genre,0),Hymn?),$stricmp($meta(genre,0),Interlude?),$stricmp($meta(genre,0),Intro?),$stricmp($meta(genre,0),Mashup?),$stricmp($meta(genre,0),Meme Music?),$stricmp($meta(genre,0),Musical Theatre?),$stricmp($meta(genre,0),Nature Recordings?),$stricmp($meta(genre,0),Novelty?),$stricmp($meta(genre,0),Outro?),$stricmp($meta(genre,0),Sea Shanties?),$stricmp($meta(genre,0),Seapunk?),$stricmp($meta(genre,0),Sound Effect?),$stricmp($meta(genre,0),Spoken Word?),$stricmp($meta(genre,0),Poetry?),$stricmp($meta(genre,0),Beat Poetry?),$stricmp($meta(genre,0),Speeches?),$stricmp($meta(genre,0),Television Music?),$stricmp($meta(genre,0),Video Game Music?),$stricmp($meta(genre,0),Vocaloid?),$stricmp($meta(genre,0),Mix?)),$set_style(back,$rgb(185,185,185)))
     $if(_is_group,$set_style(back,$rgb(100,100,100),$rgb(50,50,50)),$set_style(text,$rgb(255,255,255)))
-    
+
      */
-    
-    
+
+
     // extras:
     // acid trap
     // 7-step
@@ -2102,7 +2102,7 @@ $set_style(back,$rgb(0,0,0),$rgb(50,50,50))
         {
             Log.Error(e, "Error");
         }
-   
+
 
         var meta = FoobarFunction("meta", "genre", 0);
 
@@ -2123,7 +2123,7 @@ $set_style(back,$rgb(0,0,0),$rgb(50,50,50))
                                     if (g.Name.Contains(" & "))
                                         return $"{compare(SafeString(g.Name), meta)}{compare(SafeString(g.Name.Replace(" & ", " and ")), meta)}";
                                     if (g.Name.Contains("R&B"))
-                                        return $"{compare(SafeString(g.Name), meta)}{compare(SafeString(g.Name.Replace("R&B", "RnB")), meta)}"; 
+                                        return $"{compare(SafeString(g.Name), meta)}{compare(SafeString(g.Name.Replace("R&B", "RnB")), meta)}";
                                     return $"{compare(SafeString(g.Name), meta)}";
                                 })
                                 .ToArray<object>();
@@ -2133,7 +2133,15 @@ $set_style(back,$rgb(0,0,0),$rgb(50,50,50))
             //sb.AppendLine(@if(FoobarFunction("or", compares), FoobarFunction("set_style", "text", rgb(textColor.R, textColor.G, textColor.B), rgb(textColor.R, textColor.G, textColor.B))));
             sb.AppendLine(@if(FoobarFunction("or", compares), FoobarFunction("set_style", "back", rgb(color.R, color.G, color.B))));
 
-            compares = group.Select(g => $"{compare(SafeString(g.Name + "?"), meta)}").ToArray<object>();
+            compares = group.Select(g =>
+                            {
+                                if (g.Name.Contains(" & "))
+                                    return $"{compare(SafeString(g.Name), meta)}{compare(SafeString(g.Name.Replace(" & ", " and ") + "?"), meta)}";
+                                if (g.Name.Contains("R&B"))
+                                    return $"{compare(SafeString(g.Name), meta)}{compare(SafeString(g.Name.Replace("R&B", "RnB") + "?"), meta)}";
+                                return $"{compare(SafeString(g.Name + "?"), meta)}";
+                            })
+                            .ToArray<object>();
             //sb.AppendLine(@if(FoobarFunction("or", compares), FoobarFunction("set_style", "text", rgb(textColor.R, textColor.G, textColor.B), rgb(textColor.R, textColor.G, textColor.B))));
             sb.AppendLine(@if(FoobarFunction("or", compares), FoobarFunction("set_style", "back", rgb(color.R, color.G, color.B))));
         }
