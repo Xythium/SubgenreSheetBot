@@ -190,8 +190,9 @@ public class SpotifyService
         labelName = labelName.Replace("\"", "");
         var response = await api.Search.Item(new SearchRequest(SearchRequest.Types.Album, $"label:\"{labelName}\" year:{year}"));
 
-        var albums = new List<FullAlbum>();
+        var albums = new Dictionary<string, SimpleAlbum>();
         var sb = new StringBuilder();
+        var missing = 0;
 
         await foreach (var album in api.Paginate(response.Albums, s => s.Albums))
         {
@@ -206,15 +207,24 @@ public class SpotifyService
             if (labelName.Contains("mau5trap", StringComparison.OrdinalIgnoreCase) && !labelName.Contains("mmj mau5trap", StringComparison.OrdinalIgnoreCase) && cacheResult.Label.Contains("mmj mau5trap", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            albums.Add(cacheResult);
+            if (!albums.TryAdd(album.Id, album))
+                missing++;
+            
             if (albums.Count == 2000)
                 break;
         }
 
-        foreach (var album in albums.OrderByDescending(a => a.ReleaseDate))
+        foreach (var kvp in albums.OrderByDescending(a => a.Value.ReleaseDate))
         {
+            var album = kvp.Value;
             var line = $"{string.Join(" & ", album.Artists.Select(a => a.Name))} - {album.Name} ({album.ReleaseDate})";
             sb.AppendLine(line);
+        }
+
+        if (missing > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"{missing} releases may be missing");
         }
 
         if (sb.Length < 1)
