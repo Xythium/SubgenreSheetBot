@@ -11,11 +11,23 @@ namespace Common.Spotify;
 
 public class CachingPaginator : IPaginator
 {
-    public Task<IList<T>> PaginateAll<T>(IPaginatable<T> firstPage, IAPIConnector connector) { throw new NotImplementedException(); }
+    public Task<IList<T>> PaginateAll<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector, CancellationToken cancel = new CancellationToken())
+    {
+        throw new NotImplementedException();
+    }
 
-    public Task<IList<T>> PaginateAll<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector) { throw new NotImplementedException(); }
+    public Task<IList<T>> PaginateAll<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector)
+    {
+        throw new NotImplementedException();
+    }
 
-    public async IAsyncEnumerable<T> Paginate<T>(IPaginatable<T> firstPage, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new())
+    public Task<IList<T>> PaginateAll<T>(IPaginatable<T> firstPage, IAPIConnector connector, CancellationToken cancel = new CancellationToken())
+    {
+        throw new NotImplementedException();
+    }
+
+
+    public async IAsyncEnumerable<T> Paginate<T>(IPaginatable<T> firstPage, IAPIConnector connector, [EnumeratorCancellation]CancellationToken cancel = new())
     {
         if (firstPage is null)
             throw new ArgumentNullException(nameof(firstPage));
@@ -31,8 +43,7 @@ public class CachingPaginator : IPaginator
 
         while (!string.IsNullOrWhiteSpace(page.Next))
         {
-            page = await connector.Get<Paging<T>>(new Uri(page.Next, UriKind.Absolute))
-                .ConfigureAwait(false);
+            page = await connector.Get<Paging<T>>(new Uri(page.Next, UriKind.Absolute)).ConfigureAwait(false);
 
             foreach (var item in page.Items!)
             {
@@ -41,7 +52,7 @@ public class CachingPaginator : IPaginator
         }
     }
 
-    public async IAsyncEnumerable<T> Paginate<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector, [EnumeratorCancellation] CancellationToken cancel = new())
+    public async IAsyncEnumerable<T> Paginate<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector, [EnumeratorCancellation]CancellationToken cancel = new())
     {
         if (firstPage is null)
             throw new ArgumentNullException(nameof(firstPage));

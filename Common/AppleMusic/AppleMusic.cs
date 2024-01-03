@@ -5,7 +5,6 @@ using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RestSharp;
-using SpotifyAPI.Web;
 
 namespace Common.AppleMusic;
 

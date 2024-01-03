@@ -29,14 +29,14 @@ public class SubgenreSheetBot : Bot
     protected override void setupServices()
     {
         BeatportStore.GetStore().Conventions.MaxNumberOfRequestsPerSession = 200;
-        serviceCollection = serviceCollection
-            .AddSingleton<GraphService>()
-            .AddSingleton<MusicBrainzService>()
-            .AddSingleton<BeatportService>()
-            .AddSingleton<AppleMusicService>()
-            .AddSingleton<BeatsourceService>()
-            .AddSingleton<SpotifyService>()
-            .AddSingleton<SheetService>();
+        
+        serviceCollection = serviceCollection.AddSingleton<GraphService>()
+                                             .AddSingleton<MusicBrainzService>()
+                                             .AddSingleton<BeatportService>()
+                                             .AddSingleton<AppleMusicService>()
+                                             .AddSingleton<BeatsourceService>()
+                                             .AddSingleton<SpotifyService>()
+                                             .AddSingleton<SheetService>();
         base.setupServices();
     }
 }
