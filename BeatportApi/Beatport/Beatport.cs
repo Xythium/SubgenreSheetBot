@@ -7,7 +7,7 @@ using RestSharp;
 
 namespace BeatportApi.Beatport;
 
-public class Beatport
+/*public class Beatport
 {
     private string _bearerToken;
 
@@ -24,8 +24,9 @@ public class Beatport
     {
         var client = new RestClient();
 
-        var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.Get);
+        var request = new RestRequest($"https://api.beatport.com/v4/catalog/releases/?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.Get);
         request.AddHeader("origin", "www.beatport.com");
+        request.AddHeader("Authorization", "Bearer qXymPpVVXr7q2VnHs2OF3u6ryw5IdJ");
         var response = await client.ExecuteAsync(request);
 
         var result = Deserialize<BeatportResponse<BeatportRelease>>(response.Content, $"label{labelId}");
@@ -39,8 +40,9 @@ public class Beatport
     {
         var client = new RestClient();
 
-        var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.Get);
+        var request = new RestRequest($"https://api.beatport.com/v4/catalog/tracks/?label_id={labelId}&per_page={itemsPerPage}&page={page}", Method.Get);
         request.AddHeader("origin", "www.beatport.com");
+        request.AddHeader("Authorization", "Bearer qXymPpVVXr7q2VnHs2OF3u6ryw5IdJ");
         var response = await client.ExecuteAsync(request);
 
         var result = Deserialize<BeatportResponse<BeatportTrack>>(response.Content, $"label{labelId}");
@@ -106,8 +108,9 @@ public class Beatport
     {
         var client = new RestClient();
 
-        var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases/{releaseId}/tracks/?per_page={itemsPerPage}&page={page}", Method.Get);
+        var request = new RestRequest($"https://api.beatport.com/v4/catalog/releases/{releaseId}/tracks/?per_page={itemsPerPage}&page={page}", Method.Get);
         request.AddHeader("origin", "www.beatport.com");
+        request.AddHeader("Authorization", "Bearer qXymPpVVXr7q2VnHs2OF3u6ryw5IdJ");
         var response = await client.ExecuteAsync(request);
 
         var result = Deserialize<BeatportResponse<BeatportTrack>>(response.Content, $"release{releaseId}");
@@ -119,8 +122,9 @@ public class Beatport
     {
         var client = new RestClient();
 
-        var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/releases/{releaseId}", Method.Get);
+        var request = new RestRequest($"https://api.beatport.com/v4/catalog/releases/{releaseId}/", Method.Get);
         request.AddHeader("origin", "www.beatport.com");
+        request.AddHeader("Authorization", "Bearer qXymPpVVXr7q2VnHs2OF3u6ryw5IdJ");
         var response = await client.ExecuteAsync(request);
 
         var result = Deserialize<BeatportRelease>(response.Content, $"release{releaseId}");
@@ -131,8 +135,9 @@ public class Beatport
     public async Task<BeatportTrack?> GetTrackByTrackId(int trackId)
     {
         var client = new RestClient();
-        var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks/{trackId}", Method.Get);
+        var request = new RestRequest($"https://api.beatport.com/v4/catalog/tracks/{trackId}/", Method.Get);
         request.AddHeader("origin", "www.beatport.com");
+        request.AddHeader("Authorization", "Bearer qXymPpVVXr7q2VnHs2OF3u6ryw5IdJ");
         var response = await client.ExecuteAsync(request);
 
         var result = Deserialize<BeatportTrack>(response.Content, $"track{trackId}");
@@ -143,10 +148,11 @@ public class Beatport
     public async Task<BeatportTrack> GetTrackByTrackId(string trackId)
     {
         var client = new RestClient();
-        var request = new RestRequest($"https://www.beatport.com/api/v4/catalog/tracks/{trackId}", Method.Get);
+        var request = new RestRequest($"https://api.beatport.com/v4/catalog/tracks/{trackId}/", Method.Get);
         request.AddHeader("origin", "www.beatport.com");
+        request.AddHeader("Authorization", "Bearer qXymPpVVXr7q2VnHs2OF3u6ryw5IdJ");
         var response = await client.ExecuteAsync(request);
 
         return JsonConvert.DeserializeObject<BeatportTrack>(response.Content, serializerSettings);
     }
-}
+}*/

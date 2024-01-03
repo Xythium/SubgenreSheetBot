@@ -1,5 +1,5 @@
 ﻿using System;
-using BeatportApi.Beatport;
+using Common.Beatport.Api;
 
 namespace Common;
 

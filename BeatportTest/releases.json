@@ -1,0 +1,94 @@
+﻿[
+  {
+    "Artists": [
+      {
+        "Id": 370,
+        "Image": {
+          "DynamicUri": "https://geo-media.beatport.com/image_size/{w}x{h}/48553670-c445-4ad3-b83a-14d2681e305d.jpg",
+          "Id": "37841",
+          "Uri": "https://geo-media.beatport.com/image_size/590x404/48553670-c445-4ad3-b83a-14d2681e305d.jpg"
+        },
+        "Name": "Kaskade",
+        "Slug": "kaskade",
+        "Url": "https://api.beatport.com/v4/catalog/artists/370/"
+      },
+      {
+        "Id": 26182,
+        "Image": {
+          "DynamicUri": "https://geo-media.beatport.com/image_size/{w}x{h}/6e98ef38-e4d2-42d2-8c0f-6fcaed5f2050.jpg",
+          "Id": "26070287",
+          "Uri": "https://geo-media.beatport.com/image_size/590x404/6e98ef38-e4d2-42d2-8c0f-6fcaed5f2050.jpg"
+        },
+        "Name": "deadmau5",
+        "Slug": "deadmau5",
+        "Url": "https://api.beatport.com/v4/catalog/artists/26182/"
+      }
+    ],
+    "ArtistConcat": "Kaskade x deadmau5",
+    "BpmRange": {
+      "Min": 126,
+      "Max": 126
+    },
+    "CatalogNumber": "MAU50555BP1",
+    "Description": null,
+    "IsEnabled": true,
+    "EncodedDate": "2023-06-28T20:41:44.0000000",
+    "IsExclusive": false,
+    "Grid": null,
+    "Image": {
+      "DynamicUri": "https://geo-media.beatport.com/image_size/{w}x{h}/da27d4d5-5da1-436f-8601-7099485e70b5.jpg",
+      "Id": "34806171",
+      "Uri": "https://geo-media.beatport.com/image_size/1400x1400/da27d4d5-5da1-436f-8601-7099485e70b5.jpg"
+    },
+    "IsAvailableForStreaming": true,
+    "IsHype": false,
+    "Label": {
+      "Id": 6446,
+      "Image": {
+        "DynamicUri": "https://geo-media.beatport.com/image_size/{w}x{h}/e72c4858-ca95-4feb-8977-9e265b7ca425.jpg",
+        "Id": "6331385",
+        "Uri": "https://geo-media.beatport.com/image_size/500x500/e72c4858-ca95-4feb-8977-9e265b7ca425.jpg"
+      },
+      "Name": "mau5trap",
+      "Slug": "mau5trap"
+    },
+    "Name": "I Remember (John Summit Remix) (Extended Mix)",
+    "NewReleaseDate": "2023-07-07T00:00:00.0000000",
+    "OverridePrice": null,
+    "IsPreorder": true,
+    "PreorderDate": "2023-07-04T00:00:00.0000000",
+    "Price": {
+      "Code": "EUR",
+      "Display": "€1.29",
+      "Symbol": "€",
+      "Value": 1.29
+    },
+    "IsPriceOverriden": false,
+    "PublishDate": "2023-07-07T00:00:00.0000000",
+    "Remixers": [
+      {
+        "Id": 610028,
+        "Image": {
+          "DynamicUri": "https://geo-media.beatport.com/image_size/{w}x{h}/9226a237-6ea3-49d9-a192-0dce5ddce877.jpg",
+          "Id": "22405054",
+          "Uri": "https://geo-media.beatport.com/image_size/590x404/9226a237-6ea3-49d9-a192-0dce5ddce877.jpg"
+        },
+        "Name": "John Summit",
+        "Slug": "john-summit",
+        "Url": "https://api.beatport.com/v4/catalog/artists/610028/"
+      }
+    ],
+    "Slug": "i-remember-john-summit-remix-extended-mix",
+    "TrackCount": 1,
+    "TrackUrls": [
+      "https://api.beatport.com/v4/catalog/tracks/17883087/"
+    ],
+    "Type": {
+      "Id": 1,
+      "Name": "Release"
+    },
+    "Upc": "197189208225",
+    "Updated": "2023-07-04T08:09:10.0000000",
+    "Url": null,"Id": 4179283
+  }
+]

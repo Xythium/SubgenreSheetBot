@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 
-namespace BeatportApi.Beatport;
+namespace Common.Beatport.Api;
 
-public class BeatportSubgenreSummary
+public class BeatportStatusSummary
 {
     [JsonProperty("id"), JsonRequired]
     public int Id { get; set; } = default!;
@@ -10,12 +10,6 @@ public class BeatportSubgenreSummary
     [JsonProperty("name"), JsonRequired]
     public string Name { get; set; } = default!;
 
-    [JsonProperty("slug"), JsonRequired]
-    public string Slug { get; set; } = default!;
-
     [JsonProperty("url"), JsonRequired]
     public string Url { get; set; } = default!;
-
-    [JsonProperty("enabled")]
-    public bool Enabled { get; set; }
 }

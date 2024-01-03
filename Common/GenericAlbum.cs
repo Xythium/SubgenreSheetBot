@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using BeatportApi.Beatport;
 using BeatportApi.Beatsource;
 using Common.AppleMusic;
 using Common.AppleMusic.Api;
+using Common.Beatport.Api;
 using Common.Monstercat;
 using Serilog;
 using SpotifyAPI.Web;

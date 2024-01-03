@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BeatportApi;
-using BeatportApi.Beatport;
 using BeatportApi.Beatsource;
+using Common.Beatport.Api;
 using Raven.Client;
-using BAPI = BeatportApi.Beatport.Beatport;
+using BAPI = Common.Beatport.Api.Beatport;
 
 namespace Common.Beatport;
 

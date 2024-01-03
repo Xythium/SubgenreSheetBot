@@ -15,15 +15,19 @@ namespace SubgenreSheetBot.Services;
 
 public class BeatsourceService
 {
-    private readonly Beatsource api;
+    private Beatsource? _api;
 
-    public BeatsourceService()
+    private Beatsource api
     {
-        if (api != null)
-            throw new Exception("API already initialized");
+        get
+        {
+            if (_api != null)
+                return _api;
 
-        api = new Beatsource();
-        api.Login(File.ReadAllText("beatsource_user"), File.ReadAllText("beatsource_pass")).GetAwaiter().GetResult();
+            _api = new Beatsource();
+            _api.Login(File.ReadAllText("beatsource_user"), File.ReadAllText("beatsource_pass")).GetAwaiter().GetResult();
+            return _api = new Beatsource();
+        }
     }
 
     private Task<BeatsourceRelease?> GetAlbum(int albumId)

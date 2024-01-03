@@ -1,7 +1,7 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace BeatportApi.Beatport;
+namespace Common.Beatport.Api;
 
 public class BeatportFreeDownload
 {

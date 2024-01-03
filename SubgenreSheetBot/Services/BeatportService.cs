@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
-using BeatportApi.Beatport;
 using Common;
 using Common.Beatport;
+using Common.Beatport.Api;
 using Discord;
 using Raven.Client;
 
@@ -15,15 +15,21 @@ namespace SubgenreSheetBot.Services;
 
 public class BeatportService
 {
-    private readonly Beatport api;
+    private Beatport? _api;
 
-    public BeatportService()
+    private Beatport api
     {
-        if (api != null)
-            throw new Exception("API already initialized");
+        get
+        {
+            if (_api != null)
+                return _api;
 
-        api = new Beatport(File.ReadAllText("beatport_token"));
+            var client = new BeatportClient();
+            client.Login(File.ReadAllText("beatport_user"), File.ReadAllText("beatport_pass")).GetAwaiter().GetResult();
+            return _api = new Beatport(client);
+        }
     }
+
 
     public Task<BeatportRelease?> GetAlbum(int albumId)
     {
