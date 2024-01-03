@@ -1393,12 +1393,12 @@ public class SheetService
                 var first = dates.First();
                 var last = dates.Last();
 
-                if (first.ToString("MM/yyyy") == last.ToString("MM/yyyy"))
-                    sb.AppendLine($"{first:MM/yyyy}: {subgenre} #{mostCommon}");
+                if (first.ToString("yyyy-MM") == last.ToString("yyyy-MM"))
+                    sb.AppendLine($"{first:yyyy-MM}: {subgenre} #{mostCommon}");
                 else if (DateTime.UtcNow.Subtract(last) < TimeSpan.FromDays(90))
-                    sb.AppendLine($"{first:MM/yyyy}-now: {subgenre} #{mostCommon}");
+                    sb.AppendLine($"{first:yyyy-MM}/now: {subgenre} #{mostCommon}");
                 else
-                    sb.AppendLine($"{first:MM/yyyy}-{last:MM/yyyy}: {subgenre} #{mostCommon}");
+                    sb.AppendLine($"{first:yyyy-MM}/{last:yyyy-MM}: {subgenre} #{mostCommon}");
             }
 
             sb.AppendLine("endGroup");
