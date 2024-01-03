@@ -247,6 +247,41 @@ public class Entry
         if (string.IsNullOrWhiteSpace(str))
             return def;
 
+        var split = str.Split('-');
+        if (split.Length != 3)
+        {
+            Log.Error($"cannot parse {str} as Date");
+            return def;
+        }
+
+        if (!int.TryParse(split[0], out var year))
+        {
+            Log.Error($"cannot parse {split[0]} as year");
+            return def;
+        }
+
+        if (split[1] == "??")
+        {
+            return new DateTime(year, 1, 1);
+        }
+
+        if (!int.TryParse(split[1], out var month))
+        {
+            Log.Error($"cannot parse {split[1]} as month");
+            return def;
+        }
+
+        if (split[2] == "??")
+        {
+            return new DateTime(year, month, 1);
+        }
+
+        if (!int.TryParse(split[2], out var day))
+        {
+            Log.Error($"cannot parse {split[2]} as day");
+            return def;
+        }
+
         if (!DateTime.TryParseExact(str, DateFormat, CultureInfo.CurrentCulture, DateTimeStyles.None, out var date))
         {
             Log.Error($"cannot parse {str} as Date");
