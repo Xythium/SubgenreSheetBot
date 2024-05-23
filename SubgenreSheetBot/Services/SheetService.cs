@@ -2183,6 +2183,57 @@ $set_style(back,$rgb(0,0,0),$rgb(50,50,50))
     }
 
 #endregion
+    
+#region Not In Tree
+
+    public const string CMD_NOTINTREE_NAME = "not-in-tree";
+    public const string CMD_NOTINTREE_DESCRIPTION = "Search for tracks on the sheet";
+    public const string CMD_NOTINTREE_SEARCH_DESCRIPTION = "todo";
+
+    public async Task NotInTreeCommand(DynamicContext context, bool ephemeral, RequestOptions options)
+    {
+        await context.DeferAsync(ephemeral, options);
+        await CheckIfCacheExpired(context);
+
+        var usedSubgenres = GetAllSubgenres();
+        var unusedSubgenres = usedSubgenres.Except(treeSubgenres).ToArray();
+
+        using var stream = new MemoryStream();
+        using var writer = new StreamWriter(stream);
+        using var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture));
+        
+        var sb = new StringBuilder();
+
+        foreach (var subgenre in unusedSubgenres.OrderBy(s => s))
+        {
+            var tracks = _entries.Where(e => e.SubgenresList.Contains(subgenre)).ToArray();
+
+            foreach (var track in tracks)
+            {
+                csv.WriteRecord(new
+                {
+                    subgenre,
+                    track.OriginalArtists,
+                    track.Title,
+                    track.Sheet
+                });
+                csv.NextRecord();
+            }
+            
+            if (tracks.Length > 5)
+                sb.AppendLine($"'{subgenre}' ({tracks.Length} usages)");
+            else sb.AppendLine($"'{subgenre}' ({string.Join(", ", tracks.Select(t => $"{t.OriginalArtists} - {t.Title} [{t.Sheet}]"))})");
+        }
+        
+        csv.Flush();
+        writer.Flush();
+
+        await context.SendOrAttachment(sb.ToString());
+        await context.FollowupWithFileAsync(stream, "text.csv");
+
+    }
+
+#endregion
 }
 
 public class CollabNode

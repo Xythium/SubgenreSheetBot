@@ -197,6 +197,12 @@ public class SheetInteractionModule : InteractionModuleBase
     public async Task Foobar()
     {
         await sheet.FoobarCommand(new DynamicContext(Context), false, defaultOptions);
+    }   
+    
+    [SlashCommand(SheetService.CMD_NOTINTREE_NAME, SheetService.CMD_NOTINTREE_DESCRIPTION)]
+    public async Task NotInTree()
+    {
+        await sheet.NotInTreeCommand(new DynamicContext(Context), false, defaultOptions);
     }
 
 

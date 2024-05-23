@@ -174,6 +174,13 @@ public class SpreadsheetModule : ModuleBase
 
         await sheet.MusicBrainzSubmitCommand(new DynamicContext(Context), false, defaultOptions);
     }
+    
+
+    [Command(SheetService.CMD_NOTINTREE_NAME)]
+    public async Task NotInTree()
+    {
+      await sheet.NotInTreeCommand(new DynamicContext(Context), false, defaultOptions);
+    }
 
     /*[Command("say")]
     public async Task Say(string server, string channel, [Remainder] string message)
@@ -210,7 +217,7 @@ public class MusicBrainzTrackComparer : IComparer<IRecording>, IEqualityComparer
         return x.Id.CompareTo(y.Id);
     }
 
-    public bool Equals(IRecording x, IRecording y)
+    public bool Equals(IRecording? x, IRecording? y)
     {
         if (x is null || y is null)
             return false;
