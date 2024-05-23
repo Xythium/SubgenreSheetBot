@@ -26,7 +26,7 @@ public class GraphService
      * 1 null -> Dark Ambient node of Ambient // [Ambient, Dark Ambient]
      * 2 null -> Black Ambient node of Dark Ambient // [Ambient, Dark Ambient, Black Ambient]
      */
-    public GenreNode ParseTree(IList<IList<object>> values, Dictionary<string, Color> genreColors)
+    public (GenreNode, string[]) ParseTree(IList<IList<object>> values, Dictionary<string, Color> genreColors)
     {
         var rootNode = new GenreNode
         {
@@ -43,7 +43,7 @@ public class GraphService
         {
             var name = row.LastOrDefault() as string;
             if (string.IsNullOrWhiteSpace(name))
-                throw new InvalidDataException("No genre name");
+                continue;//throw new InvalidDataException("No genre name");
 
             var depth = row.IndexOf(name);
 
@@ -124,7 +124,7 @@ public class GraphService
         }
 
 
-        return rootNode;
+        return (rootNode, allNodes.Keys.ToArray());
     }
 
     public byte[] Render(GenreNode rootNode, SheetService.SheetGraphCommandOptions options)

@@ -66,13 +66,13 @@ public class SheetService
 
     private static List<Entry> _entries = new();
     private static DateTime? _lastTime = null;
+    private static readonly TimeSpan expiryTime = TimeSpan.FromMinutes(5);
 
     private async Task CheckIfCacheExpired(DynamicContext context)
     {
-        if (_lastTime is null || DateTime.UtcNow.Subtract(_lastTime.Value).TotalSeconds > TimeSpan.FromMinutes(5).TotalSeconds)
+        var now = DateTime.UtcNow;
+        if (_lastTime is null || now.Subtract(_lastTime.Value).TotalSeconds > expiryTime.TotalSeconds)
         {
-            var now = DateTime.UtcNow;
-
             mostCommonSubgenres = null;
             mostCommonArtists = null;
             GenreNode.All = new List<GenreNode>();
@@ -797,7 +797,8 @@ public class SheetService
                     .WithTitle(string.Join(", ", artists))
                     .WithDescription($"`{search}` matches the artists {string.Join(", ", artists)}. The latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and the first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**")
                     .AddField("Tracks", BuildTrackList(search, artists, tracks, includeArtist: false).ToString())
-                    .AddField("Genres", BuildTopGenreList(tracks.ToArray(), 5).ToString(), true);
+                    .AddField("Genres", BuildTopGenreList(tracks.ToArray(), 5).ToString(), true)
+                    .WithFooter(builder => builder.WithText($"refetch in {(int)(_lastTime.Value.Add(expiryTime).Subtract(DateTime.UtcNow)).TotalSeconds}s"));
 
         await context.FollowupAsync(embed: embed.Build());
     }
@@ -1923,6 +1924,9 @@ Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
 
                 foreach (var recording in recordings)
                 {
+                    if (recording.ArtistCredit == null)
+                        throw new NullReferenceException();
+                    
                     sb.AppendLine($"\t{string.Join(" x ", recording.ArtistCredit.Select(ac => ac.Artist.Name))} - {recording.Title} ({recording.Id})");
 
                     found++;
@@ -2149,7 +2153,7 @@ $set_style(back,$rgb(0,0,0),$rgb(50,50,50))
         await context.SendOrAttachment(sb.ToString());
     }
 
-    private static string FoobarFunction(string name, params object[] parameters)
+    private static string FoobarFunction(string name, params object?[] parameters)
     {
         var sb = new StringBuilder($"${name}(");
         sb.Append(string.Join(",", parameters.Where(p => p != null)));
@@ -2169,7 +2173,7 @@ $set_style(back,$rgb(0,0,0),$rgb(50,50,50))
     }
 
     // ReSharper disable once InconsistentNaming
-    static string @if(string condition, string then, string @else = null)
+    static string @if(string condition, string then, string? @else = null)
     {
         return FoobarFunction("if", condition, then, @else);
     }
