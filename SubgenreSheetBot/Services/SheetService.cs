@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using System.Web;
 using Common;
 using Common.SubgenreSheet;
+using CsvHelper;
+using CsvHelper.Configuration;
 using Discord;
 using FuzzySharp;
 using FuzzySharp.PreProcess;
@@ -85,6 +87,7 @@ public class SheetService
     }
 
     private static GenreNode? rootNode;
+    private static string[]? treeSubgenres;
 
     private async Task GetValuesFromSheet(DynamicContext context)
     {
@@ -122,7 +125,7 @@ public class SheetService
 
             if (sheet.StartsWith("'Genre Tree'"))
             {
-                rootNode = graphService.ParseTree(range.Values, _genreColors);
+                (rootNode, treeSubgenres) = graphService.ParseTree(range.Values, _genreColors);
                 File.WriteAllText("tree.json", JsonConvert.SerializeObject(rootNode, Formatting.Indented));
             }
             else if (sheet.StartsWith("'Genre Colors"))
