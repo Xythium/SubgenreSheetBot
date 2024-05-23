@@ -28,13 +28,13 @@ public class SpotifyService
         api = new SpotifyClient(config);
     }
 
-    private async Task<FullAlbum> GetAlbum(string albumId)
+    public async Task<FullAlbum> GetAlbum(string albumId)
     {
         using var session = SubgenreSheetBot.SpotifyStore.OpenSession();
         return await SpotifyDbUtils.GetAlbumOrCache(api, session, albumId);
     }
 
-    private async Task<List<FullTrack>> GetTracks(FullAlbum album)
+    public async Task<List<FullTrack>> GetTracks(FullAlbum album)
     {
         using var session = SubgenreSheetBot.SpotifyStore.OpenSession();
         return await SpotifyDbUtils.GetTracksOrCache(api, session, album.Tracks.Items);

@@ -36,7 +36,8 @@ public class SubgenreSheetBot : Bot
                                              .AddSingleton<AppleMusicService>()
                                              .AddSingleton<BeatsourceService>()
                                              .AddSingleton<SpotifyService>()
-                                             .AddSingleton<SheetService>();
+                                             .AddSingleton<SheetService>()
+                                             .AddSingleton<RankingService>();
         base.setupServices();
     }
 }
