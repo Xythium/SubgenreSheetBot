@@ -20,7 +20,7 @@ class Program
         var token = File.ReadAllText("bottoken");
         var bot = new SubgenreSheetBot(token, "$", new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.GuildMessages | GatewayIntents.GuildMessageTyping | GatewayIntents.GuildIntegrations | GatewayIntents.GuildMembers | GatewayIntents.AllUnprivileged
+            GatewayIntents = GatewayIntents.GuildMessages | GatewayIntents.GuildMessageTyping | GatewayIntents.MessageContent | GatewayIntents.Guilds
         });
         await bot.RunAsync();
     }

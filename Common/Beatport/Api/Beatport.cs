@@ -225,7 +225,7 @@ public class BeatportClient : IBeatportClient
 
         try
         {
-            Log.Error("json: {json}", json);
+            //Log.Verbose("json: {json}", json);
             var res = JsonConvert.DeserializeObject<T>(json, serializerSettings);
             if (res is null)
                 return new BeatportErrorType<T?>
