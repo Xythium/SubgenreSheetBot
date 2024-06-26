@@ -179,10 +179,40 @@ public class Entry
         var beatport = GetBoolArgument(row, D, false);
         var bandcamp = GetBoolArgument(row, E, false);
         var genre = GetStringArgument(row, F, null);
+        if (genre is null)
+        {
+            entry = null;
+            return false;
+        }
+
         var subgenre = GetStringArgument(row, G, null);
+        if (subgenre is null)
+        {
+            entry = null;
+            return false;
+        }
+
         var artists = GetStringArgument(row, H, null);
+        if (artists is null)
+        {
+            entry = null;
+            return false;
+        }
+
         var title = GetStringArgument(row, I, null);
+        if (title is null)
+        {
+            entry = null;
+            return false;
+        }
+
         var label = GetStringArgument(row, J, null);
+        if (label is null)
+        {
+            entry = null;
+            return false;
+        }
+
         var length = GetTimeArgument(row, K, null);
         var bpmStr = GetStringArgument(row, L, null);
         var key = GetStringArgument(row, M, null);

@@ -111,6 +111,8 @@ public class SheetService
 
         var entries = new List<Entry>();
 
+        var sb = new StringBuilder();
+
         foreach (var range in valueRanges)
         {
             if (range.Values is null)
@@ -167,20 +169,26 @@ public class SheetService
                     try
                     {
                         if (Entry.TryParse(row, sheet, out var entry))
+                            entries.Add(entry!);
+                        else
                         {
-                            entries.Add(entry);
+                            if (row.Count == 1 && int.TryParse((string)row[0], out _))
+                                continue;
+                            if (row.Count == 15 && (string)row[0] == "-")
+                                continue;
+                            sb.AppendLine($"parsing error at ({row.Count}) {string.Join(", ", row)}");
                         }
                     }
                     catch (Exception ex)
                     {
-                        await context.FollowupAsync($"parsing error at ({row.Count}) {string.Join(", ", row)}: {ex}");
-                        return null;
+                        sb.AppendLine($"parsing error at ({row.Count}) {string.Join(", ", row)}: {ex}");
                     }
                 }
             }
-
-
         }
+
+        if (sb.Length > 0)        
+            await context.SendOrAttachment(sb.ToString());
 
         return entries.Where(e => e.Genre != "Release").ToList();
     }
@@ -1929,7 +1937,7 @@ Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
                 {
                     if (recording.ArtistCredit == null)
                         throw new NullReferenceException();
-                    
+
                     sb.AppendLine($"\t{string.Join(" x ", recording.ArtistCredit.Select(ac => ac.Artist.Name))} - {recording.Title} ({recording.Id})");
 
                     found++;
@@ -2190,7 +2198,7 @@ $set_style(back,$rgb(0,0,0),$rgb(50,50,50))
     }
 
 #endregion
-    
+
 #region Not In Tree
 
     public const string CMD_NOTINTREE_NAME = "not-in-tree";
@@ -2208,7 +2216,7 @@ $set_style(back,$rgb(0,0,0),$rgb(50,50,50))
         using var stream = new MemoryStream();
         using var writer = new StreamWriter(stream);
         using var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture));
-        
+
         var sb = new StringBuilder();
 
         foreach (var subgenre in unusedSubgenres.OrderBy(s => s))
@@ -2226,12 +2234,13 @@ $set_style(back,$rgb(0,0,0),$rgb(50,50,50))
                 });
                 csv.NextRecord();
             }
-            
+
             if (tracks.Length > 5)
                 sb.AppendLine($"'{subgenre}' ({tracks.Length} usages)");
-            else sb.AppendLine($"'{subgenre}' ({string.Join(", ", tracks.Select(t => $"{t.OriginalArtists} - {t.Title} [{t.Sheet}]"))})");
+            else
+                sb.AppendLine($"'{subgenre}' ({string.Join(", ", tracks.Select(t => $"{t.OriginalArtists} - {t.Title} [{t.Sheet}]"))})");
         }
-        
+
         csv.Flush();
         writer.Flush();
 
