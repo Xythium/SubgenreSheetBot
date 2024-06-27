@@ -41,8 +41,7 @@ public class GenericTrack
             Name = song.Attributes.Name,
             MixName = null,
             Number = song.Attributes.TrackNumber,
-            Artists = song.Relationships.Artists.Data.Select(a => a.Attributes.Name)
-                .ToList()
+            Artists = song.Relationships.Artists.Data.Select(a => a.Attributes.Name).ToList()
         };
     }
 
@@ -50,15 +49,14 @@ public class GenericTrack
     {
         return new GenericTrack
         {
-            Duration = song.Length,
+            Duration = song.Length.Value,
             Bpm = song.Bpm?.ToString(),
             Key = song.Key?.Name,
             Isrc = song.Isrc,
             Name = song.Name,
             MixName = song.MixName,
             Number = song.Number.Value,
-            Artists = song.Artists.Select(a => a.Name)
-                .ToList()
+            Artists = song.Artists.Select(a => a.Name).ToList()
         };
     }
 
@@ -73,8 +71,7 @@ public class GenericTrack
             Name = song.Name,
             MixName = song.MixName,
             Number = song.Number,
-            Artists = song.Artists.Select(a => a.Name)
-                .ToList()
+            Artists = song.Artists.Select(a => a.Name).ToList()
         };
     }
 
@@ -89,10 +86,11 @@ public class GenericTrack
             Name = track.Name,
             MixName = null,
             Number = track.TrackNumber,
-            Artists = track.Artists.Select(a => a.Name)
-                .ToList()
+            Artists = track.Artists.Select(a => a.Name).ToList()
         };
-    }       public static GenericTrack FromTrack(MonstercatTrack track)
+    }
+
+    public static GenericTrack FromTrack(MonstercatTrack track)
     {
         return new GenericTrack
         {
@@ -103,8 +101,7 @@ public class GenericTrack
             Name = track.Title,
             MixName = track.Version,
             Number = track.TrackNumber,
-            Artists = track.Artists.Select(a => a.Name)
-                .ToList()
+            Artists = track.Artists.Select(a => a.Name).ToList()
         };
     }
 }

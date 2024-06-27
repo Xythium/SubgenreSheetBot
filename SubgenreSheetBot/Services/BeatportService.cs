@@ -131,7 +131,7 @@ public class BeatportService
         //2009-09-22	House	Tech House | Progressive House	deadmau5	Lack of a Better Name	mau5trap	8:15	FALSE	128	FALSE	F min
         foreach (var track in tracks)
         {
-            sb.AppendLine($"`{album.NewReleaseDate},?,?,{track.ArtistConcat},{track.Name},{album.Label.Name},{TimeSpan.FromMilliseconds(track.LengthMs):m':'ss}`");
+            sb.AppendLine($"`{album.NewReleaseDate},?,?,{track.ArtistConcat},{track.Name},{album.Label.Name},{track.Length:m':'ss}`");
         }
 
         await context.FollowupAsync(sb.ToString(), embed: embed.Build());

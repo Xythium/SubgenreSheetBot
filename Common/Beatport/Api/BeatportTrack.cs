@@ -88,10 +88,10 @@ public class BeatportTrack
     public string? LabelTrackIdentifier { get; set; }
 
     [JsonProperty("length")]
-    public TimeSpan Length => TimeSpan.FromMilliseconds(LengthMs);
+    public TimeSpan? Length => LengthMs == "{null}" ? null : TimeSpan.FromMilliseconds(int.Parse(LengthMs));
 
-    [JsonProperty("length_ms"), JsonRequired]
-    public int LengthMs { get; set; } = default!;
+    [JsonProperty("length_ms")]
+    public string LengthMs { get; set; } = default!;
 
     [JsonProperty("mix_name"), JsonRequired]
     public string MixName { get; set; } = default!;
