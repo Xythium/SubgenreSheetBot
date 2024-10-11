@@ -122,6 +122,12 @@ public class SpreadsheetModule : ModuleBase
     public async Task Subgenre([Remainder, Summary(SheetService.CMD_SUBGENRE_SEARCH_DESCRIPTION)]string genre)
     {
         await sheet.SubgenreCommand(genre, new DynamicContext(Context), false, defaultOptions);
+    }  
+    
+    [Command(SheetService.CMD_SUBGENRE_INFO_NAME), Alias("sgi"), Summary(SheetService.CMD_SUBGENRE_INFO_DESCRIPTION)]
+    public async Task SubgenreInfo([Remainder, Summary(SheetService.CMD_SUBGENRE_INFO_SEARCH_DESCRIPTION)]string genre)
+    {
+        await sheet.SubgenreInfoCommand(genre, defaultExactMatchOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
     [Command(SheetService.CMD_SUBGENRE_EXACT_NAME), Alias("sge"), Summary(SheetService.CMD_SUBGENRE_EXACT_DESCRIPTION)]

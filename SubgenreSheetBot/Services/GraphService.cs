@@ -118,7 +118,8 @@ public class GraphService
             if (!genreColors.TryGetValue(meta.Name, out var color))
                 color = Color.Default;
 
-            node.Color = color;
+            if (node.Color == Color.Default)
+                node.Color = color;
 
             //Log.Verbose("{Depth} null -> {Node} node of {Parent} // [{Map}]", depth, name, parent.Name, string.Join(", ", map));
         }

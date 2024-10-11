@@ -80,9 +80,22 @@ public class SheetInteractionModule : InteractionModuleBase
     }
 
     [SlashCommand(SheetService.CMD_SUBGENRE_NAME, SheetService.CMD_SUBGENRE_DESCRIPTION)]
-    public async Task Subgenre([Summary(nameof(genre), SheetService.CMD_SUBGENRE_SEARCH_DESCRIPTION)]string genre)
+    public async Task Subgenre([Summary(nameof(search), SheetService.CMD_SUBGENRE_SEARCH_DESCRIPTION), Autocomplete(typeof(SubgenreAutocomplete))]string search)
     {
-        await sheet.SubgenreCommand(genre, new DynamicContext(Context), false, defaultOptions);
+        await sheet.SubgenreCommand(search, new DynamicContext(Context), false, defaultOptions);
+    }
+
+    [SlashCommand(SheetService.CMD_SUBGENRE_INFO_NAME, SheetService.CMD_SUBGENRE_INFO_DESCRIPTION)]
+    public async Task SubgenreInfo([Summary(nameof(genre), SheetService.CMD_SUBGENRE_INFO_SEARCH_DESCRIPTION), Autocomplete(typeof(SubgenreAutocomplete))]string genre,
+                                   [Summary(nameof(matchMode), SheetService.CMD_SUBGENRE_MATCH_DESCRIPTION)]MatchMode matchMode = MatchMode.Exact,
+                                   [Summary(nameof(threshold), SheetService.CMD_SUBGENRE_THRESHOLD_DESCRIPTION)]int threshold = 80)
+    {
+        var matchOptions = new SheetService.MatchOptions
+        {
+            MatchMode = matchMode,
+            Threshold = threshold
+        };
+        await sheet.SubgenreInfoCommand(genre, matchOptions, new DynamicContext(Context), false, defaultOptions);
     }
 
     [SlashCommand(SheetService.CMD_SUBGENRE_EXACT_NAME, SheetService.CMD_SUBGENRE_EXACT_DESCRIPTION)]
