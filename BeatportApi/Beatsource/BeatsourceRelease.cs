@@ -101,4 +101,7 @@ public class BeatsourceRelease : BeatsourceReleaseSummary
 
     [JsonProperty("is_dj_remix"), JsonRequired]
     public bool IsDjRemix { get; set; } = default!;
+    
+    [JsonProperty("is_ugc_remix"), JsonRequired]
+    public bool IsUgcRemix { get; set; } = default!;
 }
