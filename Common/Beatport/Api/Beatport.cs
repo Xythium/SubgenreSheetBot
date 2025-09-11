@@ -118,7 +118,7 @@ public class BeatportClient : IBeatportClient
         username = user;
         password = pass;
 
-        var request = new RestRequest("https://www.beatsource.com/api/auth/login", Method.Post);
+        var request = new RestRequest("https://www.beatsource.com/api/auth/anon-login", Method.Post);
         request.AddJsonBody(new
         {
             data = new
@@ -172,7 +172,7 @@ public class BeatportClient : IBeatportClient
         var value = result.Value;
 
         if (value is null)
-            throw new Exception("Beatsource login failed");
+            throw new Exception("Beatport login failed");
 
         if (value.TokenType != "Bearer")
             throw new InvalidDataException("Unknown token type");
@@ -192,7 +192,8 @@ public class BeatportClient : IBeatportClient
 
         if (DateTime.UtcNow >= expires)
         {
-            await Refresh();
+           // await Refresh();
+           await Login(username, password);
         }
 
         var request = new RestRequest(resource);
