@@ -92,7 +92,7 @@ public class SheetService
     private async Task GetValuesFromSheet(DynamicContext context)
     {
         _entries = new List<Entry>();
-        var values = await GetEntriesFromSheets(context, "'2020-2024'!A2:O", "'2015-2019'!A2:O", "'2010-2014'!A2:O", "'Pre-2010s'!A2:O", "'Genreless'!A2:O", "'Genre Colors'!A2:B", "'Genre Tree'!A2:E");
+        var values = await GetEntriesFromSheets(context, "'2025'!A2:I", "'2020-2024'!A2:I", "'2015-2019'!A2:I", "'2010-2014'!A2:I", "'2000s'!A2:I", "'Pre-2000s'!A2:I", /*"'Genreless'!A2:O",*/ "'Genre Colors'!A2:B", "'Genre Tree'!A2:E");
         if (values != null)
             _entries.AddRange(values);
     }
@@ -173,11 +173,54 @@ public class SheetService
                             entries.Add(entry!);
                         else
                         {
-                            if (row.Count == 1 && int.TryParse((string)row[0], out _))
+                            if ((string)row[0] == "2 Million BC")
                                 continue;
                             if (row.Count == 15 && (string)row[0] == "-")
                                 continue;
-                            sb.AppendLine($"parsing error at ({row.Count}) {string.Join(", ", row)}");
+                            if (row.Count == 1 && int.TryParse((string)row[0], out _))
+                                continue;
+                            if (row.Count == 9 && sheet == "Genreless")
+                                continue;
+
+                            var any = false;
+                            if (row.Count >= 1 && string.IsNullOrWhiteSpace((string)row[0]))
+                            {
+                                sb.AppendLine($"date missing in `{sheet}`: `{string.Join(", ", row)}`");
+                                any = true;
+                            }
+
+                            if (row.Count >= 6 && string.IsNullOrWhiteSpace((string)row[5]))
+                            {
+                                sb.AppendLine($"genre missing in `{sheet}`: `{string.Join(", ", row)}`");
+                                any = true;
+                            }
+
+                            if (row.Count >= 7 && string.IsNullOrWhiteSpace((string)row[6]))
+                            {
+                                sb.AppendLine($"subgenre missing in `{sheet}`: `{string.Join(", ", row)}`");
+                                any = true;
+                            }
+
+                            if (row.Count >= 8 && string.IsNullOrWhiteSpace((string)row[7]))
+                            {
+                                sb.AppendLine($"artist missing in `{sheet}`: `{string.Join(", ", row)}`");
+                                any = true;
+                            }
+
+                            if (row.Count >= 9 && string.IsNullOrWhiteSpace((string)row[8]))
+                            {
+                                sb.AppendLine($"title missing in `{sheet}`: `{string.Join(", ", row)}`");
+                                any = true;
+                            }
+
+                            if (row.Count >= 10 && string.IsNullOrWhiteSpace((string)row[9]))
+                            {
+                                sb.AppendLine($"label missing in `{sheet}`: `{string.Join(", ", row)}`");
+                                any = true;
+                            }
+
+                            if (!any)
+                                sb.AppendLine($"parsing error in `{sheet}` at ({range.Range}) `{string.Join(", ", row)}`");
                         }
                     }
                     catch (Exception ex)
@@ -696,7 +739,7 @@ public class SheetService
         var bpms = tracks.SelectMany(t => t.BpmList)
                          .Select(d => new
                          {
-                             From = (int)(d / range) * range + 1,
+                             From = (int)(d / range) * range,
                              //To = (int)(d / 10) * 10 + 10,
                          })
                          .GroupBy(d => d, d => d, (d, e) => new
