@@ -1,34 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using BeatportApi.Beatsource;
-using Common.AppleMusic;
 using Common.AppleMusic.Api;
 using Common.Beatport.Api;
 using Common.Monstercat;
 using Common.Spotify;
-using Serilog;
 using SpotifyAPI.Web;
 
 namespace Common;
 
 public class GenericTrack
 {
-    public TimeSpan Duration { get; set; }
+    public required TimeSpan Duration { get; set; }
 
-    public string Bpm { get; set; }
+    public required string? Bpm { get; set; }
 
-    public string Key { get; set; }
+    public required string? Key { get; set; }
 
-    public string Isrc { get; set; }
+    public required string? Isrc { get; set; }
 
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
-    public string MixName { get; set; }
+    public required string? MixName { get; set; }
 
-    public int Number { get; set; }
+    public required int Number { get; set; }
 
-    public List<string> Artists { get; set; }
+    public required List<string> Artists { get; set; }
+
+    private static readonly CultureInfo cultureInfo = CultureInfo.GetCultureInfo("en-US");
 
     public static GenericTrack FromTrack(Song song)
     {
@@ -49,7 +50,7 @@ public class GenericTrack
     {
         return new GenericTrack
         {
-            Duration = song.Length.Value,
+            Duration = song.Length ?? TimeSpan.Zero,
             Bpm = song.Bpm?.ToString(),
             Key = song.Key?.Name,
             Isrc = song.Isrc,
@@ -82,7 +83,7 @@ public class GenericTrack
             Duration = TimeSpan.FromMilliseconds(track.DurationMs),
             Bpm = features != null ? SpotifyUtils.BpmToString(features) : null,
             Key = features != null ? $"{SpotifyUtils.IntToKey(features.Key)} {SpotifyUtils.IntToMode(features.Mode)}" : null,
-            Isrc = track.ExternalIds.ContainsKey("isrc") ? track.ExternalIds["isrc"] : null,
+            Isrc = track.ExternalIds.GetValueOrDefault("isrc"),
             Name = track.Name,
             MixName = null,
             Number = track.TrackNumber,
@@ -95,7 +96,7 @@ public class GenericTrack
         return new GenericTrack
         {
             Duration = TimeSpan.FromSeconds(track.Duration),
-            Bpm = track.Bpm.ToString(),
+            Bpm = track.Bpm.ToString(cultureInfo),
             Key = null,
             Isrc = track.Isrc,
             Name = track.Title,
