@@ -125,10 +125,9 @@ public class Entry
             if (string.IsNullOrWhiteSpace(Bpm))
                 return list;
 
-            var split = Bpm.Split(new[]
-            {
+            var split = Bpm.Split([
                 '/', '>'
-            }, StringSplitOptions.RemoveEmptyEntries);
+            ], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             if (split.Length < 1)
                 return list;
 
@@ -174,56 +173,56 @@ public class Entry
             return false;
         }
 
-        var spotify = GetBoolArgument(row, B, false);
+        /*var spotify = GetBoolArgument(row, B, false);
         var soundcloud = GetBoolArgument(row, C, false);
         var beatport = GetBoolArgument(row, D, false);
-        var bandcamp = GetBoolArgument(row, E, false);
-        var genre = GetStringArgument(row, F, null);
+        var bandcamp = GetBoolArgument(row, E, false);*/
+        var genre = GetStringArgument(row, B, null);
         if (genre is null)
         {
             entry = null;
             return false;
         }
 
-        var subgenre = GetStringArgument(row, G, null);
+        var subgenre = GetStringArgument(row, C, null);
         if (subgenre is null)
         {
             entry = null;
             return false;
         }
 
-        var artists = GetStringArgument(row, H, null);
+        var artists = GetStringArgument(row, D, null);
         if (artists is null)
         {
             entry = null;
             return false;
         }
 
-        var title = GetStringArgument(row, I, null);
+        var title = GetStringArgument(row, E, null);
         if (title is null)
         {
             entry = null;
             return false;
         }
 
-        var label = GetStringArgument(row, J, null);
+        var label = GetStringArgument(row, G, null);
         if (label is null)
         {
             entry = null;
             return false;
         }
 
-        var length = GetTimeArgument(row, K, null);
-        var bpmStr = GetStringArgument(row, L, null);
+        var length = GetTimeArgument(row, F, null);
+        var bpmStr = GetStringArgument(row, I, null);
         var key = GetStringArgument(row, M, null);
 
         entry = new Entry
         {
             Sheet = sheet,
             Date = date.Value,
-            Spotify = spotify,
+            /*Spotify = spotify,
             SoundCloud = soundcloud,
-            Beatport = beatport,
+            Beatport = beatport,*/
             Genre = genre,
             Subgenres = subgenre,
             SubgenresList = SubgenresUtils.SplitSubgenres(subgenre).ToArray(),
