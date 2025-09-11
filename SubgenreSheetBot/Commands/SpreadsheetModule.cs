@@ -41,17 +41,26 @@ public class SpreadsheetModule : ModuleBase
         var split = search.Split(new[]
         {
             " - "
-        }, StringSplitOptions.RemoveEmptyEntries);
+        }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        if (split.Length != 2)
+        string? artist = null;
+        string title;
+
+        if (split.Length == 1)
+        {
+            title = split[0];
+        }
+        else if (split.Length == 2)
+        {
+            artist = split[0];
+            title = split[1];
+        }
+        else
         {
             await context.ErrorAsync($"cannot parse `{search}` into `Artist - Title` or `Title`");
             return;
         }
 
-        var artist = split[0];
-        var title = split[1];
-        
         await sheet.TrackCommand(artist, title, defaultFuzzyMatchOptions, context, false, defaultOptions);
     }
 
@@ -62,17 +71,26 @@ public class SpreadsheetModule : ModuleBase
         var split = search.Split(new[]
         {
             " - "
-        }, StringSplitOptions.RemoveEmptyEntries);
+        }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        if (split.Length != 2)
+        string? artist = null;
+        string title;
+
+        if (split.Length == 1)
+        {
+            title = split[0];
+        }
+        else if (split.Length == 2)
+        {
+            artist = split[0];
+            title = split[1];
+        }
+        else
         {
             await context.ErrorAsync($"cannot parse `{search}` into `Artist - Title` or `Title`");
             return;
         }
 
-        var artist = split[0];
-        var title = split[1];
-        
         await sheet.TrackCommand(artist, title, defaultExactMatchOptions, context, false, defaultOptions);
     }
 
@@ -122,8 +140,8 @@ public class SpreadsheetModule : ModuleBase
     public async Task Subgenre([Remainder, Summary(SheetService.CMD_SUBGENRE_SEARCH_DESCRIPTION)]string genre)
     {
         await sheet.SubgenreCommand(genre, new DynamicContext(Context), false, defaultOptions);
-    }  
-    
+    }
+
     [Command(SheetService.CMD_SUBGENRE_INFO_NAME), Alias("sgi"), Summary(SheetService.CMD_SUBGENRE_INFO_DESCRIPTION)]
     public async Task SubgenreInfo([Remainder, Summary(SheetService.CMD_SUBGENRE_INFO_SEARCH_DESCRIPTION)]string genre)
     {
@@ -180,12 +198,12 @@ public class SpreadsheetModule : ModuleBase
 
         await sheet.MusicBrainzSubmitCommand(new DynamicContext(Context), false, defaultOptions);
     }
-    
+
 
     [Command(SheetService.CMD_NOTINTREE_NAME)]
     public async Task NotInTree()
     {
-      await sheet.NotInTreeCommand(new DynamicContext(Context), false, defaultOptions);
+        await sheet.NotInTreeCommand(new DynamicContext(Context), false, defaultOptions);
     }
 
     /*[Command("say")]
