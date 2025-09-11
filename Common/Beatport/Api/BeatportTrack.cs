@@ -21,8 +21,8 @@ public class BeatportTrack
     [JsonProperty("bpm")] // optional
     public int? Bpm { get; set; }
 
-    [JsonProperty("catalog_number"), JsonRequired]
-    public string CatalogNumber { get; set; } = default!;
+    [JsonProperty("catalog_number")]
+    public string? CatalogNumber { get; set; } = default!;
 
     [JsonProperty("copyright")] // optional
     public string? Copyright { get; set; }
@@ -158,4 +158,7 @@ public class BeatportTrack
 
     [JsonProperty("was_ever_exclusive")]
     public bool? WasEverExclusive { get; set; }
+
+    [JsonProperty("is_explicit")]
+    public bool IsExplicit { get; set; }
 }

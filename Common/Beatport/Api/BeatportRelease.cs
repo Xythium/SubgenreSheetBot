@@ -95,4 +95,7 @@ public class BeatportRelease
 
     [JsonProperty("url")] // optional
     public string? Url { get; set; }
+    
+    [JsonProperty("is_explicit")]
+    public bool IsExplicit { get; set; }
 }
