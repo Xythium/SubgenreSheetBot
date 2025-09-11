@@ -299,7 +299,7 @@ public class SheetService
     }
 
     private static Dictionary<string, Dictionary<string, int>> subgenreMostCommon = new();
-    
+
     private static Color GetSubgenreColor(string genre)
     {
         if (rootNode is null)
@@ -314,14 +314,14 @@ public class SheetService
     {
         if (string.Equals(node.Name, genre, StringComparison.OrdinalIgnoreCase))
             return node.Color;
-        
+
         foreach (var child in node.Subgenres)
         {
             var found = Find(genre, child);
             if (found is not null)
                 return found;
         }
-        
+
         return null;
     }
 
@@ -793,20 +793,20 @@ public class SheetService
         }
 
         return description;
-    }  
-    
+    }
+
     private static StringBuilder BuildTopLabels(ICollection<Entry> tracks, int top, out int actualTop, out int numLabels)
     {
         var labelCount = tracks.SelectMany(t => t.LabelList)
-                                .GroupBy(l => l, s => s, (s, e) => new KeyCount
-                                {
-                                    Key = s,
-                                    Count = e.Count()
-                                })
-                                .Where(kc => !string.Equals(kc.Key, "Self-Released", StringComparison.OrdinalIgnoreCase))
-                                .OrderByDescending(a => a.Count)
-                                .ThenBy(a => a.Key)
-                                .ToArray();
+                               .GroupBy(l => l, s => s, (s, e) => new KeyCount
+                               {
+                                   Key = s,
+                                   Count = e.Count()
+                               })
+                               .Where(kc => !string.Equals(kc.Key, "Self-Released", StringComparison.OrdinalIgnoreCase))
+                               .OrderByDescending(a => a.Count)
+                               .ThenBy(a => a.Key)
+                               .ToArray();
 
         numLabels = labelCount.Length;
         var topList = labelCount.Take(top).ToArray();
@@ -876,12 +876,7 @@ public class SheetService
         var earliest = tracks.Last();
         var now = DateTime.UtcNow;
 
-        var embed = new EmbedBuilder()
-                    .WithTitle(string.Join(", ", artists))
-                    .WithDescription($"`{search}` matches the artists {string.Join(", ", artists)}. The latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and the first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**")
-                    .AddField("Tracks", BuildTrackList(search, artists, tracks, includeArtist: false).ToString())
-                    .AddField("Genres", BuildTopGenreList(tracks.ToArray(), 5).ToString(), true)
-                    .WithFooter(builder => builder.WithText($"refetch in {(int)(_lastTime.Value.Add(expiryTime).Subtract(DateTime.UtcNow)).TotalSeconds}s"));
+        var embed = new EmbedBuilder().WithTitle(string.Join(", ", artists)).WithDescription($"`{search}` matches the artists {string.Join(", ", artists)}. The latest track {IsWas(latest.Date, now)} **{latest.Title} ({latest.Date:Y})**, and the first track {IsWas(earliest.Date, now)} **{earliest.Title} ({earliest.Date:Y})**").AddField("Tracks", BuildTrackList(search, artists, tracks, includeArtist: false).ToString()).AddField("Genres", BuildTopGenreList(tracks.ToArray(), 5).ToString(), true).WithFooter(builder => builder.WithText($"refetch in {(int)(_lastTime.Value.Add(expiryTime).Subtract(DateTime.UtcNow)).TotalSeconds}s"));
 
         await context.FollowupAsync(embed: embed.Build());
     }
@@ -1195,13 +1190,7 @@ public class SheetService
         var now = DateTime.Now;
 
         var color = GetGenreColor(search);
-        var embed = new EmbedBuilder()
-                    .WithTitle(search)
-                    .WithDescription($"We have {tracks.Length} {search} tracks, from {numArtists} artists.\r\n" + $"The first track {IsWas(earliest.Date, now)} on {earliest.Date:Y} by {earliest.FormattedArtists} and the latest {IsWas(latest.Date, now)} on {latest.Date:Y} by {latest.FormattedArtists}")
-                    .WithColor(color)
-                    .AddField($"Top {top} Artists", description.ToString(), true)
-                    .AddField($"Top {topSubgenre} Subgenres", subgenres.ToString(), true)
-                    .AddField("BPM", bpmList.ToString(), true);
+        var embed = new EmbedBuilder().WithTitle(search).WithDescription($"We have {tracks.Length} {search} tracks, from {numArtists} artists.\r\n" + $"The first track {IsWas(earliest.Date, now)} on {earliest.Date:Y} by {earliest.FormattedArtists} and the latest {IsWas(latest.Date, now)} on {latest.Date:Y} by {latest.FormattedArtists}").WithColor(color).AddField($"Top {top} Artists", description.ToString(), true).AddField($"Top {topSubgenre} Subgenres", subgenres.ToString(), true).AddField("BPM", bpmList.ToString(), true);
 
         await context.FollowupAsync(embed: embed.Build());
         //await Context.Message.ReplyAsync(embed: embed.Build());
@@ -1270,7 +1259,8 @@ public class SheetService
 
         genre = genres[0];
 
-        var tracks = GetAllTracksBySubgenre(genres).OrderByDescending(e => e.Date).ToArray();;
+        var tracks = GetAllTracksBySubgenre(genres).OrderByDescending(e => e.Date).ToArray();
+        ;
 
         if (tracks.Length == 0)
         {
@@ -1278,27 +1268,21 @@ public class SheetService
             return;
         }
 
-        var topArtists= BuildTopArtists(tracks, 10, out var topNumArtists, out var numArtists);
+        var topArtists = BuildTopArtists(tracks, 10, out var topNumArtists, out var numArtists);
         var topLabels = BuildTopLabels(tracks, 10, out var topNumLabels, out var numLabels);
         var bpmList = BuildBpmList(tracks, 10, out var numBpmGroups);
-        
+
         var earliest = tracks.Last();
         var latest = tracks.First();
         var now = DateTime.Now;
 
         var color = GetSubgenreColor(genres.First());
-        
-        var embed = new EmbedBuilder()
-            .WithTitle(string.Join(", ", genres))
-            .WithColor(color)
-            .WithDescription($"We have {tracks.Length} {genre} tracks, from {numArtists} artists and {numLabels} labels.\r\n"
-                           + $"The first track {IsWas(earliest.Date, now)} from {earliest.Date:Y} by {earliest.FormattedArtists} and the latest {IsWas(latest.Date, now)} from {latest.Date:Y} by {latest.FormattedArtists}")
-            .AddField($"Top {topNumArtists} Artists", topArtists.ToString(), true)
-            .AddField($"Top {topNumLabels} Labels", topLabels.ToString(), true);
+
+        var embed = new EmbedBuilder().WithTitle(string.Join(", ", genres)).WithColor(color).WithDescription($"We have {tracks.Length} {genre} tracks, from {numArtists} artists and {numLabels} labels.\r\n" + $"The first track {IsWas(earliest.Date, now)} from {earliest.Date:Y} by {earliest.FormattedArtists} and the latest {IsWas(latest.Date, now)} from {latest.Date:Y} by {latest.FormattedArtists}").AddField($"Top {topNumArtists} Artists", topArtists.ToString(), true).AddField($"Top {topNumLabels} Labels", topLabels.ToString(), true);
 
         if (numBpmGroups > 0)
             embed = embed.AddField("BPM", bpmList.ToString(), true);
-        
+
         await context.FollowupAsync(embed: embed.Build());
     }
 
@@ -1609,9 +1593,7 @@ public class SheetService
     public const string CMD_QUERY_SUBGENRE_COUNT_DESCRIPTION = "Filter on subgenre count (Usage: `>Count`, `<Count`, or `Count`)";
     public const string CMD_QUERY_LABEL_DESCRIPTION = "Filter on label (Usage: `-Name` or `!Name` for exclude, `Name` for include)";
     public const string CMD_QUERY_LABEL_COUNT_DESCRIPTION = "Filter on label count (Usage: `>Count`, `<Count`, or `Count`)";
-    public const string CMD_QUERY_BEFORE_DESCRIPTION = "Filter on dates before (Usage: `Any date`)";
-    public const string CMD_QUERY_AFTER_DESCRIPTION = "Filter on dates after (Usage: `Any date`)";
-    public const string CMD_QUERY_DATE_DESCRIPTION = "Filter on exact date (Usage: `Any date`)";
+    public const string CMD_QUERY_DATE_DESCRIPTION = "Filter on exact date (Usage: `Exact date`, `>After date`, `<Before date`)";
     public const string CMD_QUERY_SELECT_DESCRIPTION = "What to return (Usage: `track`, `artist`, or `label`)";
     public const string CMD_QUERY_ORDER_DESCRIPTION = "How to order results (Usage: `date`, `title`, `label`, `artist`. `+` for asc, `-` for desc)";
 
@@ -1630,9 +1612,7 @@ public class SheetService
 
         public string? LabelCount { get; set; }
 
-        public string? Before { get; set; }
-
-        public string? After { get; set; }
+        public string? Bpm { get; set; }
 
         public string? Date { get; set; }
 
@@ -1649,7 +1629,14 @@ public class SheetService
 
         var query = _entries.AsQueryable();
 
-        if (string.IsNullOrWhiteSpace(arguments.Artist) && string.IsNullOrWhiteSpace(arguments.ArtistCount) && string.IsNullOrWhiteSpace(arguments.Subgenre) && string.IsNullOrWhiteSpace(arguments.SubgenreCount) && string.IsNullOrWhiteSpace(arguments.Label) && string.IsNullOrWhiteSpace(arguments.LabelCount) && string.IsNullOrWhiteSpace(arguments.Before) && string.IsNullOrWhiteSpace(arguments.After) && string.IsNullOrWhiteSpace(arguments.Date))
+        if (string.IsNullOrWhiteSpace(arguments.Artist) && 
+            string.IsNullOrWhiteSpace(arguments.ArtistCount) &&
+            string.IsNullOrWhiteSpace(arguments.Subgenre) &&
+            string.IsNullOrWhiteSpace(arguments.SubgenreCount) &&
+            string.IsNullOrWhiteSpace(arguments.Label) && 
+            string.IsNullOrWhiteSpace(arguments.LabelCount) &&
+            string.IsNullOrWhiteSpace(arguments.Bpm) &&
+            string.IsNullOrWhiteSpace(arguments.Date))
         {
             await context.SendOrAttachment("No arguments specified");
             return;
@@ -1660,16 +1647,22 @@ public class SheetService
             query = query.Where(e => e.ActualArtists.Any(a => string.Equals(a, arguments.Artist, StringComparison.OrdinalIgnoreCase)));
         }
 
+        if (!query.Any())
+        {
+            await context.FollowupAsync("No results left after `artist` query");
+            return;
+        }
+
         if (!string.IsNullOrWhiteSpace(arguments.ArtistCount))
         {
             if (arguments.ArtistCount.StartsWith("<"))
             {
-                var count = int.Parse(arguments.ArtistCount.Substring(1));
+                var count = int.Parse(arguments.ArtistCount[1..]);
                 query = query.Where(e => e.ActualArtists.Length < count);
             }
             else if (arguments.ArtistCount.StartsWith(">"))
             {
-                var count = int.Parse(arguments.ArtistCount.Substring(1));
+                var count = int.Parse(arguments.ArtistCount[1..]);
                 query = query.Where(e => e.ActualArtists.Length > count);
             }
             else
@@ -1677,6 +1670,55 @@ public class SheetService
                 var count = int.Parse(arguments.ArtistCount);
                 query = query.Where(e => e.ActualArtists.Length == count);
             }
+        }
+        
+        if (!query.Any())
+        {
+            await context.FollowupAsync("No results left after `artist count` query");
+            return;
+        }
+        
+        if (!string.IsNullOrWhiteSpace(arguments.Subgenre))
+        {
+            if (arguments.Subgenre.StartsWith("-") || arguments.Subgenre.StartsWith("!"))
+            {
+                query = query.Where(e => e.SubgenresList.Any(a => !string.Equals(a, arguments.Subgenre.Substring(1), StringComparison.OrdinalIgnoreCase)));
+            }
+            else
+            {
+                query = query.Where(e => e.SubgenresList.Any(a => string.Equals(a, arguments.Subgenre, StringComparison.OrdinalIgnoreCase)));
+            }
+        }
+        
+        if (!query.Any())
+        {
+            await context.FollowupAsync("No results left after `subgenre` query");
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(arguments.SubgenreCount))
+        {
+            if (arguments.SubgenreCount.StartsWith("<"))
+            {
+                var count = int.Parse(arguments.SubgenreCount[1..]);
+                query = query.Where(e => e.SubgenresList.Length < count);
+            }
+            else if (arguments.SubgenreCount.StartsWith(">"))
+            {
+                var count = int.Parse(arguments.SubgenreCount[1..]);
+                query = query.Where(e => e.SubgenresList.Length > count);
+            }
+            else
+            {
+                var count = int.Parse(arguments.SubgenreCount);
+                query = query.Where(e => e.SubgenresList.Length == count);
+            }
+        }
+        
+        if (!query.Any())
+        {
+            await context.FollowupAsync("No results left after `subgenre count` query");
+            return;
         }
 
         if (!string.IsNullOrWhiteSpace(arguments.Label))
@@ -1690,17 +1732,23 @@ public class SheetService
                 query = query.Where(e => e.LabelList.Any(a => string.Equals(a, arguments.Label, StringComparison.OrdinalIgnoreCase)));
             }
         }
+        
+        if (!query.Any())
+        {
+            await context.FollowupAsync("No results left after `label` query");
+            return;
+        }
 
         if (!string.IsNullOrWhiteSpace(arguments.LabelCount))
         {
             if (arguments.LabelCount.StartsWith("<"))
             {
-                var count = int.Parse(arguments.LabelCount.Substring(1));
+                var count = int.Parse(arguments.LabelCount[1..]);
                 query = query.Where(e => e.LabelList.Count < count);
             }
             else if (arguments.LabelCount.StartsWith(">"))
             {
-                var count = int.Parse(arguments.LabelCount.Substring(1));
+                var count = int.Parse(arguments.LabelCount[1..]);
                 query = query.Where(e => e.LabelList.Count > count);
             }
             else
@@ -1709,62 +1757,121 @@ public class SheetService
                 query = query.Where(e => e.LabelList.Count == count);
             }
         }
-
-        if (!string.IsNullOrWhiteSpace(arguments.Before))
+        
+        if (!query.Any())
         {
-            if (!DateOnly.TryParse(arguments.Before, out var before))
-                throw new ArgumentException("Invalid date");
-
-            query = query.Where(e => e.Date != null && new DateOnly(e.Date.Year, e.Date.Month, e.Date.Day) < before);
+            await context.FollowupAsync("No results left after `label count` query");
+            return;
         }
 
-        if (!string.IsNullOrWhiteSpace(arguments.After))
+        if (!string.IsNullOrWhiteSpace(arguments.Bpm))
         {
-            if (!DateOnly.TryParse(arguments.After, out var after))
-                throw new ArgumentException("Invalid date");
+            if (arguments.Bpm.StartsWith("<"))
+            {
+                if (!int.TryParse(arguments.Bpm[1..], out var bpm))
+                {
+                    await context.FollowupAsync($"Attempt to parse bpm less than `{arguments.Bpm}` failed");
+                    return;
+                }
 
-            query = query.Where(e => e.Date != null && new DateOnly(e.Date.Year, e.Date.Month, e.Date.Day) > after);
+                //query = query.Where(e => e.BpmList.Count > 0 && e.BpmList[0] < count);
+                query = query.Where(e => e.BpmList.Any(b => b < bpm));
+            }
+            else if (arguments.Bpm.StartsWith(">"))
+            {
+                if (!int.TryParse(arguments.Bpm[1..], out var bpm))
+                {
+                    await context.FollowupAsync($"Attempt to parse bpm more than `{arguments.Bpm}` failed");
+                    return;
+                }
+
+                //query = query.Where(e => e.BpmList.Count > 0 && e.BpmList[0] > count);
+                query = query.Where(e => e.BpmList.Any(b => b > bpm));
+            }
+            else if (arguments.Bpm.Contains('-'))
+            {
+                var parts = arguments.Bpm.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (parts.Length != 2)
+                {
+                    await context.FollowupAsync($"Attempt to parse bpm range `{arguments.Bpm}` failed");
+                    return;
+                }
+
+                if (!int.TryParse(parts[0], out var lower))
+                {
+                    await context.FollowupAsync($"Attempt to parse bpm range lower bound {parts[0]} failed");
+                    return;
+                }
+
+                if (!int.TryParse(parts[1], out var upper))
+                {
+                    await context.FollowupAsync($"Attempt to parse bpm range upper bound {parts[1]} failed");
+                    return;
+                }
+                
+                query = query.Where(e => e.BpmList.Any(b => b >=  lower && b <= upper));
+            }
+            else
+            {
+                if (!int.TryParse(arguments.Bpm[1..], out var bpm))
+                {
+                    await context.FollowupAsync($"Attempt to parse bpm `{arguments.Bpm}` failed");
+                    return;
+                }
+
+                //query = query.Where(e => e.BpmList.Count > 0 && e.BpmList[0] == count);
+                query = query.Where(e => e.BpmList.Any(b => b == bpm));
+            }
+        }
+        
+        if (!query.Any())
+        {
+            await context.FollowupAsync("No results left after `bpm` query");
+            return;
         }
 
         if (!string.IsNullOrWhiteSpace(arguments.Date))
         {
-            if (!DateOnly.TryParse(arguments.Date, out var date))
-                throw new ArgumentException("Invalid date");
-
-            query = query.Where(e => e.Date != null && new DateOnly(e.Date.Year, e.Date.Month, e.Date.Day) == date);
-        }
-
-        if (!string.IsNullOrWhiteSpace(arguments.Subgenre))
-        {
-            if (arguments.Subgenre.StartsWith("-") || arguments.Subgenre.StartsWith("!"))
+            if (arguments.Date.StartsWith(">"))
             {
-                query = query.Where(e => e.SubgenresList.Any(a => !string.Equals(a, arguments.Subgenre.Substring(1), StringComparison.OrdinalIgnoreCase)));
+                if (!DateOnly.TryParse(arguments.Date[1..], out var after))
+                    throw new ArgumentException("Invalid date");
+
+                query = query.Where(e => e.Date != null && new DateOnly(e.Date.Year, e.Date.Month, e.Date.Day) > after);
+            }
+            else if (arguments.Date.StartsWith("<"))
+            {
+                if (!DateOnly.TryParse(arguments.Date[1..], out var before))
+                    throw new ArgumentException("Invalid date");
+
+                query = query.Where(e => e.Date != null && new DateOnly(e.Date.Year, e.Date.Month, e.Date.Day) < before);
             }
             else
             {
-                query = query.Where(e => e.SubgenresList.Any(a => string.Equals(a, arguments.Subgenre, StringComparison.OrdinalIgnoreCase)));
+                if (!DateOnly.TryParse(arguments.Date, out var date))
+                    throw new ArgumentException("Invalid date");
+
+                query = query.Where(e => e.Date != null && new DateOnly(e.Date.Year, e.Date.Month, e.Date.Day) == date);
             }
+        }
+        
+        if (!query.Any())
+        {
+            await context.FollowupAsync("No results left after `date` query");
+            return;
         }
 
         if (!string.IsNullOrWhiteSpace(arguments.Order))
         {
             switch (arguments.Order)
             {
-                case "+date":
-                    query = query.OrderBy(e => e.Date);
-                    break;
+                case "+date": query = query.OrderBy(e => e.Date); break;
 
-                case "-date":
-                    query = query.OrderByDescending(e => e.Date);
-                    break;
+                case "-date": query = query.OrderByDescending(e => e.Date); break;
 
-                case "+title":
-                    query = query.OrderBy(e => e.Title);
-                    break;
+                case "+title": query = query.OrderBy(e => e.Title); break;
 
-                case "-title":
-                    query = query.OrderByDescending(e => e.Title);
-                    break;
+                case "-title": query = query.OrderByDescending(e => e.Title); break;
 
                 case "+label":
                 case "+labels":
@@ -1805,6 +1912,8 @@ public class SheetService
                 case "labels":
                     strs = query.SelectMany(e => e.LabelList).Distinct();
                     break;
+
+                case "bpm": break;
             }
         }
 
@@ -1841,10 +1950,17 @@ public class SheetService
 
             foreach (var result in entryResults)
             {
-                sb.AppendLine($"{string.Join(", ", result.ArtistsList)} - {result.Title} [{string.Join(", ", result.LabelList)}]");
+                if (arguments.Bpm != null)
+                    sb.AppendLine($"{string.Join(", ", result.ArtistsList)} - {result.Title} [{string.Join(", ", result.LabelList)}] [{result.Bpm}]");
+                else
+                    sb.AppendLine($"{string.Join(", ", result.ArtistsList)} - {result.Title} [{string.Join(", ", result.LabelList)}]");
             }
 
             await context.SendOrAttachment(sb.ToString());
+        }
+        else
+        {
+            await context.FollowupAsync("No results found");
         }
     }
 
@@ -1912,11 +2028,11 @@ public class SheetService
             throw new InvalidDataException("node not found");
 
         var res = $"""
-Name = {node.Name}
-Meta = {node.IsMeta}
-Root = {node.IsRoot}
-Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
-""";
+                   Name = {node.Name}
+                   Meta = {node.IsMeta}
+                   Root = {node.IsRoot}
+                   Subgenres = {string.Join(", ", node.Subgenres.Select(sg => sg.Name))}
+                   """;
         await context.FollowupAsync(res);
     }
 

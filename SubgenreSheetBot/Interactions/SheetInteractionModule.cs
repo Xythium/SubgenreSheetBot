@@ -189,8 +189,7 @@ public class SheetInteractionModule : InteractionModuleBase
                             [Summary(nameof(subgenreCount), SheetService.CMD_QUERY_SUBGENRE_COUNT_DESCRIPTION)]string? subgenreCount = null,
                             [Summary(nameof(label), SheetService.CMD_QUERY_LABEL_DESCRIPTION)]string? label = null,
                             [Summary(nameof(labelCount), SheetService.CMD_QUERY_LABEL_COUNT_DESCRIPTION)]string? labelCount = null,
-                            [Summary(nameof(before), SheetService.CMD_QUERY_BEFORE_DESCRIPTION)]string? before = null,
-                            [Summary(nameof(after), SheetService.CMD_QUERY_AFTER_DESCRIPTION)]string? after = null,
+                            string? bpm = null,
                             [Summary(nameof(date), SheetService.CMD_QUERY_DATE_DESCRIPTION)]string? date = null,
                             [Summary(nameof(select), SheetService.CMD_QUERY_SELECT_DESCRIPTION)]string? select = null,
                             [Summary(nameof(order), SheetService.CMD_QUERY_ORDER_DESCRIPTION)]string? order = null)
@@ -203,8 +202,7 @@ public class SheetInteractionModule : InteractionModuleBase
             SubgenreCount = subgenreCount,
             Label = label,
             LabelCount = labelCount,
-            Before = before,
-            After = after,
+            Bpm = bpm,
             Date = date,
             Select = select,
             Order = order
