@@ -34,12 +34,12 @@ public class DynamicContext
     {
         if (InteractionContext != null)
         {
-           return await InteractionContext.Interaction.FollowupAsync(text: text, embeds: embeds, isTTS: isTts, ephemeral: ephemeral, allowedMentions: allowedMentions, components: components, embed: embed, options: options);
+            return await InteractionContext.Interaction.FollowupAsync(text: text, embeds: embeds, isTTS: isTts, ephemeral: ephemeral, allowedMentions: allowedMentions, components: components, embed: embed, options: options);
         }
 
         if (CommandContext != null)
         {
-           return await CommandContext.Message.ReplyAsync(text, isTts, embed, allowedMentions, options, components, stickers, embeds);
+            return await CommandContext.Message.ReplyAsync(text, isTts, embed, allowedMentions, options, components, stickers, embeds);
         }
 
         throw new UnreachableException();
@@ -64,21 +64,21 @@ public class DynamicContext
         }
     }
 
-    public async Task SendOrAttachment(string str, bool removeQuotes = false)
+    public async Task SendOrAttachment(string str, string customMessage = "Message too long", bool removeQuotes = false)
     {
         if (str.Length > 2000)
         {
             if (removeQuotes)
                 str = str.Replace("`", "");
-            var writer = new MemoryStream(Encoding.UTF8.GetBytes(str));
-            await FollowupWithFileAsync(writer, "context.txt", "Message too long");
+            using var writer = new MemoryStream(Encoding.UTF8.GetBytes(str));
+            await FollowupWithFileAsync(writer, "context.txt", customMessage);
         }
         else
         {
             await FollowupAsync(str);
         }
     }
-    
+
     public async Task<IUserMessage> UpdateOrSend(IUserMessage? message, string str)
     {
         if (message is null)

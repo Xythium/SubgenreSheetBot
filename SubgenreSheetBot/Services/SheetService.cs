@@ -188,8 +188,8 @@ public class SheetService
             }
         }
 
-        if (sb.Length > 0)        
-            await context.SendOrAttachment(sb.ToString());
+        if (sb.Length > 0)
+            await context.SendOrAttachment(sb.ToString(), removeQuotes: true);
 
         return entries.Where(e => e.Genre != "Release").ToList();
     }

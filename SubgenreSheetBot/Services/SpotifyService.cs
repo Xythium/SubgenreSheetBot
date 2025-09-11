@@ -85,7 +85,7 @@ public class SpotifyService
             sb.AppendLine($"`{album.ReleaseDate},TRUE,FALSE,FALSE,FALSE,?,?,{string.Join(" & ", track.Artists.Select(a => a.Name))},{track.Name},{album.Label},{TimeSpan.FromMilliseconds(track.DurationMs):m':'ss},{(feature is null ? "" : Math.Round(feature.Tempo).ToString())},{(feature is null ? "" : $"{SpotifyUtils.IntToKey(feature.Key)} {SpotifyUtils.IntToMode(feature.Mode)}")},,{track.ExternalIds["isrc"]}`");
         }
 
-        await context.SendOrAttachment(sb.ToString(), true);
+        await context.SendOrAttachment(sb.ToString(), removeQuotes:true);
     }
 
 #endregion
