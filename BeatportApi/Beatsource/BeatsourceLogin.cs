@@ -5,31 +5,31 @@ namespace BeatportApi.Beatsource;
 
 public class BeatsourceLogin
 {
-    [JsonProperty("application_id"), JsonRequired]
+    [JsonProperty("application_id")]
     public int ApplicationId { get; set; } = default!;
 
-    [JsonProperty("user_id"), JsonRequired]
+    [JsonProperty("user_id")]
     public int UserId { get; set; } = default!;
 
-    [JsonProperty("username"), JsonRequired]
+    [JsonProperty("username")]
     public string Username { get; set; } = default!;
 
-    [JsonProperty("first_name"), JsonRequired]
+    [JsonProperty("first_name")]
     public string FirstName { get; set; } = default!;
 
-    [JsonProperty("last_name"), JsonRequired]
+    [JsonProperty("last_name")]
     public string LastName { get; set; } = default!;
 
     [JsonProperty("scope"), JsonRequired]
     public string Scope { get; set; } = default!; // array?
 
-    [JsonProperty("feature"), JsonRequired]
+    [JsonProperty("feature")]
     public List<string> Features { get; set; } = default!;
 
     [JsonProperty("subscription")]
     public string? Subscription { get; set; }
 
-    [JsonProperty("person_id"), JsonRequired]
+    [JsonProperty("person_id")]
     public int PersonId { get; set; } = default!;
 
     [JsonProperty("access_token"), JsonRequired]
@@ -41,7 +41,7 @@ public class BeatsourceLogin
     [JsonProperty("token_type"), JsonRequired]
     public string TokenType { get; set; } = default!;
 
-    [JsonProperty("refresh_token"), JsonRequired]
+    [JsonProperty("refresh_token")]
     public string RefreshToken { get; set; } = default!;
 
     [JsonProperty("expires_at"), JsonRequired]
