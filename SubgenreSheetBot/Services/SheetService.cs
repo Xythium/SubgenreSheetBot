@@ -1342,6 +1342,49 @@ public class SheetService
 
 #endregion
 
+#region Top Subgenres
+
+    public const string CMD_TOP_SUBGENRES_NAME = "topsubgenres";
+    public const string CMD_TOP_SUBGENRES_DESCRIPTION = "Returns a list of up to 8 tracks of a given subgenre";
+    public const string CMD_TOP_SUBGENRES_YEAR_DESCRIPTION = "Subgenre to search for";
+
+    public async Task TopSubgenresCommand(int year, DynamicContext context, bool ephemeral, RequestOptions options)
+    {
+        await context.DeferAsync(ephemeral, options);
+        await CheckIfCacheExpired(context);
+
+        var tracks = _entries.Where(e => e.Date.Year == year).ToArray();
+
+        if (tracks.Length == 0)
+        {
+            await context.FollowupAsync($"No tracks in year `{year}` found");
+            return;
+        }
+
+        var counts = new Dictionary<string, int>();
+
+        foreach (var track in tracks)
+        {
+            foreach (var subgenre in track.SubgenresList)
+            {
+                counts.TryAdd(subgenre, 0);
+                counts[subgenre]++;
+            }
+        }
+
+
+        var sb = new StringBuilder();
+
+        foreach (var kvp in counts.OrderByDescending(k => k.Value).ThenBy(k => k.Key))
+        {
+            sb.AppendLine($"{kvp.Key}: {kvp.Value}");
+        }
+
+        await context.SendOrAttachment(sb.ToString(), $"Top subgenres in {year}");
+    }
+
+#endregion
+
 #region Labels
 
     public const string CMD_LABELS_NAME = "labels";

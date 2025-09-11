@@ -154,6 +154,12 @@ public class SpreadsheetModule : ModuleBase
         await sheet.SubgenreExactCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
 
+    [Command(SheetService.CMD_TOP_SUBGENRES_NAME), Summary(SheetService.CMD_TOP_SUBGENRES_DESCRIPTION)]
+    public async Task TopSubgenres([Summary(SheetService.CMD_TOP_SUBGENRES_YEAR_DESCRIPTION)]int year)
+    {
+        await sheet.TopSubgenresCommand(year, new DynamicContext(Context), false, defaultOptions);
+    }
+
     [Command(SheetService.CMD_LABELS_NAME), Alias("ls"), Summary(SheetService.CMD_LABELS_DESCRIPTION)]
     public async Task Labels()
     {

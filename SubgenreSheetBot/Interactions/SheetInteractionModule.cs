@@ -103,6 +103,12 @@ public class SheetInteractionModule : InteractionModuleBase
     {
         await sheet.SubgenreExactCommand(genre, new DynamicContext(Context), false, defaultOptions);
     }
+    
+    [SlashCommand(SheetService.CMD_TOP_SUBGENRES_NAME, SheetService.CMD_TOP_SUBGENRES_DESCRIPTION)]
+    public async Task TopSubgenres([Summary(nameof(year), SheetService.CMD_TOP_SUBGENRES_YEAR_DESCRIPTION)]int year)
+    {
+        await sheet.TopSubgenresCommand(year, new DynamicContext(Context), false, defaultOptions);
+    }
 
     [SlashCommand(SheetService.CMD_LABELS_NAME, SheetService.CMD_LABELS_DESCRIPTION)]
     public async Task Labels()
