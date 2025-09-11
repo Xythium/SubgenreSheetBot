@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,8 @@ public class SpotifyService
 {
     private readonly SpotifyClient api;
 
+    private static readonly CultureInfo cultureInfo = CultureInfo.GetCultureInfo("en-US");
+    
     public SpotifyService()
     {
         if (api != null)
@@ -82,7 +85,7 @@ public class SpotifyService
         {
             var feature = features.FirstOrDefault(f => f.Uri == track.Uri);
 
-            sb.AppendLine($"`{album.ReleaseDate},TRUE,FALSE,FALSE,FALSE,?,?,{string.Join(" & ", track.Artists.Select(a => a.Name))},{track.Name},{album.Label},{TimeSpan.FromMilliseconds(track.DurationMs):m':'ss},{(feature is null ? "" : Math.Round(feature.Tempo).ToString())},{(feature is null ? "" : $"{SpotifyUtils.IntToKey(feature.Key)} {SpotifyUtils.IntToMode(feature.Mode)}")},,{track.ExternalIds["isrc"]}`");
+            sb.AppendLine($"`{album.ReleaseDate},TRUE,FALSE,FALSE,FALSE,?,?,{string.Join(" & ", track.Artists.Select(a => a.Name))},{track.Name},{album.Label},{TimeSpan.FromMilliseconds(track.DurationMs):m':'ss},{(feature is null ? "" : Math.Round(feature.Tempo).ToString(cultureInfo))},{(feature is null ? "" : $"{SpotifyUtils.IntToKey(feature.Key)} {SpotifyUtils.IntToMode(feature.Mode)}")},,{track.ExternalIds["isrc"]}`");
         }
 
         await context.SendOrAttachment(sb.ToString(), removeQuotes:true);
