@@ -23,7 +23,7 @@ public class AlbumEmbed
 
         foreach (var track in album.Tracks)
         {
-            var line = FormatTrack(track);
+            var line = FormatTrack(track, string.Join(" × ", track.Artists) != string.Join(" × ", album.Artists));
 
             StringBuilder sb = null;
 
@@ -126,7 +126,7 @@ public class AlbumEmbed
         return (embed, ms);
     }
 
-    private static string FormatTrack(GenericTrack track, bool includeArtist = false)
+    public static string FormatTrack(GenericTrack track, bool includeArtist = false)
     {
         var featureList = new List<string>
         {
